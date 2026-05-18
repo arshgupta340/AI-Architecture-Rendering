@@ -14,7 +14,7 @@ Read this top-to-bottom. The agent picks the **first row with `- [ ]`** and work
 
 - [x] **T01** — Commit in-progress Spike 2.5/B1 work, then create `overnight/spike-builder-2026-05-17` (done manually by main session; see commit `74fc908`).
   - Files: git only
-- [ ] **T02** — Renderer-package skeleton: create `spike/renderers/__init__.py` exporting `Renderer` base class, and `spike/renderers/base.py` defining `class Renderer(ABC)` with abstract `render(screenshot_path: Path, prompt: str, *, seed: int | None = None, **kwargs) -> bytes`. Include a `name: ClassVar[str]` and `cost_per_call_usd: ClassVar[float]` for the bake-off scoring. No network.
+- [x] **T02** — Renderer-package skeleton: create `spike/renderers/__init__.py` exporting `Renderer` base class, and `spike/renderers/base.py` defining `class Renderer(ABC)` with abstract `render(screenshot_path: Path, prompt: str, *, seed: int | None = None, **kwargs) -> bytes`. Include a `name: ClassVar[str]` and `cost_per_call_usd: ClassVar[float]` for the bake-off scoring. No network. → [report](REPORTS/T02.md) (done by main session as smoke test, commit `518bdcd`)
   - Files: `spike/renderers/__init__.py`, `spike/renderers/base.py`
 - [ ] **T03** — `spike/renderers/nano_banana.py` — `NanoBananaProRenderer(Renderer)` that wraps the existing `render_from_model_view` Modal function from `spike/modal_app.py`. Import-only at module load (do **not** call modal). The `render()` method should construct the Modal `Function.lookup(...)` call lazily so that import works without modal CLI auth.
   - Files: `spike/renderers/nano_banana.py`
