@@ -277,11 +277,59 @@ def tag_regions(
     volumes={str(WEIGHTS_DIR): volume},
     timeout=300,
 )
-def segment(image_bytes: bytes, click_x: int, click_y: int) -> bytes:
+def segment(
+    image_bytes: bytes,
+    click_x: int | None = None,
+    click_y: int | None = None,
+    prompt: dict | None = None,
+) -> bytes:
+    """
+    SAM 2 segmentation accepting either a click point OR a bounding box.
+
+    Preferred call shape (new):
+      segment(image_bytes, prompt={"type": "point", "x": 400, "y": 300})
+      segment(image_bytes, prompt={"type": "bbox", "x": 100, "y": 50, "w": 200, "h": 150})
+
+    Legacy call shape (deprecated, kept for back-compat with existing callers
+    in run_*.py and modal_app.main()):
+      segment(image_bytes, click_x, click_y)
+    A DeprecationWarning is emitted when the legacy shape is used; the call
+    is internally translated to a point prompt.
+
+    The bbox shape lets the VLM tagging output (TagRegionsResponse.regions[*].bbox)
+    flow directly into SAM2 without picking a point inside each region.
+    """
+    import warnings
+
     import numpy as np
     import torch
     from PIL import Image
     from sam2.sam2_image_predictor import SAM2ImagePredictor
+
+    # ---- Normalize legacy (click_x, click_y) -> prompt dict ----
+    if prompt is None:
+        if click_x is None or click_y is None:
+            raise ValueError(
+                "segment() requires either prompt={'type': 'point'|'bbox', ...} "
+                "or the legacy (click_x, click_y) positional arguments."
+            )
+        warnings.warn(
+            "segment(image_bytes, click_x, click_y) is deprecated; pass "
+            "prompt={'type': 'point', 'x': ..., 'y': ...} instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        prompt = {"type": "point", "x": click_x, "y": click_y}
+    elif click_x is not None or click_y is not None:
+        raise ValueError(
+            "segment(): pass either prompt=... or (click_x, click_y), not both."
+        )
+
+    ptype = prompt.get("type")
+    if ptype not in ("point", "bbox"):
+        raise ValueError(
+            f"segment(): prompt['type'] must be 'point' or 'bbox', got {ptype!r}"
+        )
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -292,15 +340,49 @@ def segment(image_bytes: bytes, click_x: int, click_y: int) -> bytes:
 
     img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
     w, h = img.size
-    cx = max(0, min(click_x, w - 1))
-    cy = max(0, min(click_y, h - 1))
-    print(f"[segment] {w}x{h} image, click=({cx},{cy})")
+
+    point_coords = None
+    point_labels = None
+    box = None
+
+    if ptype == "point":
+        try:
+            px = int(prompt["x"])
+            py = int(prompt["y"])
+        except KeyError as e:
+            raise ValueError(f"segment(): point prompt missing key {e}") from e
+        cx = max(0, min(px, w - 1))
+        cy = max(0, min(py, h - 1))
+        point_coords = np.array([[cx, cy]])
+        point_labels = np.array([1])
+        print(f"[segment] {w}x{h} image, point=({cx},{cy})")
+    else:  # bbox
+        try:
+            bx = int(prompt["x"])
+            by = int(prompt["y"])
+            bw = int(prompt["w"])
+            bh = int(prompt["h"])
+        except KeyError as e:
+            raise ValueError(f"segment(): bbox prompt missing key {e}") from e
+        # Clip to image; SAM2 expects [x1, y1, x2, y2] in pixel coords.
+        x1 = max(0, min(bx, w - 1))
+        y1 = max(0, min(by, h - 1))
+        x2 = max(0, min(bx + bw, w - 1))
+        y2 = max(0, min(by + bh, h - 1))
+        if x2 <= x1 or y2 <= y1:
+            raise ValueError(
+                f"segment(): bbox has zero area after clipping to image "
+                f"({w}x{h}): got x1={x1} y1={y1} x2={x2} y2={y2}."
+            )
+        box = np.array([x1, y1, x2, y2])
+        print(f"[segment] {w}x{h} image, bbox=({x1},{y1},{x2},{y2})")
 
     with torch.inference_mode(), torch.autocast(device, dtype=torch.bfloat16):
         predictor.set_image(np.array(img))
         masks, scores, _ = predictor.predict(
-            point_coords=np.array([[cx, cy]]),
-            point_labels=np.array([1]),
+            point_coords=point_coords,
+            point_labels=point_labels,
+            box=box,
             multimask_output=True,
         )
 
