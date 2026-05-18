@@ -5,6 +5,12 @@ Pillow>=10.0
 requests>=2.31
 google-genai>=1.0
 
+# Test + schema deps introduced by overnight spike-builder tasks
+# (verified present in spike/.venv/ on 2026-05-18)
+pytest>=9.0
+respx>=0.23
+pydantic>=2.13
+
 # Pinned inside Modal container image (see modal_app.py)
 # torch, diffusers, transformers, sam2, controlnet-aux are
 # installed in the Modal image definition, not here.
