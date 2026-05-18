@@ -24,7 +24,7 @@ Read this top-to-bottom. The agent picks the **first row with `- [ ]`** and work
   - Files: `spike/renderers/flux_bfl.py`
 - [x] **T05** — `spike/renderers/magnific.py` + `spike/renderers/recraft.py` — `MagnificMysticRenderer` (Magnific Relight/Mystic; env `MAGNIFIC_API_KEY`) and `RecraftV3Renderer` (Recraft native API; env `RECRAFT_API_TOKEN`). Same pattern as T04 — env-gated, no live calls. → [report](REPORTS/T05.md)
   - Files: `spike/renderers/magnific.py`, `spike/renderers/recraft.py`
-- [ ] **T06** — `spike/renderers/replicate_models.py` — three classes (`QwenImageEditRenderer`, `HiDreamE1Renderer`, `RecraftV3ReplicateRenderer`) all hitting Replicate's HTTP API. Env: `REPLICATE_API_TOKEN`. Same pattern.
+- [x] **T06** — `spike/renderers/replicate_models.py` — three classes (`QwenImageEditRenderer`, `HiDreamE1Renderer`, `RecraftV3ReplicateRenderer`) all hitting Replicate's HTTP API. Env: `REPLICATE_API_TOKEN`. Same pattern. → [report](REPORTS/T06.md)
   - Files: `spike/renderers/replicate_models.py`
 - [ ] **T07** — `spike/scoring.py` — pure CV functions: `silhouette_iou(img_a: bytes, img_b: bytes) -> float` (Canny + flood-fill silhouettes, return IoU); `edge_density_delta(img_a: bytes, img_b: bytes, region_bbox: tuple | None = None) -> float` (Canny pixel-count ratio). Plus a `count_windows(render_bytes: bytes) -> int` stub that *would* call Gemini 3 Pro structured output but is env-gated (`GOOGLE_API_KEY`) and not invoked here. Reuse `overlay_canny_edges` from `run_b1_baseline.py` if possible — do not re-implement Canny.
   - Files: `spike/scoring.py`
