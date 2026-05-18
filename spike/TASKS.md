@@ -54,7 +54,7 @@ Read this top-to-bottom. The agent picks the **first row with `- [ ]`** and work
 
 ## Spike 4 — end-to-end edit scaffold
 
-- [ ] **T18** — `spike/cache.py` + `spike/composite.py`. `cache.py` exposes `get_or_compute(key: str, fn: Callable, scope: str = "default") -> bytes` with disk persistence under `spike/.cache/<scope>/<key>.bin`. `composite.py` exposes `paste_tile(base: bytes, mask: bytes, tile: bytes) -> bytes` — alpha-aware PIL composite. Pure local; no network. Reuse existing PIL idioms from `modal_app.py:composite()`.
+- [x] **T18** — `spike/cache.py` + `spike/composite.py`. `cache.py` exposes `get_or_compute(key: str, fn: Callable, scope: str = "default") -> bytes` with disk persistence under `spike/.cache/<scope>/<key>.bin`. `composite.py` exposes `paste_tile(base: bytes, mask: bytes, tile: bytes) -> bytes` — alpha-aware PIL composite. Pure local; no network. Reuse existing PIL idioms from `modal_app.py:composite()`. → [report](REPORTS/T18.md)
   - Files: `spike/cache.py`, `spike/composite.py`
 - [ ] **T19** — `spike/end_to_end_edit.py` driver. Inputs: `--screenshot`, `--region-label` (e.g., "wall"), `--material` (path to swatch). Pipeline: `render_from_model_view` → `tag_regions` → pick region matching label → `segment` (bbox mode) → `apply_material` → `composite` (uses T18 helper). Default `--dry-run` prints the call graph without invoking anything. Cost estimate per live run: ~$0.50 (printed before execution).
   - Files: `spike/end_to_end_edit.py`
