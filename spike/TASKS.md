@@ -22,7 +22,7 @@ Read this top-to-bottom. The agent picks the **first row with `- [ ]`** and work
   - Files: `spike/renderers/nano_banana.py`
 - [x] **T04** — `spike/renderers/flux_bfl.py` — two classes, `FluxCannyProRenderer` and `FluxKontextProRenderer`, both subclasses of `Renderer`. Use `os.environ.get("BFL_API_KEY")`; if missing, `render()` raises a clear `RuntimeError("BFL_API_KEY not set")`. Implement the actual HTTP shape against `https://api.bfl.ml/v1/flux-pro-1.1-canny` and `…/flux-pro-1.1-kontext` per BFL docs (polling on the task `id` is fine). **Do not actually call the API.** Just write the code. → [report](REPORTS/T04.md)
   - Files: `spike/renderers/flux_bfl.py`
-- [ ] **T05** — `spike/renderers/magnific.py` + `spike/renderers/recraft.py` — `MagnificMysticRenderer` (Magnific Relight/Mystic; env `MAGNIFIC_API_KEY`) and `RecraftV3Renderer` (Recraft native API; env `RECRAFT_API_TOKEN`). Same pattern as T04 — env-gated, no live calls.
+- [x] **T05** — `spike/renderers/magnific.py` + `spike/renderers/recraft.py` — `MagnificMysticRenderer` (Magnific Relight/Mystic; env `MAGNIFIC_API_KEY`) and `RecraftV3Renderer` (Recraft native API; env `RECRAFT_API_TOKEN`). Same pattern as T04 — env-gated, no live calls. → [report](REPORTS/T05.md)
   - Files: `spike/renderers/magnific.py`, `spike/renderers/recraft.py`
 - [ ] **T06** — `spike/renderers/replicate_models.py` — three classes (`QwenImageEditRenderer`, `HiDreamE1Renderer`, `RecraftV3ReplicateRenderer`) all hitting Replicate's HTTP API. Env: `REPLICATE_API_TOKEN`. Same pattern.
   - Files: `spike/renderers/replicate_models.py`
