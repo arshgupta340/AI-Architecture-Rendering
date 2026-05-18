@@ -1,0 +1,67 @@
+{
+  "regions": [
+    {
+      "id": "r1",
+      "label": "sky",
+      "bbox": {"x": 0, "y": 0, "w": 1024, "h": 220},
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "r2",
+      "label": "ground",
+      "bbox": {"x": 0, "y": 720, "w": 1024, "h": 280},
+      "confidence": 0.92,
+      "parent_id": null
+    },
+    {
+      "id": "r3",
+      "label": "wall",
+      "bbox": {"x": 120, "y": 230, "w": 540, "h": 480},
+      "confidence": 0.88,
+      "parent_id": null
+    },
+    {
+      "id": "r4",
+      "label": "roof",
+      "bbox": {"x": 100, "y": 180, "w": 580, "h": 70},
+      "confidence": 0.83,
+      "parent_id": null
+    },
+    {
+      "id": "r5",
+      "label": "window",
+      "bbox": {"x": 200, "y": 320, "w": 140, "h": 200},
+      "confidence": 0.9,
+      "parent_id": "r3"
+    },
+    {
+      "id": "r6",
+      "label": "window",
+      "bbox": {"x": 420, "y": 320, "w": 140, "h": 200},
+      "confidence": 0.89,
+      "parent_id": "r3"
+    },
+    {
+      "id": "r7",
+      "label": "door",
+      "bbox": {"x": 310, "y": 560, "w": 140, "h": 150},
+      "confidence": 0.86,
+      "parent_id": "r3"
+    },
+    {
+      "id": "r8",
+      "label": "mullion",
+      "bbox": {"x": 265, "y": 320, "w": 10, "h": 200},
+      "confidence": 0.7,
+      "parent_id": "r5"
+    },
+    {
+      "id": "r9",
+      "label": "vegetation",
+      "bbox": {"x": 700, "y": 540, "w": 280, "h": 200},
+      "confidence": 0.81,
+      "parent_id": null
+    }
+  ]
+}
