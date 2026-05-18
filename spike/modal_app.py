@@ -111,11 +111,19 @@ def render_from_model_view(
     image_bytes: bytes,
     style_prompt: str = "modern materials, natural daylight, professional architectural render",
     mime_type: str = "image/png",
+    seed: int | None = None,
+    extra_constraints: str = "",
 ) -> bytes:
     """
     Input: 3D-model viewport screenshot (PNG) from Rhino / SketchUp / Revit /
     Forma in default shaded display mode — solid color fills plus visible edges.
     Output: photorealistic render preserving every edge, opening, and form.
+
+    seed: optional RNG seed for reproducible output. Different seeds produce
+          different renders; useful for distinguishing deterministic vs
+          stochastic failures.
+    extra_constraints: optional extra natural-language constraints injected
+          into the prompt (e.g., "the right facade has no windows").
     """
     from google import genai
     from google.genai import types
@@ -142,24 +150,29 @@ def render_from_model_view(
         "shadows, atmosphere, and surface texture appropriate to each region. "
         "Add realistic sky, surroundings, and environmental context where "
         "the input shows empty/background space.\n"
-        f"4. STYLE: {style_prompt}.\n\n"
-        "Output a single high-quality architectural render."
+        f"4. STYLE: {style_prompt}.\n"
     )
+    if extra_constraints:
+        instruction += f"5. EXTRA CONSTRAINTS: {extra_constraints}\n"
+    instruction += "\nOutput a single high-quality architectural render."
 
     image_part = types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
+
+    config_kwargs = {"response_modalities": ["IMAGE", "TEXT"]}
+    if seed is not None:
+        config_kwargs["seed"] = seed
 
     response = client.models.generate_content(
         model="nano-banana-pro-preview",
         contents=[image_part, instruction],
-        config=types.GenerateContentConfig(
-            response_modalities=["IMAGE", "TEXT"],
-        ),
+        config=types.GenerateContentConfig(**config_kwargs),
     )
 
     for part in response.candidates[0].content.parts:
         if hasattr(part, "inline_data") and part.inline_data:
             data = part.inline_data.data
-            print(f"[render_from_model_view] Nano Banana Pro: {len(data):,} bytes")
+            seed_str = f" seed={seed}" if seed is not None else ""
+            print(f"[render_from_model_view] Nano Banana Pro{seed_str}: {len(data):,} bytes")
             return data
 
     raise RuntimeError("No image returned by Nano Banana Pro from model-view input")

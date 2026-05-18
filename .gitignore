@@ -45,9 +45,10 @@ desktop.ini
 **/outputs/**/*.png
 **/outputs/**/*.jpg
 **/outputs/**/*.jpeg
-!**/outputs/**/overlay.png
-!**/outputs/**/sidebyside.png
-!**/outputs/**/comparison.png
+!**/outputs/**/*overlay*.png
+!**/outputs/**/*sidebyside*.png
+!**/outputs/**/*comparison*.png
+!**/outputs/**/edges.png
 
 # Test assets are fine to commit (small line drawings / model views)
 # But ignore any heavy reference renders the user drops in

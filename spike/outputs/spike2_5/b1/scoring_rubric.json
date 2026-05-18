@@ -1,0 +1,68 @@
+{
+  "_instructions": "Score each render below by tagging every observed failure. Use the categories defined in the plan: Type (Invention/Omission/Displacement/Transformation/StyleDrift), Location (FrameEdge/Distant/Repetitive/Ambiguous/CoreMass), Severity (Critical/High/Medium/Low). Then subjectively score Photorealism, Material believability, and Lighting coherence on 1-10. The 'critical_failures' field is what gates a renderer in/out of consideration.",
+  "_severity_definitions": {
+    "Critical": "Changes building footprint, story count, window grid \u2014 architect rejects",
+    "High": "Proportions, mullion patterns, or other visible geometric deviation",
+    "Medium": "Material/glass tint/color choices \u2014 meant to change",
+    "Low": "Shadows, sky, foreground vegetation \u2014 not part of design"
+  },
+  "renders": {
+    "nb_seed_42": {
+      "render_file": "outputs/spike2_5/b1/nb_seed_42.png",
+      "overlay_file": "outputs/spike2_5/b1/nb_seed_42_overlay.png",
+      "failures": [],
+      "critical_failure_count": 0,
+      "high_failure_count": 0,
+      "medium_failure_count": 0,
+      "low_failure_count": 0,
+      "photorealism_1_to_10": null,
+      "material_believability_1_to_10": null,
+      "lighting_coherence_1_to_10": null,
+      "notes": ""
+    },
+    "nb_seed_100": {
+      "render_file": "outputs/spike2_5/b1/nb_seed_100.png",
+      "overlay_file": "outputs/spike2_5/b1/nb_seed_100_overlay.png",
+      "failures": [],
+      "critical_failure_count": 0,
+      "high_failure_count": 0,
+      "medium_failure_count": 0,
+      "low_failure_count": 0,
+      "photorealism_1_to_10": null,
+      "material_believability_1_to_10": null,
+      "lighting_coherence_1_to_10": null,
+      "notes": ""
+    },
+    "nb_seed_200": {
+      "render_file": "outputs/spike2_5/b1/nb_seed_200.png",
+      "overlay_file": "outputs/spike2_5/b1/nb_seed_200_overlay.png",
+      "failures": [],
+      "critical_failure_count": 0,
+      "high_failure_count": 0,
+      "medium_failure_count": 0,
+      "low_failure_count": 0,
+      "photorealism_1_to_10": null,
+      "material_believability_1_to_10": null,
+      "lighting_coherence_1_to_10": null,
+      "notes": ""
+    },
+    "nb_seed_300": {
+      "render_file": "outputs/spike2_5/b1/nb_seed_300.png",
+      "overlay_file": "outputs/spike2_5/b1/nb_seed_300_overlay.png",
+      "failures": [],
+      "critical_failure_count": 0,
+      "high_failure_count": 0,
+      "medium_failure_count": 0,
+      "low_failure_count": 0,
+      "photorealism_1_to_10": null,
+      "material_believability_1_to_10": null,
+      "lighting_coherence_1_to_10": null,
+      "notes": ""
+    }
+  },
+  "_summary": {
+    "deterministic_failures": "list failures that appear across ALL seeds (model limitation, not stochastic)",
+    "stochastic_failures": "list failures that vary by seed (potentially fixable with seed selection)",
+    "verdict": "advance / iterate-prompt / escalate-to-bake-off"
+  }
+}
