@@ -41,7 +41,7 @@ Read this top-to-bottom. The agent picks the **first row with `- [ ]`** and work
 
 ## Spike 3 — VLM tagging scaffold
 
-- [ ] **T13** — `spike/schemas.py` — Pydantic v2 models: `BBox(x: int, y: int, w: int, h: int)`, `Region(id: str, label: str, bbox: BBox, confidence: float, parent_id: str | None = None)`, `TagRegionsResponse(regions: list[Region])`. Include a `Region.LABELS` ClassVar with the allowed enum (wall, floor, ceiling, window, door, mullion, roof, ground, sky, vegetation, furniture, person, vehicle).
+- [x] **T13** — `spike/schemas.py` — Pydantic v2 models: `BBox(x: int, y: int, w: int, h: int)`, `Region(id: str, label: str, bbox: BBox, confidence: float, parent_id: str | None = None)`, `TagRegionsResponse(regions: list[Region])`. Include a `Region.LABELS` ClassVar with the allowed enum (wall, floor, ceiling, window, door, mullion, roof, ground, sky, vegetation, furniture, person, vehicle). → [report](REPORTS/T13.md)
   - Files: `spike/schemas.py`
 - [ ] **T14** — Add `tag_regions()` Modal function in `spike/modal_app.py`. Inputs: `screenshot_bytes: bytes, render_bytes: bytes`. Calls Gemini 3 Pro (`gemini-3-pro-preview`) with structured-output config, schema = `TagRegionsResponse`. Returns `TagRegionsResponse`. Reuse the existing `google.genai` client wiring pattern. Mark with `@app.function(image=image, secrets=[...])` matching the existing render function. Don't deploy.
   - Files: `spike/modal_app.py`
