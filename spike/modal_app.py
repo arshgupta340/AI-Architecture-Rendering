@@ -184,6 +184,91 @@ render_from_linework = render_from_model_view
 
 
 # ---------------------------------------------------------------------------
+# Stage 1b — VLM region tagging (Gemini 3 Pro structured output)
+# Takes the original viewport screenshot + the photoreal render and returns
+# a list of labeled bounding boxes (wall, window, door, …) in render-pixel
+# coordinates. The render is the authoritative coordinate space because
+# downstream tools (SAM2, inpainting) operate on the render, not the model
+# screenshot. The screenshot is provided as additional context so the VLM
+# can disambiguate regions whose geometric identity is clearer in the
+# source 3D view than in the photoreal output.
+# ---------------------------------------------------------------------------
+
+@app.function(secrets=[secret], timeout=120)
+def tag_regions(
+    screenshot_bytes: bytes,
+    render_bytes: bytes,
+    screenshot_mime: str = "image/png",
+    render_mime: str = "image/png",
+):
+    """
+    Inputs:
+      screenshot_bytes: the original 3D-model viewport screenshot (PNG bytes).
+      render_bytes:     the photoreal render produced by render_from_model_view.
+    Returns: a TagRegionsResponse (pydantic model from spike.schemas).
+
+    Bounding boxes are in pixel coordinates of the RENDER image (not the
+    screenshot). Allowed labels come from Region.LABELS.
+    """
+    from google import genai
+    from google.genai import types
+
+    # Local import keeps the Modal container slim and avoids a hard dependency
+    # on spike package layout from this file (modal_app.py is run as a script).
+    from spike.schemas import Region, TagRegionsResponse
+
+    client = genai.Client(api_key=os.environ["GOOGLE_API_KEY"])
+
+    allowed = ", ".join(Region.LABELS)
+    instruction = (
+        "You are tagging architectural regions for a Photoshop-style editor. "
+        "You are given two images of the SAME scene:\n"
+        "  IMAGE 1: the 3D-model viewport screenshot (solid color fills, "
+        "visible edges) — use this to disambiguate geometry.\n"
+        "  IMAGE 2: the photoreal render produced from that screenshot — "
+        "ALL bounding boxes MUST be in pixel coordinates of IMAGE 2.\n\n"
+        "Return a list of regions. Each region has:\n"
+        "  - id: a short unique string (e.g., 'r1', 'r2', …)\n"
+        "  - label: ONE of [" + allowed + "]\n"
+        "  - bbox: {x, y, w, h} in IMAGE 2 pixel coordinates "
+        "(x, y is top-left; w, h are width and height)\n"
+        "  - confidence: float in [0, 1]\n"
+        "  - parent_id: optional id of an enclosing region "
+        "(e.g., a 'mullion' inside a 'window')\n\n"
+        "Cover every visually distinct architectural region. Prefer tight "
+        "bounding boxes. If a region does not fit any allowed label, omit it."
+    )
+
+    screenshot_part = types.Part.from_bytes(
+        data=screenshot_bytes, mime_type=screenshot_mime
+    )
+    render_part = types.Part.from_bytes(
+        data=render_bytes, mime_type=render_mime
+    )
+
+    response = client.models.generate_content(
+        model="gemini-3-pro-preview",
+        contents=[screenshot_part, render_part, instruction],
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+            response_schema=TagRegionsResponse,
+        ),
+    )
+
+    # The SDK exposes the parsed pydantic object directly when response_schema
+    # is a BaseModel subclass; fall back to manual parse if not populated.
+    parsed = getattr(response, "parsed", None)
+    if isinstance(parsed, TagRegionsResponse):
+        print(f"[tag_regions] {len(parsed.regions)} regions")
+        return parsed
+
+    text = getattr(response, "text", None) or response.candidates[0].content.parts[0].text
+    result = TagRegionsResponse.model_validate_json(text)
+    print(f"[tag_regions] {len(result.regions)} regions (manual parse)")
+    return result
+
+
+# ---------------------------------------------------------------------------
 # Stage 2 — SAM 2 segmentation (A10G)
 # ---------------------------------------------------------------------------
 
