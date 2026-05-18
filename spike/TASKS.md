@@ -36,7 +36,7 @@ Read this top-to-bottom. The agent picks the **first row with `- [ ]`** and work
   - Files: `spike/.env.example`, `spike/PROVIDERS.md`
 - [x] **T11** — `spike/tests/test_renderers.py` — pytest tests for every renderer class. Mock HTTP with `respx` (preferred) or `responses`. Cover: (1) env-var missing → clean RuntimeError; (2) request shape matches provider docs; (3) response parsing returns bytes; (4) HTTP error → propagates. Also `spike/tests/conftest.py` with a `tiny_png` fixture (8×8 solid color, PIL-generated in-memory). → [report](REPORTS/T11.md)
   - Files: `spike/tests/__init__.py`, `spike/tests/conftest.py`, `spike/tests/test_renderers.py`
-- [ ] **T12** — Update `spike/requirements.txt` adding any new deps the agent introduced (`pytest`, `respx`, `pydantic` for T13). Pin minor versions. Verify the venv at `spike/.venv/` already has them; if not, add `# install: pip install respx pytest` comment but do **not** run pip.
+- [x] **T12** — Update `spike/requirements.txt` adding any new deps the agent introduced (`pytest`, `respx`, `pydantic` for T13). Pin minor versions. Verify the venv at `spike/.venv/` already has them; if not, add `# install: pip install respx pytest` comment but do **not** run pip. → [report](REPORTS/T12.md)
   - Files: `spike/requirements.txt`
 
 ## Spike 3 — VLM tagging scaffold
