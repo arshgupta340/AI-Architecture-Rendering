@@ -8,7 +8,7 @@ Read this top-to-bottom. The agent picks the **first row with `- [ ]`** and work
 
 **Per-task contract:** see `.claude/agents/spike-builder.md` § "Per-task contract".
 
-**Tonight's environment (2026-05-17):** the venv at `spike/.venv/` is broken (uv pointer references a non-existent Python). Use `C:\Users\arshg\AppData\Local\Programs\Python\Python313\python.exe` (stdlib only — no third-party packages). Syntax-check Python files with `python -m py_compile <file>`. Tasks needing pytest/pydantic/cv2/PIL/modal/google-genai will commit source code but skip runtime checks; the human will validate after fixing the venv tomorrow. T17 (live Gemini call) will likely be marked `- [!]` blocked because `google.genai` is not importable.
+**Tonight's environment (2026-05-17, post-repair):** the venv at `spike/.venv/` is healthy (Python 3.13 with PIL, cv2, numpy, pytest, pydantic, respx, modal, google-genai, python-dotenv, requests installed). Use `spike\.venv\Scripts\python.exe` for everything. Runtime import checks and pytest are expected to work. T17 should succeed against the live Gemini API for ~$0.01.
 
 ---
 

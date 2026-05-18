@@ -21,11 +21,10 @@ You are working on branch `overnight/spike-builder-2026-05-17`, branched off `re
 3. **Read** the relevant existing code referenced by the task row's `Files` column and any "Reusable building blocks" mentioned in the plan.
 4. **Implement** the change. Each task has a clear deliverable in the row description — do exactly that, no more. Don't add features beyond what the task names. Don't refactor unrelated code.
 5. **Check locally:**
-   - Python interpreter to use: `C:\Users\arshg\AppData\Local\Programs\Python\Python313\python.exe` (the project's `spike/.venv/` is currently broken — see "Environment caveats" below).
-   - For Python code: **`python -m py_compile <file>`** to catch syntax errors. This works without any third-party packages installed.
-   - For tasks whose deliverable is a test file (T11, T20): `python -m pytest spike/tests/<file>.py -v` *if* `pytest` is importable; otherwise mark blocked.
-   - For T07/T13/T16/T17/T18/T19 (need cv2, numpy, PIL, pydantic, modal, google-genai, etc.): try the import as a soft probe. If the import fails because the package isn't installed, **still commit the code** (the source is the deliverable, not a runtime check) but note in the report that runtime testing was skipped.
-   - Never run `pip install`.
+   - Python interpreter to use: `spike\.venv\Scripts\python.exe` (Python 3.13 with PIL, cv2, numpy, pytest, pydantic, respx, modal, google-genai, python-dotenv, requests pre-installed — verified 2026-05-17).
+   - For Python source: run `python -m py_compile <file>` to catch syntax errors, then `python -c "import <module>"` to confirm runtime imports.
+   - For tasks whose deliverable is a test file (T11, T20): `python -m pytest spike/tests/<file>.py -v`. All tests must pass.
+   - Never run `pip install`. If a task needs a package not listed in the venv inventory above, mark blocked and write a report — the human will install it tomorrow.
 6. **Stage** ONLY the files listed in the task row's `Files` column, plus the report file you're about to write. Use explicit paths, never `git add .` or `git add -A`.
 7. **Commit** with message format `[T<id>] <task title from TASKS.md>`. Include a body listing files changed and a one-line summary.
 8. **Write report** at `spike/REPORTS/T<id>.md` per the template in `spike/REPORTS/README.md`. Include commit SHA (use `git rev-parse --short HEAD` after commit).
@@ -55,14 +54,19 @@ You are working on branch `overnight/spike-builder-2026-05-17`, branched off `re
 - **Allowed:** `python -m pytest`, `python -m ruff check` (if ruff is installed), `python -c "..."` for import sanity, `python spike/<script>.py --dry-run`.
 - **Forbidden:** any command that spawns a daemon, long-running server, GUI, browser, or interactive prompt. No `npm`, `docker`, `modal token new`, `pip install`. No `cmd`, `start`, `&` background jobs.
 
-### Environment caveats (as of 2026-05-17)
+### Environment (as of 2026-05-17, post-venv-repair)
 
-- The project venv at `spike/.venv/` is **broken** — its python pointer references a non-existent uv-managed Python. Don't try to use it.
-- Use `C:\Users\arshg\AppData\Local\Programs\Python\Python313\python.exe` (system Python 3.13). It has stdlib only — none of the project's third-party deps are installed.
-- This means **runtime import checks for cv2/PIL/numpy/pydantic/modal/google-genai/pytest/respx will fail**. That is OK. Your job is to produce correct *source code*; runtime verification is on the human after the venv is repaired tomorrow.
-- For T11 and T20 (pytest-based tests), if `python -m pytest --version` fails, mark the row blocked (`- [!]`) with reason "pytest not installed" and a clear note in the report — the test source is the deliverable so the file should still exist on disk, but no commit (your contract says don't commit work that fails its check).
-  - **Compromise:** for these two tasks, write the test file, run `python -m py_compile` on it to verify syntax, commit the source, and write the report noting "pytest run skipped: not installed in current Python; run manually after venv fix". This is acceptable; the deliverable is the test file.
-- For T17 (live Gemini smoke test): if `google.genai` import fails, mark blocked (`- [!]`). Do not attempt creative workarounds.
+Venv is healthy. Confirmed installed:
+
+```
+PIL  12.2.0      cv2  4.13.0     numpy  2.4.5
+pytest  9.0.3    pydantic  2.13.4    respx  0.23.1
+modal  1.4.2     google.genai  2.4.0  python-dotenv  ?    requests  2.34.2
+```
+
+- Use `spike\.venv\Scripts\python.exe` for everything.
+- Runtime import checks should pass. If one fails unexpectedly, that's a real problem in the code you just wrote — debug it before committing.
+- T17 (live Gemini smoke test) is expected to succeed; ledger budget $0.05 absolute, $0.01 planned.
 
 ### Failure handling
 - If a step in your task fails (test red, import error, lint red, branch mismatch, cost cap, missing dependency), DO NOT commit the partial work. Instead:
