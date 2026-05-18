@@ -1,0 +1,10 @@
+# Local dev / runner
+modal>=0.73
+python-dotenv>=1.0
+Pillow>=10.0
+requests>=2.31
+google-genai>=1.0
+
+# Pinned inside Modal container image (see modal_app.py)
+# torch, diffusers, transformers, sam2, controlnet-aux are
+# installed in the Modal image definition, not here.
