@@ -58,7 +58,7 @@ Read this top-to-bottom. The agent picks the **first row with `- [ ]`** and work
   - Files: `spike/cache.py`, `spike/composite.py`
 - [x] **T19** — `spike/end_to_end_edit.py` driver. Inputs: `--screenshot`, `--region-label` (e.g., "wall"), `--material` (path to swatch). Pipeline: `render_from_model_view` → `tag_regions` → pick region matching label → `segment` (bbox mode) → `apply_material` → `composite` (uses T18 helper). Default `--dry-run` prints the call graph without invoking anything. Cost estimate per live run: ~$0.50 (printed before execution). → [report](REPORTS/T19.md)
   - Files: `spike/end_to_end_edit.py`
-- [ ] **T20** — `spike/tests/test_end_to_end.py` — pytest end-to-end mock test. Mocks every Modal function (`render_from_model_view`, `tag_regions`, `segment`, `apply_material`) using `unittest.mock`. Asserts: pipeline calls things in the right order, region matching picks the right region, output composite is non-empty bytes.
+- [x] **T20** — `spike/tests/test_end_to_end.py` — pytest end-to-end mock test. Mocks every Modal function (`render_from_model_view`, `tag_regions`, `segment`, `apply_material`) using `unittest.mock`. Asserts: pipeline calls things in the right order, region matching picks the right region, output composite is non-empty bytes. → [report](REPORTS/T20.md)
   - Files: `spike/tests/test_end_to_end.py`
 
 ---
