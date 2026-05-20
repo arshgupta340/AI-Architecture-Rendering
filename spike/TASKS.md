@@ -61,6 +61,16 @@ Read this top-to-bottom. The agent picks the **first row with `- [ ]`** and work
 - [x] **T20** — `spike/tests/test_end_to_end.py` — pytest end-to-end mock test. Mocks every Modal function (`render_from_model_view`, `tag_regions`, `segment`, `apply_material`) using `unittest.mock`. Asserts: pipeline calls things in the right order, region matching picks the right region, output composite is non-empty bytes. → [report](REPORTS/T20.md)
   - Files: `spike/tests/test_end_to_end.py`
 
+## Spike 3 — proper evaluation (follow-up from T17)
+
+- [ ] **T21** — Proper Spike 3 gate evaluation. T17 was a smoke-test pass but exposed substantive quality issues with `tag_regions` output (see `REPORTS/T17.md` "Quality findings"). Required work:
+  1. **Coordinate fix.** Gemini returns bboxes in 0–1000 normalized space, not pixel coords. Either (a) scale bboxes to actual pixel dimensions in `test_vlm_tagging.py:_draw_regions` and in `end_to_end_edit.py` before passing to SAM2, OR (b) update the `tag_regions` prompt in `modal_app.py` to require actual pixel coordinates AND verify the model complies (VLMs often ignore this instruction).
+  2. **Prompt revision.** Tighten `tag_regions` to: ask for tight bboxes per architectural element (not per-facade); clarify that `parent_id` means geometric containment, not spatial overlap; add explicit "do not invent a 'door' inside a 'window'" guidance.
+  3. **Multi-render test set.** Per the plan, evaluate on **5 diverse screenshots** (modern interior, traditional exterior, mixed materials, complex window patterns, urban exterior with people/cars/trees).
+  4. **Manual scoring.** Score each screenshot against the actual Spike 3 gate: ≥80% of major elements (wall/window/mullion/floor/ceiling/door) **correctly labeled** with **tight, pixel-accurate bboxes**.
+  5. **Cost estimate:** ~$0.05 (5 Gemini calls @ $0.01). Brings running total to $0.06 — **exceeds the $0.05 session cap; needs user authorization before running.**
+  - Files: `spike/modal_app.py` (tag_regions prompt), `spike/test_vlm_tagging.py` (coord scaling), `spike/end_to_end_edit.py` (coord scaling if used), `spike/test_assets/model_views/` (4 new screenshots), `spike/outputs/spike3/` (new tagged_*.png + scored_rubric.json)
+
 ---
 
 ## Status legend
