@@ -12,6 +12,7 @@ Append-only log of every paid API call the overnight agent makes.
 
 ```
 2026-05-17 SETUP | T00 | --- | --- | 0.00 | Initial ledger created
+2026-05-19 T17 | T17 | Google | gemini-3-pro-preview | 0.01 | tag_regions smoke test, 49 regions returned
 ```
 
-**Running total: $0.00**
+**Running total: $0.01**

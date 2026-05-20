@@ -72,10 +72,18 @@ def _call_live(screenshot_bytes: bytes, render_bytes: bytes) -> TagRegionsRespon
     result = fn.remote(screenshot_bytes, render_bytes)
     # Modal returns whatever the function returns. If it's already a
     # TagRegionsResponse we use it; otherwise validate from dict/json.
+    import json as _json
+
     if isinstance(result, TagRegionsResponse):
         return result
     if isinstance(result, (str, bytes)):
-        return TagRegionsResponse.model_validate_json(result)
+        raw = _json.loads(result)
+        # Gemini may return a bare list instead of {"regions": [...]}
+        if isinstance(raw, list):
+            raw = {"regions": raw}
+        return TagRegionsResponse.model_validate(raw)
+    if isinstance(result, list):
+        return TagRegionsResponse.model_validate({"regions": result})
     return TagRegionsResponse.model_validate(result)
 
 
@@ -200,6 +208,15 @@ def main(argv: list[str] | None = None) -> int:
     out_path = out_dir / f"tagged_{input_path.stem}.png"
     out_path.write_bytes(_draw_regions(render_bytes, response))
     print(f"[test_vlm_tagging] wrote {out_path}")
+
+    if args.live:
+        import json as _json
+        json_path = out_dir / "smoke_test.json"
+        json_path.write_text(
+            _json.dumps(response.model_dump(), indent=2), encoding="utf-8"
+        )
+        print(f"[test_vlm_tagging] wrote {json_path}")
+
     return 0
 
 

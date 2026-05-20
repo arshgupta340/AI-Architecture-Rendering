@@ -151,9 +151,20 @@ def render_from_model_view(
         "Add realistic sky, surroundings, and environmental context where "
         "the input shows empty/background space.\n"
         f"4. STYLE: {style_prompt}.\n"
+        "5. MATERIAL & CONTEXT BASELINE. Unless the caller's extra constraints "
+        "or style prompt say otherwise, use a NEUTRAL architectural palette as "
+        "the default: light gray concrete or stucco for walls, neutral-tinted "
+        "glazing, dark anodized aluminum or steel mullions and frames, gray "
+        "concrete or asphalt for ground. Keep the same palette across all "
+        "facades of the same building. Do NOT invent water features, swimming "
+        "pools, rooftop amenities, distant skylines, large planting beds, or "
+        "significant vegetation that are not present in the input geometry. "
+        "Treat the scene context (sky, ground plane, immediate surroundings) "
+        "as a minimal neutral backdrop unless the input clearly shows urban "
+        "fabric.\n"
     )
     if extra_constraints:
-        instruction += f"5. EXTRA CONSTRAINTS: {extra_constraints}\n"
+        instruction += f"6. EXTRA CONSTRAINTS: {extra_constraints}\n"
     instruction += "\nOutput a single high-quality architectural render."
 
     image_part = types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
@@ -205,21 +216,21 @@ def tag_regions(
     Inputs:
       screenshot_bytes: the original 3D-model viewport screenshot (PNG bytes).
       render_bytes:     the photoreal render produced by render_from_model_view.
-    Returns: a TagRegionsResponse (pydantic model from spike.schemas).
+    Returns: a JSON string (TagRegionsResponse schema) — parsed by the local
+    caller so pydantic and spike.schemas need not be installed in the container.
 
     Bounding boxes are in pixel coordinates of the RENDER image (not the
-    screenshot). Allowed labels come from Region.LABELS.
+    screenshot).
     """
     from google import genai
     from google.genai import types
 
-    # Local import keeps the Modal container slim and avoids a hard dependency
-    # on spike package layout from this file (modal_app.py is run as a script).
-    from spike.schemas import Region, TagRegionsResponse
-
     client = genai.Client(api_key=os.environ["GOOGLE_API_KEY"])
 
-    allowed = ", ".join(Region.LABELS)
+    allowed = (
+        "wall, floor, ceiling, window, door, mullion, roof, "
+        "ground, sky, vegetation, furniture, person, vehicle"
+    )
     instruction = (
         "You are tagging architectural regions for a Photoshop-style editor. "
         "You are given two images of the SAME scene:\n"
@@ -227,14 +238,15 @@ def tag_regions(
         "visible edges) — use this to disambiguate geometry.\n"
         "  IMAGE 2: the photoreal render produced from that screenshot — "
         "ALL bounding boxes MUST be in pixel coordinates of IMAGE 2.\n\n"
-        "Return a list of regions. Each region has:\n"
-        "  - id: a short unique string (e.g., 'r1', 'r2', …)\n"
+        "Return a JSON object with a single key 'regions' whose value is a "
+        "list of region objects. Each region object has:\n"
+        "  - id: a short unique string (e.g., 'r1', 'r2', ...)\n"
         "  - label: ONE of [" + allowed + "]\n"
         "  - bbox: {x, y, w, h} in IMAGE 2 pixel coordinates "
         "(x, y is top-left; w, h are width and height)\n"
         "  - confidence: float in [0, 1]\n"
         "  - parent_id: optional id of an enclosing region "
-        "(e.g., a 'mullion' inside a 'window')\n\n"
+        "(e.g., a 'mullion' inside a 'window'), or null\n\n"
         "Cover every visually distinct architectural region. Prefer tight "
         "bounding boxes. If a region does not fit any allowed label, omit it."
     )
@@ -251,21 +263,12 @@ def tag_regions(
         contents=[screenshot_part, render_part, instruction],
         config=types.GenerateContentConfig(
             response_mime_type="application/json",
-            response_schema=TagRegionsResponse,
         ),
     )
 
-    # The SDK exposes the parsed pydantic object directly when response_schema
-    # is a BaseModel subclass; fall back to manual parse if not populated.
-    parsed = getattr(response, "parsed", None)
-    if isinstance(parsed, TagRegionsResponse):
-        print(f"[tag_regions] {len(parsed.regions)} regions")
-        return parsed
-
     text = getattr(response, "text", None) or response.candidates[0].content.parts[0].text
-    result = TagRegionsResponse.model_validate_json(text)
-    print(f"[tag_regions] {len(result.regions)} regions (manual parse)")
-    return result
+    print(f"[tag_regions] raw response length={len(text)} chars")
+    return text
 
 
 # ---------------------------------------------------------------------------

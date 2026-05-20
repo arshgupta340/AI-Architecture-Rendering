@@ -49,7 +49,7 @@ Read this top-to-bottom. The agent picks the **first row with `- [ ]`** and work
   - Files: `spike/modal_app.py`
 - [x] **T16** — `spike/test_vlm_tagging.py` — driver script. Loads a render PNG, calls `tag_regions` (or loads fixture JSON in `--dry-run` mode), draws bboxes + labels on the render with PIL, saves to `spike/outputs/spike3/tagged_<basename>.png`. Default to `--dry-run` (uses fixture). `--live` triggers actual Modal/Gemini call (still local execution — Modal lookup, not deploy). → [report](REPORTS/T16.md)
   - Files: `spike/test_vlm_tagging.py`, `spike/tests/fixtures/tag_regions_response.json`
-- [!] **T17** — **SMOKE TEST (LIVE).** Run `python spike/test_vlm_tagging.py --live --input spike/outputs/spike2/render.png` ONCE. Verify schema parses. Save raw response JSON to `spike/outputs/spike3/smoke_test.json` and the visualization to `spike/outputs/spike3/tagged_render.png`. Append actual cost (or $0.01 estimate) to `cost_ledger.md`. If running cost would exceed $0.05, STOP and write a STOPPED.md note. → [report](REPORTS/T17.md)
+- [x] **T17** — **SMOKE TEST (LIVE).** Run `python spike/test_vlm_tagging.py --live --input spike/outputs/spike2/render.png` ONCE. Verify schema parses. Save raw response JSON to `spike/outputs/spike3/smoke_test.json` and the visualization to `spike/outputs/spike3/tagged_render.png`. Append actual cost (or $0.01 estimate) to `cost_ledger.md`. If running cost would exceed $0.05, STOP and write a STOPPED.md note. → [report](REPORTS/T17.md)
   - Files: `spike/outputs/spike3/smoke_test.json`, `spike/outputs/spike3/tagged_render.png`, `spike/REPORTS/cost_ledger.md`
 
 ## Spike 4 — end-to-end edit scaffold
