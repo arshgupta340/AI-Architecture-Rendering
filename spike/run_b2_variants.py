@@ -316,7 +316,7 @@ def run_variant_live(
         target.parent.mkdir(parents=True, exist_ok=True)
         img.save(target, format="PNG")
 
-    fn = modal.Function.lookup(_MODAL_APP_NAME, _MODAL_FN_NAME)
+    fn = modal.Function.from_name(_MODAL_APP_NAME, _MODAL_FN_NAME)
 
     last_bytes: bytes | None = None
     for idx, call in enumerate(variant.calls, 1):

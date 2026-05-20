@@ -56,7 +56,7 @@ class NanoBananaProRenderer(Renderer):
         mime_type = kwargs.pop("mime_type", "image/png")
         extra_constraints = kwargs.pop("extra_constraints", "")
 
-        fn = modal.Function.lookup(_MODAL_APP_NAME, _MODAL_FN_NAME)
+        fn = modal.Function.from_name(_MODAL_APP_NAME, _MODAL_FN_NAME)
         result = fn.remote(
             image_bytes=image_bytes,
             style_prompt=prompt,

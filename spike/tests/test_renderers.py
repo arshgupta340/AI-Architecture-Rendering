@@ -15,7 +15,7 @@ us — assert on submitted URL + body, return fake responses — just expressed
 against the actual transport library.
 
 NanoBananaProRenderer does not hit HTTP at all; it calls a Modal Function via
-`modal.Function.lookup`. We monkeypatch that and `modal` module-level access.
+`modal.Function.from_name`. We monkeypatch that and `modal` module-level access.
 """
 
 from __future__ import annotations
@@ -500,7 +500,7 @@ def test_nano_banana_calls_modal_lookup_and_returns_bytes(
 
     fake_modal = types.ModuleType("modal")
     fake_modal.Function = MagicMock()
-    fake_modal.Function.lookup = MagicMock(return_value=fake_fn)
+    fake_modal.Function.from_name = MagicMock(return_value=fake_fn)
 
     with patch.dict(sys.modules, {"modal": fake_modal}):
         out = NanoBananaProRenderer().render(
@@ -508,7 +508,7 @@ def test_nano_banana_calls_modal_lookup_and_returns_bytes(
         )
 
     assert out == another_tiny_png
-    fake_modal.Function.lookup.assert_called_once_with(
+    fake_modal.Function.from_name.assert_called_once_with(
         "arch-rendering-spike", "render_from_model_view"
     )
     fake_fn.remote.assert_called_once()
@@ -527,7 +527,7 @@ def test_nano_banana_non_bytes_result_raises(tiny_png, monkeypatch):
 
     fake_modal = types.ModuleType("modal")
     fake_modal.Function = MagicMock()
-    fake_modal.Function.lookup = MagicMock(return_value=fake_fn)
+    fake_modal.Function.from_name = MagicMock(return_value=fake_fn)
 
     with patch.dict(sys.modules, {"modal": fake_modal}):
         with pytest.raises(RuntimeError, match="expected bytes"):
@@ -541,7 +541,7 @@ def test_nano_banana_missing_file_raises(tmp_path, monkeypatch):
     fake_fn = MagicMock()
     fake_modal = types.ModuleType("modal")
     fake_modal.Function = MagicMock()
-    fake_modal.Function.lookup = MagicMock(return_value=fake_fn)
+    fake_modal.Function.from_name = MagicMock(return_value=fake_fn)
 
     with patch.dict(sys.modules, {"modal": fake_modal}):
         with pytest.raises(FileNotFoundError):

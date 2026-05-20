@@ -68,7 +68,7 @@ def _call_live(screenshot_bytes: bytes, render_bytes: bytes) -> TagRegionsRespon
     # Import inside the function so module import works without modal auth.
     import modal
 
-    fn = modal.Function.lookup("arch-rendering-spike", "tag_regions")
+    fn = modal.Function.from_name("arch-rendering-spike", "tag_regions")
     result = fn.remote(screenshot_bytes, render_bytes)
     # Modal returns whatever the function returns. If it's already a
     # TagRegionsResponse we use it; otherwise validate from dict/json.

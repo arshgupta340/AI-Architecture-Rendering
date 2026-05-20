@@ -6,7 +6,7 @@ composite step:
     render_from_model_view -> tag_regions -> segment -> apply_material
                                                       -> paste_tile (local)
 
-Each Modal function is reached via `modal.Function.lookup("arch-rendering-spike",
+Each Modal function is reached via `modal.Function.from_name("arch-rendering-spike",
 <fn_name>)`. We mock that lookup so every "remote" call is in fact a
 predictable in-process stub. The composite step uses a real PIL call against
 mock bytes, so the assertion that the final output is non-empty PNG bytes is
@@ -230,7 +230,7 @@ def test_end_to_end_pipeline_mocked(
         assert fn_name in fake_fns, f"unexpected Modal lookup: {fn_name}"
         return fake_fns[fn_name]
 
-    fake_modal.Function.lookup = MagicMock(side_effect=lookup)
+    fake_modal.Function.from_name = MagicMock(side_effect=lookup)
 
     output_path = tmp_path / "out" / "edit_result.png"
 
@@ -308,7 +308,7 @@ def test_end_to_end_picks_window_not_wall(
 
     fake_modal = types.ModuleType("modal")
     fake_modal.Function = MagicMock()
-    fake_modal.Function.lookup = MagicMock(side_effect=lambda app, fn: fake_fns[fn])
+    fake_modal.Function.from_name = MagicMock(side_effect=lambda app, fn: fake_fns[fn])
 
     output_path = tmp_path / "out" / "window_edit.png"
 
@@ -335,8 +335,8 @@ def test_end_to_end_dry_run_makes_no_modal_calls(
     """Default --dry-run path must not import or call modal at all."""
     fake_modal = types.ModuleType("modal")
     fake_modal.Function = MagicMock()
-    fake_modal.Function.lookup = MagicMock(
-        side_effect=AssertionError("dry-run must not call modal.Function.lookup")
+    fake_modal.Function.from_name = MagicMock(
+        side_effect=AssertionError("dry-run must not call modal.Function.from_name")
     )
 
     with patch.dict(sys.modules, {"modal": fake_modal}):
@@ -350,7 +350,7 @@ def test_end_to_end_dry_run_makes_no_modal_calls(
         )
 
     assert rc == 0
-    fake_modal.Function.lookup.assert_not_called()
+    fake_modal.Function.from_name.assert_not_called()
     out = capsys.readouterr().out
     assert "DRY RUN" in out
     assert "ESTIMATED COST PER LIVE RUN" in out
@@ -362,7 +362,7 @@ def test_end_to_end_unknown_label_short_circuits(
     """--region-label outside the allowed vocab fails before any Modal call."""
     fake_modal = types.ModuleType("modal")
     fake_modal.Function = MagicMock()
-    fake_modal.Function.lookup = MagicMock(
+    fake_modal.Function.from_name = MagicMock(
         side_effect=AssertionError("must not call modal on a bad label")
     )
 
@@ -377,4 +377,4 @@ def test_end_to_end_unknown_label_short_circuits(
                 ]
             )
 
-    fake_modal.Function.lookup.assert_not_called()
+    fake_modal.Function.from_name.assert_not_called()

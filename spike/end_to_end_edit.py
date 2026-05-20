@@ -141,7 +141,7 @@ def _modal_lookup(fn_name: str):
     """
     import modal
 
-    return modal.Function.lookup("arch-rendering-spike", fn_name)
+    return modal.Function.from_name("arch-rendering-spike", fn_name)
 
 
 def _run_render(
