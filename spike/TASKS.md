@@ -64,6 +64,8 @@ Read this top-to-bottom. The agent picks the **first row with `- [ ]`** and work
 ## Spike 3 — proper evaluation (follow-up from T17)
 
 - [x] **T21** — Proper Spike 3 gate evaluation. T17 was a smoke-test pass but exposed substantive quality issues with `tag_regions` output (see `REPORTS/T17.md` "Quality findings"). Required work: → [report](REPORTS/T21.md)
+- [x] **T22** — Production-shape gate eval. T21 within budget could only test 1 of 5 pairs in the production (screenshot, photoreal render) shape — the other 4 were screenshot-only and one (urban_exterior) failed badly because raw screenshots underperform. T22 renders the 4 new screenshots via Nano Banana Pro and re-tags each (screenshot, render) pair, completing the 5-pair gate sample. Cost: ~$0.20 + $0.01 retry. → [report](REPORTS/T22.md)
+  - Files: `spike/run_t22.py`, `spike/salvage_urban_tags.py`, `spike/outputs/spike3/t22/<slug>/`
   1. **Coordinate fix.** Gemini returns bboxes in 0–1000 normalized space, not pixel coords. Either (a) scale bboxes to actual pixel dimensions in `test_vlm_tagging.py:_draw_regions` and in `end_to_end_edit.py` before passing to SAM2, OR (b) update the `tag_regions` prompt in `modal_app.py` to require actual pixel coordinates AND verify the model complies (VLMs often ignore this instruction).
   2. **Prompt revision.** Tighten `tag_regions` to: ask for tight bboxes per architectural element (not per-facade); clarify that `parent_id` means geometric containment, not spatial overlap; add explicit "do not invent a 'door' inside a 'window'" guidance.
   3. **Multi-render test set.** Per the plan, evaluate on **5 diverse screenshots** (modern interior, traditional exterior, mixed materials, complex window patterns, urban exterior with people/cars/trees).
