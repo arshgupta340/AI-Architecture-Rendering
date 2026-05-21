@@ -1,0 +1,21 @@
+{
+  "screenshot": "spike\\test_assets\\model_views\\complex windows - Copy.png",
+  "render_size": [
+    1024,
+    1030
+  ],
+  "region_count": 118,
+  "label_counts": {
+    "window": 103,
+    "wall": 7,
+    "roof": 6,
+    "ground": 1,
+    "sky": 1
+  },
+  "max_xy_norm": [
+    1000,
+    1000
+  ],
+  "render_cost_usd": 0.04,
+  "tag_cost_usd": 0.01
+}

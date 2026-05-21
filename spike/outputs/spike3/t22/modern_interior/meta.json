@@ -1,0 +1,22 @@
+{
+  "screenshot": "spike\\test_assets\\model_views\\modern interior.jpg",
+  "render_size": [
+    1376,
+    782
+  ],
+  "region_count": 27,
+  "label_counts": {
+    "ground": 1,
+    "sky": 1,
+    "wall": 10,
+    "window": 9,
+    "roof": 3,
+    "furniture": 3
+  },
+  "max_xy_norm": [
+    1000,
+    1000
+  ],
+  "render_cost_usd": 0.04,
+  "tag_cost_usd": 0.01
+}

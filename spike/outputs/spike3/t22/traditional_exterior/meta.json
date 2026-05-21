@@ -1,0 +1,23 @@
+{
+  "screenshot": "spike\\test_assets\\model_views\\traditional exterior.jpg",
+  "render_size": [
+    1376,
+    782
+  ],
+  "region_count": 25,
+  "label_counts": {
+    "ceiling": 1,
+    "wall": 4,
+    "door": 1,
+    "furniture": 11,
+    "floor": 1,
+    "window": 2,
+    "mullion": 5
+  },
+  "max_xy_norm": [
+    1000,
+    1000
+  ],
+  "render_cost_usd": 0.04,
+  "tag_cost_usd": 0.01
+}

@@ -20,6 +20,23 @@ Each entry follows the same shape so it can be scanned in 15 seconds:
 
 ---
 
+## 2026-05-20 — Defend against Gemini malformed bbox JSON; never lose paid data to schema validation {#gemini-bbox-malformed-json}
+
+**Decision:** Wherever we call `tag_regions` (or any Gemini structured-output call), the caller must persist the raw response *before* attempting pydantic validation, and must use a tolerant JSON parser that handles known model output bugs (currently: duplicate `y` keys in bboxes). Schema validation is best-effort; data loss on schema failure is not acceptable.
+
+**Context:** T22 ran `tag_regions` on 4 new (screenshot, photoreal_render) pairs. 3 of 4 returned clean schema. On urban_exterior, every bbox came back as `{"x": 499, "y": 361, "w": 25, "y": 425}` — duplicate `y` key, no `h`. JSON parsers silently drop the first key on duplicates, so pydantic saw `{x, y, w}` and threw 37 validation errors. Reproducible on a $0.01 retry (same screenshot, same render, same prompt → same malformation). 47 regions worth of paid data would have been lost if the raw response hadn't been saved. The `spike/salvage_urban_tags.py` script recovered 44 of 47 via `json.loads(..., object_pairs_hook=...)` that promotes the second `y` to `h`.
+
+**Alternatives considered:**
+- Trust schema validation and re-call on failure — rejected; the malformation is reproducible, so retries waste money without recovering data.
+- Rewrite the `tag_regions` prompt to avoid the bug — uncertain whether it would help (we don't know what's triggering it on this specific image), and risks regressing the cases that already work.
+- Accept the loss as a one-off — rejected; with $0.01 per Gemini call, every paid response is data that future eval and prompt iteration depends on. Schema failures will recur as the model evolves.
+
+**Reasoning:** Save raw, then attempt validation, then attempt tolerant repair, then surface. Cost: a few lines of code and a small disk overhead per call. Benefit: never throw away paid data because of a schema mismatch.
+
+**Revisit if:** Gemini stops producing the duplicate-key malformation entirely (in which case we still want the safety net); or we discover the malformation has a meaning other than "duplicate key" (e.g., maybe the second `y` is actually `y2` not `h`, in which case the salvage hook's interpretation needs revision).
+
+---
+
 ## 2026-05-20 — tag_regions requires the photoreal render, not a raw screenshot {#tag-regions-needs-photoreal}
 
 **Decision:** `tag_regions` is only invoked on `(screenshot, photoreal_render)` pairs in production. Calling it on a raw 3D-model screenshot alone (e.g., for a pre-render preview) is not supported by Gemini 3 Pro at the quality level the Spike 4 pipeline needs.

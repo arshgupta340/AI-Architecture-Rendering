@@ -1,13 +1,13 @@
 ---
 type: spike
-status: T21 done — gate PASSES on photoreal pair, FAILS on raw-screenshot pairs; T22 follow-up to test 4 new screenshots in production shape pending budget
-budget: $0.06 spent (T17 $0.01 + T21 $0.05). T22 would add ~$0.20.
+status: T22 done — production-shape gate PASSES on 4/5 pairs (1 strong pass, 3 pass, 1 partial). Spike 4 integration unblocked.
+budget: $0.27 spent on Spike 3 (T17 $0.01 + T21 $0.05 + T22 $0.21). Plus $0.04 B3-PREP unintended, not Spike 3.
 gate: ≥80% of major elements correctly labeled with tight pixel-accurate bboxes on ≥4/5 diverse screenshots
 ---
 
 # Spike 3 — VLM region tagging (Gemini 3 Pro)
 
-**Status:** T21 complete. Gate **passes** on the (screenshot, photoreal render) pair (94 tight regions, all major label categories hit, 77 per-window bboxes vs T17's 0). Gate **fails** on raw-screenshot-only pairs — most starkly, the urban exterior screenshot returned zero windows despite having many visible blue-block window markings. Key finding: see [[DECISIONS#tag-regions-needs-photoreal]]. T22 (run Nano Banana on the 4 new screenshots, then re-tag) is the path to validate the gate on a full production-shape sample.
+**Status:** T22 complete. Production-shape gate **PASSES** on 4 of 5 pairs (modern_interior PASS, traditional_exterior STRONG PASS — hit all 6 categories, urban_exterior PASS-with-caveat, complex_windows PARTIAL on mullions). The T21 hypothesis ([[DECISIONS#tag-regions-needs-photoreal]]) was empirically confirmed: urban_exterior went from 0 windows (T21 screenshot-only) to 10 windows (T22 photoreal pair) on the same screenshot. New finding from T22: Gemini 3 Pro can return malformed bbox JSON with duplicate `y` keys — [[DECISIONS#gemini-bbox-malformed-json]]. Spike 4 integration can proceed.
 
 ## Hypothesis
 
@@ -96,15 +96,42 @@ All four pieces of T21 work landed. Full write-up: [`REPORTS/T21.md`](../../spik
 | D — Doors mislabeled as balcony glazing | bug | FIXED (none reproduced) |
 | E — `parent_id` used as "overlap" | bug | FIXED (no invalid parent chains) |
 
-## T22 — production-shape gate eval (proposed, ~$0.20)
+## T22 — production-shape gate eval (DONE 2026-05-20)
 
-The decisive insight from T21 is [[DECISIONS#tag-regions-needs-photoreal]] — raw screenshots aren't good enough. T22 would close the gate by:
+Full write-up: [`REPORTS/T22.md`](../../spike/REPORTS/T22.md).
 
-1. Run `render_from_model_view` on each of the 4 new screenshots (~$0.16 = 4 × $0.04 Nano Banana).
-2. Re-tag each (screenshot, render) pair via the deployed Modal `tag_regions` (~$0.04 = 4 × $0.01).
-3. Score against the gate; predicted PASS on most or all based on the pair-1 finding.
+Did exactly what was proposed: rendered the 4 new screenshots through Nano Banana Pro, ran `tag_regions` on each (screenshot, render) pair, scored against the gate. Cost: $0.21 ($0.16 renders + $0.04 tags + $0.01 retry).
 
-Needs ~$0.20 additional authorization on top of the current $0.06.
+### T22 vs T21 — same screenshots, with and without photoreal context
+
+| Image | T21 (screenshot-only) | T22 (photoreal pair) | Δ |
+|---|---|---|---|
+| modern_interior | 31 regions, no door | 27 regions, +ground/sky | similar |
+| traditional_exterior | 16, 4 mullions, no door, 3 furniture | 25, 5 mullions, 1 door, 11 furniture | photoreal added: door, +8 furniture, +1 mullion |
+| **urban_exterior** | 25, **0 windows** | 47, **10 windows**, 10 vegetation | photoreal unblocked window detection |
+| complex_windows | 97, 69 windows, no roof | 118, 103 windows, 6 roofs | more windows + roof + context |
+
+The urban_exterior row is the decisive proof of [[DECISIONS#tag-regions-needs-photoreal]]: same screenshot, same prompt, different input image, completely different categorical outcome on windows.
+
+### T22 results vs gate
+
+| # | Image | Verdict |
+|---|---|---|
+| 1 | T21 carry-over (spike2 photoreal) | PASS |
+| 2 | modern_interior | PASS |
+| 3 | traditional_exterior | **STRONG PASS** (all 6 categories) |
+| 4 | urban_exterior | PASS-with-caveat (Gemini JSON bug, salvaged) |
+| 5 | complex_windows | PARTIAL (mullion miss on dense grid) |
+
+### New finding from T22 — Gemini bbox JSON malformation
+
+On urban_exterior (2/2 attempts), Gemini returned `{"x": 499, "y": 361, "w": 25, "y": 425}` — duplicate `y` keys, no `h`. Standard JSON parsing drops the first key on duplicates → pydantic saw `{x, y, w}` → 37 validation errors. Reproducible. Salvaged via `spike/salvage_urban_tags.py` (custom JSON object_pairs_hook). 44 of 47 regions recovered. Decision recorded as [[DECISIONS#gemini-bbox-malformed-json]].
+
+## Follow-ups (after T22)
+
+- **T23 candidate (no API cost):** promote `_save_raw_response` + tolerant JSON parser from `spike/run_t22.py` and `spike/salvage_urban_tags.py` into `spike/test_vlm_tagging.py:_call_live`. Prevents future paid-data loss.
+- **Mullion-on-grid prompt iteration** (~$0.01 per attempt on complex_windows). Low-cost optimization.
+- Spike 4 integration unblocked — `tag_regions` output on real photoreal renders is good enough to drive SAM2 + material swap on 4 of 5 image types.
 
 ## Fallback if T21 also fails
 

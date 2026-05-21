@@ -1,0 +1,28 @@
+{
+  "screenshot": "spike/test_assets/model_views/urban exterior.png",
+  "render_size": [
+    1427,
+    736
+  ],
+  "region_count": 44,
+  "label_counts": {
+    "sky": 1,
+    "ground": 1,
+    "vegetation": 10,
+    "roof": 8,
+    "wall": 14,
+    "window": 10
+  },
+  "max_xy_norm": [
+    1544,
+    1806
+  ],
+  "salvage_note": "Original Gemini response had malformed bboxes with duplicate 'y' keys instead of 'h'. Salvaged via custom JSON object_pairs_hook treating the second 'y' as 'h'. Dropped any region whose bbox still lacked w or h after that fix.",
+  "dropped_region_ids": [
+    "veg11",
+    "veg12",
+    "veg13"
+  ],
+  "render_cost_usd": 0.04,
+  "tag_cost_usd": 0.02
+}

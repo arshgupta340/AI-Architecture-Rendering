@@ -1,0 +1,304 @@
+{
+  "regions": [
+    {
+      "id": "r1",
+      "label": "ceiling",
+      "bbox": {
+        "x": 62,
+        "y": 0,
+        "w": 938,
+        "h": 305
+      },
+      "confidence": 0.99,
+      "parent_id": null
+    },
+    {
+      "id": "r2",
+      "label": "wall",
+      "bbox": {
+        "x": 709,
+        "y": 259,
+        "w": 184,
+        "h": 269
+      },
+      "confidence": 0.99,
+      "parent_id": null
+    },
+    {
+      "id": "r3",
+      "label": "wall",
+      "bbox": {
+        "x": 0,
+        "y": 0,
+        "w": 551,
+        "h": 264
+      },
+      "confidence": 0.98,
+      "parent_id": null
+    },
+    {
+      "id": "r4",
+      "label": "wall",
+      "bbox": {
+        "x": 472,
+        "y": 204,
+        "w": 183,
+        "h": 149
+      },
+      "confidence": 0.98,
+      "parent_id": null
+    },
+    {
+      "id": "r5",
+      "label": "wall",
+      "bbox": {
+        "x": 894,
+        "y": 248,
+        "w": 106,
+        "h": 298
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "r6",
+      "label": "door",
+      "bbox": {
+        "x": 958,
+        "y": 381,
+        "w": 42,
+        "h": 172
+      },
+      "confidence": 0.94,
+      "parent_id": null
+    },
+    {
+      "id": "r7",
+      "label": "furniture",
+      "bbox": {
+        "x": 786,
+        "y": 668,
+        "w": 214,
+        "h": 332
+      },
+      "confidence": 0.99,
+      "parent_id": null
+    },
+    {
+      "id": "r8",
+      "label": "furniture",
+      "bbox": {
+        "x": 386,
+        "y": 574,
+        "w": 459,
+        "h": 412
+      },
+      "confidence": 0.99,
+      "parent_id": null
+    },
+    {
+      "id": "r9",
+      "label": "furniture",
+      "bbox": {
+        "x": 388,
+        "y": 622,
+        "w": 100,
+        "h": 272
+      },
+      "confidence": 0.97,
+      "parent_id": null
+    },
+    {
+      "id": "r10",
+      "label": "furniture",
+      "bbox": {
+        "x": 474,
+        "y": 651,
+        "w": 128,
+        "h": 333
+      },
+      "confidence": 0.97,
+      "parent_id": null
+    },
+    {
+      "id": "r11",
+      "label": "furniture",
+      "bbox": {
+        "x": 589,
+        "y": 692,
+        "w": 203,
+        "h": 308
+      },
+      "confidence": 0.99,
+      "parent_id": null
+    },
+    {
+      "id": "r12",
+      "label": "furniture",
+      "bbox": {
+        "x": 328,
+        "y": 597,
+        "w": 79,
+        "h": 235
+      },
+      "confidence": 0.98,
+      "parent_id": null
+    },
+    {
+      "id": "r13",
+      "label": "furniture",
+      "bbox": {
+        "x": 834,
+        "y": 535,
+        "w": 93,
+        "h": 109
+      },
+      "confidence": 0.97,
+      "parent_id": null
+    },
+    {
+      "id": "r14",
+      "label": "furniture",
+      "bbox": {
+        "x": 743,
+        "y": 582,
+        "w": 102,
+        "h": 196
+      },
+      "confidence": 0.98,
+      "parent_id": null
+    },
+    {
+      "id": "r15",
+      "label": "furniture",
+      "bbox": {
+        "x": 653,
+        "y": 566,
+        "w": 82,
+        "h": 159
+      },
+      "confidence": 0.97,
+      "parent_id": null
+    },
+    {
+      "id": "r16",
+      "label": "furniture",
+      "bbox": {
+        "x": 621,
+        "y": 497,
+        "w": 106,
+        "h": 106
+      },
+      "confidence": 0.98,
+      "parent_id": null
+    },
+    {
+      "id": "r17",
+      "label": "furniture",
+      "bbox": {
+        "x": 0,
+        "y": 619,
+        "w": 90,
+        "h": 372
+      },
+      "confidence": 0.99,
+      "parent_id": null
+    },
+    {
+      "id": "r18",
+      "label": "floor",
+      "bbox": {
+        "x": 13,
+        "y": 535,
+        "w": 987,
+        "h": 465
+      },
+      "confidence": 0.99,
+      "parent_id": null
+    },
+    {
+      "id": "r19",
+      "label": "window",
+      "bbox": {
+        "x": 579,
+        "y": 326,
+        "w": 130,
+        "h": 222
+      },
+      "confidence": 0.94,
+      "parent_id": null
+    },
+    {
+      "id": "r20",
+      "label": "window",
+      "bbox": {
+        "x": 656,
+        "y": 346,
+        "w": 52,
+        "h": 182
+      },
+      "confidence": 0.92,
+      "parent_id": null
+    },
+    {
+      "id": "r21",
+      "label": "mullion",
+      "bbox": {
+        "x": 591,
+        "y": 331,
+        "w": 3,
+        "h": 204
+      },
+      "confidence": 0.96,
+      "parent_id": "r19"
+    },
+    {
+      "id": "r22",
+      "label": "mullion",
+      "bbox": {
+        "x": 579,
+        "y": 374,
+        "w": 47,
+        "h": 5
+      },
+      "confidence": 0.98,
+      "parent_id": "r19"
+    },
+    {
+      "id": "r23",
+      "label": "mullion",
+      "bbox": {
+        "x": 651,
+        "y": 344,
+        "w": 5,
+        "h": 184
+      },
+      "confidence": 0.96,
+      "parent_id": null
+    },
+    {
+      "id": "r24",
+      "label": "mullion",
+      "bbox": {
+        "x": 656,
+        "y": 381,
+        "w": 52,
+        "h": 4
+      },
+      "confidence": 0.97,
+      "parent_id": "r20"
+    },
+    {
+      "id": "r25",
+      "label": "mullion",
+      "bbox": {
+        "x": 668,
+        "y": 346,
+        "w": 2,
+        "h": 177
+      },
+      "confidence": 0.96,
+      "parent_id": "r20"
+    }
+  ]
+}
