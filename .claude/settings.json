@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.venv\\\\Scripts\\\\python.exe -m pip list)",
+      "Read(//c/Users/arshg/.claude/plans/**)",
+      "Bash(git check-ignore *)",
+      "Bash(git add *)",
+      "Bash(git checkout *)",
+      "Bash(git commit -m ' *)",
+      "PowerShell(spike\\\\.venv\\\\Scripts\\\\python.exe -c \"from spike.renderers import Renderer; from spike.renderers.base import Renderer as R2; assert Renderer is R2; print\\('ok'\\)\")",
+      "Read(//c/Users/arshg/AppData/Roaming/uv/**)",
+      "PowerShell(Get-Command -All python -ErrorAction SilentlyContinue)",
+      "Bash(ls /c/Users/arshg/AppData/Local/Programs/Python/ 2>&1 | head; ls /c/Python* 2>&1 | head; ls /c/ProgramData/anaconda*/python.exe 2>&1 | head; find /c/Users/arshg -maxdepth 4 -name \"python.exe\" 2>/dev/null | head -10)",
+      "Read(//c/Users/arshg/AppData/Local/Programs/Python//**)",
+      "Read(//c/ProgramData/**)",
+      "Read(//c/Users/arshg/**)",
+      "Bash(git commit *)",
+      "Bash(/c/Users/arshg/AppData/Local/Programs/Python/Python313/python.exe -c ' *)",
+      "Bash(rm -rf .venv)",
+      "Bash(/c/Users/arshg/AppData/Local/Programs/Python/Python313/python.exe -m venv .venv)",
+      "Bash(.venv/Scripts/python.exe --version)",
+      "Bash(.venv/Scripts/python.exe -m pip --version)",
+      "Bash(spike/.venv/Scripts/python.exe -c ' *)",
+      "Bash(unset GOOGLE_API_KEY BFL_API_KEY MAGNIFIC_API_KEY RECRAFT_API_TOKEN REPLICATE_API_TOKEN)"
+    ]
+  }
+}
