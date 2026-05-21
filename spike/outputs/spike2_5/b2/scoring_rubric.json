@@ -1,0 +1,100 @@
+{
+  "_instructions": "B2 v2 scoring rubric. Renders use the tightened prompt constraints PLUS rule 5 (material + context baseline). Same scoring schema as B1.",
+  "_b2_variant": "tightened_prompt_with_material_baseline",
+  "_b2_prompt_changes_vs_b1": [
+    "Added EXTRA CONSTRAINTS: 'The right facade has zero windows; do not add any. The corner is recessed, not wrapping — do not extend glazing around it. Mullion patterns must match the input exactly; do not invent new subdivisions. Window count per facade must equal what the input shows.'",
+    "Added rule 5: MATERIAL & CONTEXT BASELINE — neutral palette (light gray concrete/stucco walls, neutral glazing, dark mullions, gray concrete ground), single palette across all facades, no invented water features / skylines / vegetation."
+  ],
+  "renders": {
+    "nb_seed_42": {
+      "render_file": "outputs/spike2_5/b2/nb_seed_42_tightened.png",
+      "overlay_file": "outputs/spike2_5/b2/nb_seed_42_tightened_overlay.png",
+      "failures": [
+        {"type": "Invention", "location": "CoreMass", "severity": "Critical", "note": "Corner wraparound — model ignored explicit constraint 'the corner is recessed, not wrapping'"},
+        {"type": "Transformation", "location": "Ambiguous", "severity": "Low", "note": "Minor shape changes in distant/ambiguous regions"},
+        {"type": "Omission", "location": "CoreMass", "severity": "High", "note": "Some existing openings from source disappeared"},
+        {"type": "StyleDrift", "location": "CoreMass", "severity": "Medium", "note": "Materials/color deviation from baseline"}
+      ],
+      "critical_failure_count": 1,
+      "high_failure_count": 1,
+      "medium_failure_count": 1,
+      "low_failure_count": 1,
+      "photorealism_1_to_10": 5,
+      "material_believability_1_to_10": 5,
+      "lighting_coherence_1_to_10": 6,
+      "notes": "B1 had 2 critical (invention + corner). B2 reduced to 1 critical but corner still wraps despite explicit prompt constraint."
+    },
+    "nb_seed_100": {
+      "render_file": "outputs/spike2_5/b2/nb_seed_100_tightened.png",
+      "overlay_file": "outputs/spike2_5/b2/nb_seed_100_tightened_overlay.png",
+      "failures": [
+        {"type": "Invention", "location": "CoreMass", "severity": "Critical", "note": "Corner wraparound — REGRESSION vs B1 where corner was intact at this seed"},
+        {"type": "StyleDrift", "location": "CoreMass", "severity": "Medium", "note": "Materials still drift but pool/skyline context inventions from B1 are gone"}
+      ],
+      "critical_failure_count": 1,
+      "high_failure_count": 0,
+      "medium_failure_count": 1,
+      "low_failure_count": 0,
+      "photorealism_1_to_10": 7,
+      "material_believability_1_to_10": 5,
+      "lighting_coherence_1_to_10": 6,
+      "notes": "Material baseline killed the pool + skyline inventions (huge win on context). BUT corner wraparound appeared at this seed for the first time — the geometry constraint may have introduced ambiguity that pushed the model toward wraparound."
+    },
+    "nb_seed_200": {
+      "render_file": "outputs/spike2_5/b2/nb_seed_200_tightened.png",
+      "overlay_file": "outputs/spike2_5/b2/nb_seed_200_tightened_overlay.png",
+      "failures": [
+        {"type": "Invention", "location": "CoreMass", "severity": "Critical", "note": "Corner wraparound persists"},
+        {"type": "Transformation", "location": "Ambiguous", "severity": "Low", "note": "Minor shape changes"},
+        {"type": "Omission", "location": "CoreMass", "severity": "High", "note": "Some existing openings from source disappeared"}
+      ],
+      "critical_failure_count": 1,
+      "high_failure_count": 1,
+      "medium_failure_count": 0,
+      "low_failure_count": 1,
+      "photorealism_1_to_10": 7,
+      "material_believability_1_to_10": 5,
+      "lighting_coherence_1_to_10": 6,
+      "notes": "B1 had 2 critical (invention + transformation). B2 reduced to 1 critical (still corner) but photorealism jumped from 3 to 7."
+    },
+    "nb_seed_300": {
+      "render_file": "outputs/spike2_5/b2/nb_seed_300_tightened.png",
+      "overlay_file": "outputs/spike2_5/b2/nb_seed_300_tightened_overlay.png",
+      "failures": [
+        {"type": "Invention", "location": "CoreMass", "severity": "Critical", "note": "Right facade windows — REGRESSION vs B1 where this seed had zero critical failures"},
+        {"type": "Transformation", "location": "Ambiguous", "severity": "Low", "note": "Minor shape changes"},
+        {"type": "StyleDrift", "location": "CoreMass", "severity": "Medium", "note": "Materials drift from baseline (brick podium not in spec)"}
+      ],
+      "critical_failure_count": 1,
+      "high_failure_count": 0,
+      "medium_failure_count": 1,
+      "low_failure_count": 1,
+      "photorealism_1_to_10": 5,
+      "material_believability_1_to_10": 5,
+      "lighting_coherence_1_to_10": 6,
+      "notes": "REGRESSION. B1 seed 300 was the clean seed (0 critical, photoreal 7). B2 seed 300 invented right-facade windows the constraint explicitly forbids. Seed lottery is no longer in our favor — the constraint changed the model's behavior in unpredictable ways."
+    }
+  },
+  "_summary": {
+    "critical_failures_per_seed": {
+      "B1_42": 2, "B2_42": 1,
+      "B1_100": 1, "B2_100": 1,
+      "B1_200": 2, "B2_200": 1,
+      "B1_300": 0, "B2_300": 1
+    },
+    "deterministic_failures": [
+      "Corner wraparound: now present in seeds 42, 100, 200 (3 of 4 seeds, up from 2 of 4 in B1). The explicit constraint 'the corner is recessed, not wrapping' did NOT stop the model. Soft prompt constraints are insufficient.",
+      "Right-facade window invention: persistent across seeds (was deterministic in B1, still present in seed 300 in B2). The explicit constraint 'right facade has zero windows; do not add any' did NOT stop the model."
+    ],
+    "stochastic_failures": [
+      "Which seed maps to which critical failure flipped: B1 seed 300 was clean, B2 seed 300 invented windows. The constraint perturbed the model in unpredictable ways."
+    ],
+    "wins_from_rule_5_material_baseline": [
+      "All B1 context inventions (swimming pool at seed 100, downtown skyline at seed 300) are GONE in B2.",
+      "Materials converged from wild variation (tan stucco / brick / white / cream) to a narrow neutral-gray-concrete range.",
+      "Photorealism improved on 2 of 4 seeds (100: 3→7, 200: 3→7). Other 2 seeds stayed at 5."
+    ],
+    "verdict": "escalate-to-bake-off",
+    "verdict_rationale": "Nano Banana Pro cannot be prompted out of its core geometry hallucinations. The material+context baseline (rule 5) was a clear win on context inventions and material consistency, so rule 5 stays in the production prompt regardless of which renderer we pick. But geometry-pinning constraints are being treated as suggestions, not rules. We need a renderer that enforces edges as hard constraints — FLUX Canny Pro is the lead candidate because it uses Canny edges from the source as a ControlNet, not a prompt hint. Escalate to B3 bake-off."
+  }
+}

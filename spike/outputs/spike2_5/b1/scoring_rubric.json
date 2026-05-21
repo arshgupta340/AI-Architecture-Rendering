@@ -1,68 +1,93 @@
 {
   "_instructions": "Score each render below by tagging every observed failure. Use the categories defined in the plan: Type (Invention/Omission/Displacement/Transformation/StyleDrift), Location (FrameEdge/Distant/Repetitive/Ambiguous/CoreMass), Severity (Critical/High/Medium/Low). Then subjectively score Photorealism, Material believability, and Lighting coherence on 1-10. The 'critical_failures' field is what gates a renderer in/out of consideration.",
   "_severity_definitions": {
-    "Critical": "Changes building footprint, story count, window grid \u2014 architect rejects",
+    "Critical": "Changes building footprint, story count, window grid — architect rejects",
     "High": "Proportions, mullion patterns, or other visible geometric deviation",
-    "Medium": "Material/glass tint/color choices \u2014 meant to change",
-    "Low": "Shadows, sky, foreground vegetation \u2014 not part of design"
+    "Medium": "Material/glass tint/color choices — meant to change",
+    "Low": "Shadows, sky, foreground vegetation — not part of design"
   },
   "renders": {
     "nb_seed_42": {
       "render_file": "outputs/spike2_5/b1/nb_seed_42.png",
       "overlay_file": "outputs/spike2_5/b1/nb_seed_42_overlay.png",
-      "failures": [],
-      "critical_failure_count": 0,
-      "high_failure_count": 0,
-      "medium_failure_count": 0,
+      "failures": [
+        {"type": "Invention", "location": "CoreMass", "severity": "Critical", "note": "Invented windows on right facade — blank wall in source has no openings"},
+        {"type": "Transformation", "location": "CoreMass", "severity": "Critical", "note": "Corner glazing wrapped around onto adjacent facade — punched window became corner curtain wall"},
+        {"type": "Omission", "location": "CoreMass", "severity": "High", "note": "Some existing openings from source disappeared in the render"},
+        {"type": "StyleDrift", "location": "CoreMass", "severity": "Medium", "note": "Material and glass color substantially off from intended"}
+      ],
+      "critical_failure_count": 2,
+      "high_failure_count": 1,
+      "medium_failure_count": 1,
       "low_failure_count": 0,
-      "photorealism_1_to_10": null,
-      "material_believability_1_to_10": null,
-      "lighting_coherence_1_to_10": null,
-      "notes": ""
+      "photorealism_1_to_10": 3,
+      "material_believability_1_to_10": 3,
+      "lighting_coherence_1_to_10": 5,
+      "notes": "Worst seed — both critical failure types (blank-wall invention + corner wraparound) present simultaneously"
     },
     "nb_seed_100": {
       "render_file": "outputs/spike2_5/b1/nb_seed_100.png",
       "overlay_file": "outputs/spike2_5/b1/nb_seed_100_overlay.png",
-      "failures": [],
-      "critical_failure_count": 0,
+      "failures": [
+        {"type": "Invention", "location": "CoreMass", "severity": "Critical", "note": "Invented windows on right facade (blank wall in source)"},
+        {"type": "Transformation", "location": "Ambiguous", "severity": "Low", "note": "Minor shape changes in distant or ambiguous regions — not architect-blocking"},
+        {"type": "StyleDrift", "location": "CoreMass", "severity": "Medium", "note": "Material and glass color off from intended"}
+      ],
+      "critical_failure_count": 1,
       "high_failure_count": 0,
-      "medium_failure_count": 0,
-      "low_failure_count": 0,
-      "photorealism_1_to_10": null,
-      "material_believability_1_to_10": null,
-      "lighting_coherence_1_to_10": null,
-      "notes": ""
+      "medium_failure_count": 1,
+      "low_failure_count": 1,
+      "photorealism_1_to_10": 3,
+      "material_believability_1_to_10": 3,
+      "lighting_coherence_1_to_10": 5,
+      "notes": "One critical (blank-wall invention). Corner is intact. Slightly better than seed 42 but still rejected."
     },
     "nb_seed_200": {
       "render_file": "outputs/spike2_5/b1/nb_seed_200.png",
       "overlay_file": "outputs/spike2_5/b1/nb_seed_200_overlay.png",
-      "failures": [],
-      "critical_failure_count": 0,
-      "high_failure_count": 0,
-      "medium_failure_count": 0,
+      "failures": [
+        {"type": "Invention", "location": "CoreMass", "severity": "Critical", "note": "Invented windows on right facade (blank wall in source)"},
+        {"type": "Transformation", "location": "CoreMass", "severity": "Critical", "note": "Corner glazing wrapped around onto adjacent facade"},
+        {"type": "Omission", "location": "CoreMass", "severity": "High", "note": "Some existing openings from source disappeared in the render"},
+        {"type": "StyleDrift", "location": "CoreMass", "severity": "Medium", "note": "Materials and glass color off from intended"}
+      ],
+      "critical_failure_count": 2,
+      "high_failure_count": 1,
+      "medium_failure_count": 1,
       "low_failure_count": 0,
-      "photorealism_1_to_10": null,
-      "material_believability_1_to_10": null,
-      "lighting_coherence_1_to_10": null,
-      "notes": ""
+      "photorealism_1_to_10": 3,
+      "material_believability_1_to_10": 3,
+      "lighting_coherence_1_to_10": 5,
+      "notes": "Same failure profile as seed 42 — both critical types plus omission and style drift. Worst quality scores."
     },
     "nb_seed_300": {
       "render_file": "outputs/spike2_5/b1/nb_seed_300.png",
       "overlay_file": "outputs/spike2_5/b1/nb_seed_300_overlay.png",
-      "failures": [],
+      "failures": [
+        {"type": "Invention", "location": "CoreMass", "severity": "High", "note": "Invented mullion subdivisions on core facade — no new windows on blank walls, but existing grid redrawn"},
+        {"type": "Transformation", "location": "Ambiguous", "severity": "Low", "note": "Minor shape changes in distant or ambiguous regions — not architect-blocking"}
+      ],
       "critical_failure_count": 0,
-      "high_failure_count": 0,
+      "high_failure_count": 1,
       "medium_failure_count": 0,
-      "low_failure_count": 0,
-      "photorealism_1_to_10": null,
-      "material_believability_1_to_10": null,
-      "lighting_coherence_1_to_10": null,
-      "notes": ""
+      "low_failure_count": 1,
+      "photorealism_1_to_10": 7,
+      "material_believability_1_to_10": 5,
+      "lighting_coherence_1_to_10": 6,
+      "notes": "Best seed by a wide margin — no critical failures, photorealism 7/10. Blank right wall is preserved. Mullion grid deviation is High not Critical. This seed shows geometry hallucination is stochastic, not a hard model limit."
     }
   },
   "_summary": {
-    "deterministic_failures": "list failures that appear across ALL seeds (model limitation, not stochastic)",
-    "stochastic_failures": "list failures that vary by seed (potentially fixable with seed selection)",
-    "verdict": "advance / iterate-prompt / escalate-to-bake-off"
+    "deterministic_failures": [
+      "Blank-wall window invention (right facade): present in ALL 4 seeds at Critical or High severity — the model persistently hallucinates openings on solid walls. This is the primary architect-blocker.",
+      "Low photorealism (3/10): seeds 42, 100, 200 all score 3/10. Seed 300 is 7/10. Material quality also low across seeds 42, 100, 200."
+    ],
+    "stochastic_failures": [
+      "Corner wraparound transformation: Critical in seeds 42 and 200, absent in seeds 100 and 300 — seed-dependent.",
+      "Omission of existing openings: seeds 42 and 200 only.",
+      "Severity of invention: seed 300 invents mullion patterns (High) but not blank-wall windows (Critical) — hallucination magnitude is stochastic and seed 300 is a meaningful outlier."
+    ],
+    "verdict": "iterate-prompt",
+    "verdict_rationale": "Seed 300 proves the model CAN preserve the blank right facade — it’s not a hard capability limit. Run B2 (tightened prompt: explicit zero-window constraint on right facade, no corner extension, pin mullion counts) before spending on other APIs. If B2 with seed 300 or a new seed produces zero critical failures, advance to Spike 3. If B2 fails across all seeds, escalate to B3 bake-off (FLUX Canny Pro is the strongest candidate for geometry-hard cases)."
   }
 }
