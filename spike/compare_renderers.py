@@ -29,7 +29,14 @@ import time
 import traceback
 from pathlib import Path
 
+from dotenv import load_dotenv
 from PIL import Image
+
+# Load spike/.env so renderer env vars (BFL_API_KEY, REPLICATE_API_TOKEN,
+# RECRAFT_API_TOKEN, MAGNIFIC_API_KEY, GOOGLE_API_KEY) are picked up without
+# requiring the user to source it in their shell first. Shell env still wins
+# over .env values, matching run_spike.py's behavior.
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 # Reuse B1's labeled-grid / overlay helpers so the visual style stays
 # consistent across spike phases. Path bootstrap: this file may be run via

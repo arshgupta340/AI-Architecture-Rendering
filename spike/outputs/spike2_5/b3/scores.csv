@@ -1,0 +1,2 @@
+renderer,provider,cost_per_call_usd,status,elapsed_s,output_file,critical_failures,high_failures,medium_failures,low_failures,photorealism_1_to_10,material_believability_1_to_10,lighting_coherence_1_to_10,silhouette_iou,edge_density_delta,notes
+nano_banana_pro,google,0.039,ok,20.70,spike\outputs\spike2_5\b3\nano_banana_pro.png,,,,,,,,,,
