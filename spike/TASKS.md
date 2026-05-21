@@ -63,7 +63,7 @@ Read this top-to-bottom. The agent picks the **first row with `- [ ]`** and work
 
 ## Spike 3 — proper evaluation (follow-up from T17)
 
-- [ ] **T21** — Proper Spike 3 gate evaluation. T17 was a smoke-test pass but exposed substantive quality issues with `tag_regions` output (see `REPORTS/T17.md` "Quality findings"). Required work:
+- [x] **T21** — Proper Spike 3 gate evaluation. T17 was a smoke-test pass but exposed substantive quality issues with `tag_regions` output (see `REPORTS/T17.md` "Quality findings"). Required work: → [report](REPORTS/T21.md)
   1. **Coordinate fix.** Gemini returns bboxes in 0–1000 normalized space, not pixel coords. Either (a) scale bboxes to actual pixel dimensions in `test_vlm_tagging.py:_draw_regions` and in `end_to_end_edit.py` before passing to SAM2, OR (b) update the `tag_regions` prompt in `modal_app.py` to require actual pixel coordinates AND verify the model complies (VLMs often ignore this instruction).
   2. **Prompt revision.** Tighten `tag_regions` to: ask for tight bboxes per architectural element (not per-facade); clarify that `parent_id` means geometric containment, not spatial overlap; add explicit "do not invent a 'door' inside a 'window'" guidance.
   3. **Multi-render test set.** Per the plan, evaluate on **5 diverse screenshots** (modern interior, traditional exterior, mixed materials, complex window patterns, urban exterior with people/cars/trees).
