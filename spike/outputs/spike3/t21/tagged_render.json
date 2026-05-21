@@ -1,0 +1,1132 @@
+{
+  "regions": [
+    {
+      "id": "roof_1",
+      "label": "roof",
+      "bbox": {
+        "x": 655,
+        "y": 554,
+        "w": 344,
+        "h": 32
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "roof_2",
+      "label": "roof",
+      "bbox": {
+        "x": 308,
+        "y": 591,
+        "w": 222,
+        "h": 61
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "roof_3",
+      "label": "roof",
+      "bbox": {
+        "x": 0,
+        "y": 512,
+        "w": 147,
+        "h": 32
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "wall_1",
+      "label": "wall",
+      "bbox": {
+        "x": 655,
+        "y": 0,
+        "w": 204,
+        "h": 574
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "wall_2",
+      "label": "wall",
+      "bbox": {
+        "x": 860,
+        "y": 0,
+        "w": 139,
+        "h": 570
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "wall_3",
+      "label": "wall",
+      "bbox": {
+        "x": 583,
+        "y": 66,
+        "w": 73,
+        "h": 468
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "wall_4",
+      "label": "wall",
+      "bbox": {
+        "x": 349,
+        "y": 91,
+        "w": 218,
+        "h": 435
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "wall_5",
+      "label": "wall",
+      "bbox": {
+        "x": 236,
+        "y": 126,
+        "w": 113,
+        "h": 393
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "wall_6",
+      "label": "wall",
+      "bbox": {
+        "x": 0,
+        "y": 91,
+        "w": 236,
+        "h": 431
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "wall_7",
+      "label": "wall",
+      "bbox": {
+        "x": 530,
+        "y": 582,
+        "w": 248,
+        "h": 334
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "wall_8",
+      "label": "wall",
+      "bbox": {
+        "x": 778,
+        "y": 552,
+        "w": 221,
+        "h": 328
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "wall_9",
+      "label": "wall",
+      "bbox": {
+        "x": 306,
+        "y": 617,
+        "w": 224,
+        "h": 269
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "wall_10",
+      "label": "wall",
+      "bbox": {
+        "x": 144,
+        "y": 574,
+        "w": 182,
+        "h": 182
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "wall_11",
+      "label": "wall",
+      "bbox": {
+        "x": 0,
+        "y": 512,
+        "w": 147,
+        "h": 224
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_1",
+      "label": "window",
+      "bbox": {
+        "x": 603,
+        "y": 88,
+        "w": 33,
+        "h": 69
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_2",
+      "label": "window",
+      "bbox": {
+        "x": 604,
+        "y": 178,
+        "w": 33,
+        "h": 69
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_3",
+      "label": "window",
+      "bbox": {
+        "x": 602,
+        "y": 272,
+        "w": 34,
+        "h": 66
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_4",
+      "label": "window",
+      "bbox": {
+        "x": 602,
+        "y": 361,
+        "w": 33,
+        "h": 65
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_5",
+      "label": "window",
+      "bbox": {
+        "x": 603,
+        "y": 451,
+        "w": 33,
+        "h": 65
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_6",
+      "label": "window",
+      "bbox": {
+        "x": 526,
+        "y": 113,
+        "w": 29,
+        "h": 63
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_7",
+      "label": "window",
+      "bbox": {
+        "x": 484,
+        "y": 124,
+        "w": 13,
+        "h": 53
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_8",
+      "label": "window",
+      "bbox": {
+        "x": 435,
+        "y": 133,
+        "w": 26,
+        "h": 58
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_9",
+      "label": "window",
+      "bbox": {
+        "x": 401,
+        "y": 141,
+        "w": 14,
+        "h": 53
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_10",
+      "label": "window",
+      "bbox": {
+        "x": 355,
+        "y": 150,
+        "w": 23,
+        "h": 54
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_11",
+      "label": "window",
+      "bbox": {
+        "x": 526,
+        "y": 198,
+        "w": 29,
+        "h": 69
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_12",
+      "label": "window",
+      "bbox": {
+        "x": 484,
+        "y": 208,
+        "w": 13,
+        "h": 59
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_13",
+      "label": "window",
+      "bbox": {
+        "x": 435,
+        "y": 213,
+        "w": 26,
+        "h": 58
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_14",
+      "label": "window",
+      "bbox": {
+        "x": 401,
+        "y": 218,
+        "w": 14,
+        "h": 53
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_15",
+      "label": "window",
+      "bbox": {
+        "x": 355,
+        "y": 227,
+        "w": 23,
+        "h": 54
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_16",
+      "label": "window",
+      "bbox": {
+        "x": 484,
+        "y": 288,
+        "w": 13,
+        "h": 59
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_17",
+      "label": "window",
+      "bbox": {
+        "x": 435,
+        "y": 291,
+        "w": 26,
+        "h": 56
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_18",
+      "label": "window",
+      "bbox": {
+        "x": 401,
+        "y": 296,
+        "w": 14,
+        "h": 54
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_19",
+      "label": "window",
+      "bbox": {
+        "x": 355,
+        "y": 300,
+        "w": 23,
+        "h": 51
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_20",
+      "label": "window",
+      "bbox": {
+        "x": 526,
+        "y": 366,
+        "w": 29,
+        "h": 61
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_21",
+      "label": "window",
+      "bbox": {
+        "x": 484,
+        "y": 369,
+        "w": 13,
+        "h": 58
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_22",
+      "label": "window",
+      "bbox": {
+        "x": 435,
+        "y": 371,
+        "w": 26,
+        "h": 55
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_23",
+      "label": "window",
+      "bbox": {
+        "x": 401,
+        "y": 370,
+        "w": 14,
+        "h": 52
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_24",
+      "label": "window",
+      "bbox": {
+        "x": 355,
+        "y": 372,
+        "w": 23,
+        "h": 50
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_25",
+      "label": "window",
+      "bbox": {
+        "x": 526,
+        "y": 451,
+        "w": 29,
+        "h": 61
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_26",
+      "label": "window",
+      "bbox": {
+        "x": 484,
+        "y": 451,
+        "w": 13,
+        "h": 55
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_27",
+      "label": "window",
+      "bbox": {
+        "x": 436,
+        "y": 447,
+        "w": 25,
+        "h": 55
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_28",
+      "label": "window",
+      "bbox": {
+        "x": 401,
+        "y": 446,
+        "w": 14,
+        "h": 52
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_29",
+      "label": "window",
+      "bbox": {
+        "x": 355,
+        "y": 445,
+        "w": 23,
+        "h": 50
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_30",
+      "label": "window",
+      "bbox": {
+        "x": 325,
+        "y": 158,
+        "w": 13,
+        "h": 51
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_31",
+      "label": "window",
+      "bbox": {
+        "x": 325,
+        "y": 232,
+        "w": 13,
+        "h": 51
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_32",
+      "label": "window",
+      "bbox": {
+        "x": 325,
+        "y": 303,
+        "w": 13,
+        "h": 51
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_33",
+      "label": "window",
+      "bbox": {
+        "x": 325,
+        "y": 375,
+        "w": 13,
+        "h": 50
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_34",
+      "label": "window",
+      "bbox": {
+        "x": 325,
+        "y": 445,
+        "w": 13,
+        "h": 49
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_35",
+      "label": "window",
+      "bbox": {
+        "x": 274,
+        "y": 151,
+        "w": 28,
+        "h": 56
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_36",
+      "label": "window",
+      "bbox": {
+        "x": 236,
+        "y": 143,
+        "w": 15,
+        "h": 55
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_37",
+      "label": "window",
+      "bbox": {
+        "x": 275,
+        "y": 227,
+        "w": 28,
+        "h": 52
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_38",
+      "label": "window",
+      "bbox": {
+        "x": 236,
+        "y": 219,
+        "w": 15,
+        "h": 55
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_39",
+      "label": "window",
+      "bbox": {
+        "x": 236,
+        "y": 296,
+        "w": 15,
+        "h": 54
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_40",
+      "label": "window",
+      "bbox": {
+        "x": 275,
+        "y": 372,
+        "w": 28,
+        "h": 53
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_41",
+      "label": "window",
+      "bbox": {
+        "x": 237,
+        "y": 370,
+        "w": 15,
+        "h": 53
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_42",
+      "label": "window",
+      "bbox": {
+        "x": 275,
+        "y": 446,
+        "w": 28,
+        "h": 52
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_43",
+      "label": "window",
+      "bbox": {
+        "x": 237,
+        "y": 446,
+        "w": 15,
+        "h": 51
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_44",
+      "label": "window",
+      "bbox": {
+        "x": 196,
+        "y": 133,
+        "w": 30,
+        "h": 59
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_45",
+      "label": "window",
+      "bbox": {
+        "x": 141,
+        "y": 122,
+        "w": 18,
+        "h": 55
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_46",
+      "label": "window",
+      "bbox": {
+        "x": 71,
+        "y": 111,
+        "w": 32,
+        "h": 68
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_47",
+      "label": "window",
+      "bbox": {
+        "x": 196,
+        "y": 213,
+        "w": 30,
+        "h": 59
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_48",
+      "label": "window",
+      "bbox": {
+        "x": 142,
+        "y": 207,
+        "w": 17,
+        "h": 58
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_49",
+      "label": "window",
+      "bbox": {
+        "x": 196,
+        "y": 292,
+        "w": 30,
+        "h": 58
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_50",
+      "label": "window",
+      "bbox": {
+        "x": 142,
+        "y": 289,
+        "w": 17,
+        "h": 55
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_51",
+      "label": "window",
+      "bbox": {
+        "x": 72,
+        "y": 284,
+        "w": 32,
+        "h": 61
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_52",
+      "label": "window",
+      "bbox": {
+        "x": 143,
+        "y": 369,
+        "w": 17,
+        "h": 56
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_53",
+      "label": "window",
+      "bbox": {
+        "x": 72,
+        "y": 367,
+        "w": 32,
+        "h": 61
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_54",
+      "label": "window",
+      "bbox": {
+        "x": 196,
+        "y": 448,
+        "w": 31,
+        "h": 55
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_55",
+      "label": "window",
+      "bbox": {
+        "x": 143,
+        "y": 449,
+        "w": 17,
+        "h": 56
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_56",
+      "label": "window",
+      "bbox": {
+        "x": 599,
+        "y": 622,
+        "w": 31,
+        "h": 236
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_57",
+      "label": "window",
+      "bbox": {
+        "x": 669,
+        "y": 625,
+        "w": 33,
+        "h": 242
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_58",
+      "label": "window",
+      "bbox": {
+        "x": 878,
+        "y": 613,
+        "w": 16,
+        "h": 222
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_59",
+      "label": "window",
+      "bbox": {
+        "x": 913,
+        "y": 605,
+        "w": 15,
+        "h": 215
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_60",
+      "label": "window",
+      "bbox": {
+        "x": 948,
+        "y": 597,
+        "w": 13,
+        "h": 210
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_61",
+      "label": "window",
+      "bbox": {
+        "x": 978,
+        "y": 591,
+        "w": 13,
+        "h": 204
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_62",
+      "label": "window",
+      "bbox": {
+        "x": 344,
+        "y": 679,
+        "w": 16,
+        "h": 113
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_63",
+      "label": "window",
+      "bbox": {
+        "x": 384,
+        "y": 688,
+        "w": 18,
+        "h": 120
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_64",
+      "label": "window",
+      "bbox": {
+        "x": 427,
+        "y": 696,
+        "w": 19,
+        "h": 125
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_65",
+      "label": "window",
+      "bbox": {
+        "x": 473,
+        "y": 707,
+        "w": 20,
+        "h": 128
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_66",
+      "label": "window",
+      "bbox": {
+        "x": 344,
+        "y": 619,
+        "w": 16,
+        "h": 50
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_67",
+      "label": "window",
+      "bbox": {
+        "x": 384,
+        "y": 625,
+        "w": 18,
+        "h": 51
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_68",
+      "label": "window",
+      "bbox": {
+        "x": 427,
+        "y": 632,
+        "w": 19,
+        "h": 52
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_69",
+      "label": "window",
+      "bbox": {
+        "x": 473,
+        "y": 641,
+        "w": 20,
+        "h": 54
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_70",
+      "label": "window",
+      "bbox": {
+        "x": 191,
+        "y": 640,
+        "w": 46,
+        "h": 115
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_71",
+      "label": "window",
+      "bbox": {
+        "x": 250,
+        "y": 651,
+        "w": 48,
+        "h": 112
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_72",
+      "label": "window",
+      "bbox": {
+        "x": 151,
+        "y": 619,
+        "w": 13,
+        "h": 90
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_73",
+      "label": "window",
+      "bbox": {
+        "x": 175,
+        "y": 624,
+        "w": 12,
+        "h": 92
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_74",
+      "label": "window",
+      "bbox": {
+        "x": 0,
+        "y": 540,
+        "w": 8,
+        "h": 142
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_75",
+      "label": "window",
+      "bbox": {
+        "x": 21,
+        "y": 543,
+        "w": 8,
+        "h": 145
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_76",
+      "label": "window",
+      "bbox": {
+        "x": 42,
+        "y": 546,
+        "w": 9,
+        "h": 148
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "window_77",
+      "label": "window",
+      "bbox": {
+        "x": 65,
+        "y": 551,
+        "w": 10,
+        "h": 152
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "door_1",
+      "label": "door",
+      "bbox": {
+        "x": 778,
+        "y": 787,
+        "w": 61,
+        "h": 124
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "door_2",
+      "label": "door",
+      "bbox": {
+        "x": 839,
+        "y": 794,
+        "w": 9,
+        "h": 94
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    },
+    {
+      "id": "roof_4",
+      "label": "roof",
+      "bbox": {
+        "x": 779,
+        "y": 756,
+        "w": 122,
+        "h": 36
+      },
+      "confidence": 0.95,
+      "parent_id": null
+    }
+  ]
+}

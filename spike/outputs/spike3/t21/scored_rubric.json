@@ -1,0 +1,139 @@
+{
+  "task": "T21",
+  "date": "2026-05-20",
+  "gate_criterion": "Gemini 3 Pro tags >=80% of major architectural regions (wall, window, mullion, floor, ceiling, door) with tight, pixel-accurate bboxes across 5 diverse test images.",
+  "prompt_revision": "spike/modal_app.py tag_regions: explicit 0-1000 normalized coord declaration; tight-bbox-per-element rules (not per-facade); strict parent_id semantics (geometric containment, not overlap); label discipline (door != balcony glazing, mullion only when visible); primary-building focus.",
+  "coord_fix": "spike/test_vlm_tagging.py:_scale_bbox_to_pixels and spike/end_to_end_edit.py:_bbox_norm_to_pixels both rescale 0-1000 to pixel dims before drawing or sending to SAM2.",
+  "budget_constraint": "Authorized $0.05 = 5 tag_regions calls. Did not include 5x render_from_model_view ($0.20). Pair 1 used the existing T17 photoreal render pair; pairs 2-5 passed the screenshot as both screenshot and render (model effectively sees one image).",
+  "pairs": [
+    {
+      "id": 1,
+      "name": "render.png (photoreal urban building)",
+      "screenshot": "spike/outputs/spike2/source.png",
+      "render": "spike/outputs/spike2/render.png",
+      "image_size": [1259, 848],
+      "regions": 94,
+      "label_counts": {"roof": 4, "wall": 11, "window": 77, "door": 2},
+      "coord_max_xy": [999, 916],
+      "scores": {
+        "wall": "hit_tight",
+        "window": "hit_tight (77 individual window units, dramatic improvement over T17)",
+        "mullion": "miss (not visible at this scale on this building)",
+        "floor": "n/a (exterior view)",
+        "ceiling": "n/a (exterior view)",
+        "door": "hit (storefront doors captured)",
+        "roof": "hit (4 roof planes, may be overcounted but not wrong)"
+      },
+      "verdict": "PASS",
+      "notes": "T17 had 49 loose regions including walls covering entire facades; T21 has 94 tight regions with per-window bboxes. Confidence still flat (~0.95 across the board). Coord-space fix works: max_xy=(999,916) fits within the 1000-normalized expectation, scales correctly to 1259x848 render."
+    },
+    {
+      "id": 2,
+      "name": "modern interior.jpg (filename mislabeled - actually modern EXTERIOR house view)",
+      "screenshot": "spike/test_assets/model_views/modern interior.jpg",
+      "render": "(same; screenshot passed as both)",
+      "image_size": [1687, 959],
+      "regions": 31,
+      "label_counts": {"ground": 1, "sky": 1, "wall": 11, "roof": 3, "window": 9, "door": 3, "furniture": 3},
+      "coord_max_xy": [1000, 1000],
+      "scores": {
+        "wall": "hit (11 walls across multiple building masses)",
+        "window": "partial (9 windows; house clearly has more in clerestory bands)",
+        "mullion": "miss",
+        "floor": "n/a (exterior)",
+        "ceiling": "n/a (exterior)",
+        "door": "partial (3 doors flagged, hard to verify placement at thumbnail scale)",
+        "roof": "hit (3 distinct roof planes)"
+      },
+      "verdict": "PARTIAL",
+      "notes": "Lower coverage than expected for a dense exterior view. Model handled the screenshot's color-block style better than the urban exterior screenshot, likely because materials are differentiated by hue (gray stone vs wood vs dark roof)."
+    },
+    {
+      "id": 3,
+      "name": "traditional exterior.jpg (filename mislabeled - actually modern INTERIOR dining)",
+      "screenshot": "spike/test_assets/model_views/traditional exterior.jpg",
+      "render": "(same; screenshot passed as both)",
+      "image_size": [1687, 959],
+      "regions": 16,
+      "label_counts": {"ceiling": 1, "wall": 4, "floor": 1, "window": 6, "mullion": 4},
+      "coord_max_xy": [1000, 1000],
+      "scores": {
+        "wall": "hit (4 walls)",
+        "window": "hit (6 large glazing panels at right wall)",
+        "mullion": "HIT (4 mullion bboxes - first successful mullion detection)",
+        "floor": "hit (wood floor)",
+        "ceiling": "hit (wood plank ceiling)",
+        "door": "n/a (no visible door in this view)"
+      },
+      "verdict": "PASS",
+      "notes": "5 of 6 major label categories hit. Per-instance count is low (16 regions) but covers all visible architectural surfaces. This is the FIRST eval where mullions were detected at all - the revised prompt's explicit mullion guidance worked."
+    },
+    {
+      "id": 4,
+      "name": "urban exterior.png",
+      "screenshot": "spike/test_assets/model_views/urban exterior.png",
+      "render": "(same; screenshot passed as both)",
+      "image_size": [1915, 988],
+      "regions": 25,
+      "label_counts": {"wall": 15, "roof": 10},
+      "coord_max_xy": [820, 941],
+      "scores": {
+        "wall": "hit (15 wall masses across multiple buildings)",
+        "window": "MISS - zero window regions despite many visible blue-block windows on tower and podium facades",
+        "mullion": "miss",
+        "floor": "n/a (exterior)",
+        "ceiling": "n/a (exterior)",
+        "door": "miss",
+        "roof": "hit (10 roof planes)"
+      },
+      "verdict": "FAIL",
+      "notes": "Critical failure: model identified building masses and roofs but completely missed every window. Almost certainly the screenshot-only mode hurting us here - the bright-blue window blocks were not interpreted as windows without photoreal context. This pair is the strongest evidence that tag_regions needs the photoreal render path, not raw screenshots."
+    },
+    {
+      "id": 5,
+      "name": "complex windows - Copy.png",
+      "screenshot": "spike/test_assets/model_views/complex windows - Copy.png",
+      "render": "(same; screenshot passed as both)",
+      "image_size": [982, 988],
+      "regions": 97,
+      "label_counts": {"wall": 28, "window": 69},
+      "coord_max_xy": [725, 858],
+      "scores": {
+        "wall": "hit (28 wall strips between windows)",
+        "window": "hit (69 individual window units across two towers)",
+        "mullion": "MISS - critical given this image is dominated by mullion grid",
+        "floor": "n/a (exterior)",
+        "ceiling": "n/a (exterior)",
+        "door": "miss"
+      },
+      "verdict": "PARTIAL",
+      "notes": "Strong window coverage but the mullion miss is significant - the entire facade is essentially a mullion+window grid. Model treated the mullion lines as wall strips between window bands instead. Suggests further prompt work needed to distinguish wall (opaque) from mullion (frame between glazing)."
+    }
+  ],
+  "summary": {
+    "pass": 2,
+    "partial": 2,
+    "fail": 1,
+    "gate_passed": false,
+    "improvements_vs_t17": [
+      "Coord-space bug fixed: visualizations now render at correct positions on the actual image dimensions",
+      "Wall bboxes are tight (per-element, not per-facade)",
+      "Per-window bbox count jumped from 0 to 77 on the same render",
+      "Mullion detection: 4 mullions returned for the first time (traditional interior)",
+      "No 'door inside window' parent_id violations observed",
+      "No balcony-glazing-tagged-as-door errors observed"
+    ],
+    "remaining_issues": [
+      "Confidence field still effectively flat (~0.85-0.99 range, not usable as filter)",
+      "Mullion detection inconsistent - hit on traditional interior, missed on complex-windows facade",
+      "Screenshot-only mode produces dramatically worse output than (screenshot, photoreal_render) pair - see urban exterior fail",
+      "Some over-segmentation in roofs (4 roof planes on render.png where ~2 are visible)"
+    ],
+    "key_finding": "Spike 3 gate PASSES on photoreal render input but FAILS on raw 3D-model screenshots. This empirically confirms tag_regions should run AFTER render_from_model_view in the pipeline. Pair 1 (photoreal pair) is the only one that truly tests the production scenario.",
+    "next_steps": [
+      "Future T22 (when GPU/API budget allows): generate Nano Banana renders for the 4 new screenshots (~$0.20), then re-run tag_regions on each (screenshot, render) pair to validate gate on a full production-shape sample of 5",
+      "Iterate prompt on mullion vs wall-strip distinction (complex-windows case)",
+      "Consider whether the flat-confidence issue is fixable via prompt or is a Gemini 3 Pro limitation"
+    ]
+  }
+}

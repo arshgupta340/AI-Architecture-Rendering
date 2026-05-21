@@ -45,19 +45,29 @@ from spike.schemas import BBox, Region, TagRegionsResponse
 # --------------------------------------------------------------------------- #
 
 
-def _solid_png(color: tuple[int, int, int], size: tuple[int, int] = (32, 32)) -> bytes:
+# Render size is 1000x1000 so that normalized 0-1000 bbox coords map 1:1 to
+# pixel coords through end_to_end_edit._bbox_norm_to_pixels. This keeps the
+# fixture values readable and lets the segment() mock assert on the same
+# (x, y, w, h) numbers the fixture declares.
+_RENDER_SIZE = (1000, 1000)
+
+
+def _solid_png(color: tuple[int, int, int], size: tuple[int, int] = _RENDER_SIZE) -> bytes:
     img = Image.new("RGB", size, color=color)
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     return buf.getvalue()
 
 
-def _mask_png(size: tuple[int, int] = (32, 32)) -> bytes:
+def _mask_png(size: tuple[int, int] = _RENDER_SIZE) -> bytes:
     """Grayscale mask with a white rectangle in the center."""
     img = Image.new("L", size, color=0)
+    w, h = size
     # Paint a white square in the middle -> the tile shows through there.
-    for x in range(8, 24):
-        for y in range(8, 24):
+    x0, y0 = w // 4, h // 4
+    x1, y1 = 3 * w // 4, 3 * h // 4
+    for x in range(x0, x1):
+        for y in range(y0, y1):
             img.putpixel((x, y), 255)
     buf = io.BytesIO()
     img.save(buf, format="PNG")
@@ -270,7 +280,7 @@ def test_end_to_end_pipeline_mocked(
     out_img = Image.open(io.BytesIO(result_bytes))
     out_img.load()
     assert out_img.format == "PNG"
-    assert out_img.size == (32, 32)  # matches fake_render_bytes
+    assert out_img.size == _RENDER_SIZE  # matches fake_render_bytes
 
 
 def test_end_to_end_picks_window_not_wall(

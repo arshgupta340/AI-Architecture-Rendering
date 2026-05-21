@@ -69,6 +69,32 @@ def _short_hash(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()[:16]
 
 
+# Gemini 3 Pro returns spatial bboxes in normalized 0-1000 space regardless of
+# input image dimensions. SAM2 needs pixel coordinates of the render, so we
+# rescale here. Keep in sync with spike/test_vlm_tagging.py:_scale_bbox_to_pixels.
+_NORMALIZED_MAX = 1000
+
+
+def _render_pixel_size(render_bytes: bytes) -> tuple[int, int]:
+    import io as _io
+    from PIL import Image as _Image
+
+    with _Image.open(_io.BytesIO(render_bytes)) as im:
+        return im.size  # (w, h)
+
+
+def _bbox_norm_to_pixels(
+    region: Region, img_w: int, img_h: int
+) -> tuple[int, int, int, int]:
+    sx = img_w / _NORMALIZED_MAX
+    sy = img_h / _NORMALIZED_MAX
+    px = int(round(region.bbox.x * sx))
+    py = int(round(region.bbox.y * sy))
+    pw = int(round(region.bbox.w * sx))
+    ph = int(round(region.bbox.h * sy))
+    return px, py, pw, ph
+
+
 def _pick_region(
     response: TagRegionsResponse, label: str
 ) -> Region:
@@ -182,15 +208,16 @@ def _run_segment_bbox(
     render_bytes: bytes,
     region: Region,
 ) -> bytes:
-    bbox = region.bbox
+    img_w, img_h = _render_pixel_size(render_bytes)
+    px, py, pw, ph = _bbox_norm_to_pixels(region, img_w, img_h)
     key = (
         f"mask_{_short_hash(render_bytes)}_"
-        f"{bbox.x}_{bbox.y}_{bbox.w}_{bbox.h}"
+        f"{px}_{py}_{pw}_{ph}"
     )
 
     def _compute() -> bytes:
         fn = _modal_lookup("segment")
-        prompt = {"type": "bbox", "x": bbox.x, "y": bbox.y, "w": bbox.w, "h": bbox.h}
+        prompt = {"type": "bbox", "x": px, "y": py, "w": pw, "h": ph}
         return fn.remote(render_bytes, prompt=prompt)
 
     return cache.get_or_compute(key, _compute, scope="mask")
@@ -239,10 +266,12 @@ def _run_live(
 
     print(f"[3/6] pick region label={region_label!r} …")
     region = _pick_region(tags, region_label)
-    bbox = region.bbox
+    img_w, img_h = _render_pixel_size(render_bytes)
+    px, py, pw, ph = _bbox_norm_to_pixels(region, img_w, img_h)
     print(
         f"      picked {region.id} ({region.label}) "
-        f"bbox=({bbox.x},{bbox.y},{bbox.w},{bbox.h}) "
+        f"bbox_norm=({region.bbox.x},{region.bbox.y},{region.bbox.w},{region.bbox.h}) "
+        f"bbox_px=({px},{py},{pw},{ph}) on {img_w}x{img_h} render "
         f"conf={region.confidence:.2f}"
     )
 

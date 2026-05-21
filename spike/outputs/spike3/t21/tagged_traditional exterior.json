@@ -1,0 +1,196 @@
+{
+  "regions": [
+    {
+      "id": "r1",
+      "label": "ceiling",
+      "bbox": {
+        "x": 37,
+        "y": 0,
+        "w": 963,
+        "h": 308
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r2",
+      "label": "wall",
+      "bbox": {
+        "x": 707,
+        "y": 259,
+        "w": 186,
+        "h": 277
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r3",
+      "label": "wall",
+      "bbox": {
+        "x": 883,
+        "y": 315,
+        "w": 46,
+        "h": 218
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r4",
+      "label": "floor",
+      "bbox": {
+        "x": 0,
+        "y": 517,
+        "w": 1000,
+        "h": 483
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r5",
+      "label": "window",
+      "bbox": {
+        "x": 578,
+        "y": 326,
+        "w": 130,
+        "h": 214
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r6",
+      "label": "mullion",
+      "bbox": {
+        "x": 622,
+        "y": 339,
+        "w": 5,
+        "h": 201
+      },
+      "confidence": 0.9,
+      "parent_id": "r5"
+    },
+    {
+      "id": "r7",
+      "label": "mullion",
+      "bbox": {
+        "x": 654,
+        "y": 349,
+        "w": 4,
+        "h": 149
+      },
+      "confidence": 0.9,
+      "parent_id": "r5"
+    },
+    {
+      "id": "r8",
+      "label": "window",
+      "bbox": {
+        "x": 578,
+        "y": 372,
+        "w": 75,
+        "h": 168
+      },
+      "confidence": 0.9,
+      "parent_id": "r5"
+    },
+    {
+      "id": "r9",
+      "label": "window",
+      "bbox": {
+        "x": 578,
+        "y": 326,
+        "w": 45,
+        "h": 50
+      },
+      "confidence": 0.9,
+      "parent_id": "r5"
+    },
+    {
+      "id": "r10",
+      "label": "window",
+      "bbox": {
+        "x": 627,
+        "y": 339,
+        "w": 28,
+        "h": 161
+      },
+      "confidence": 0.9,
+      "parent_id": "r5"
+    },
+    {
+      "id": "r11",
+      "label": "window",
+      "bbox": {
+        "x": 658,
+        "y": 349,
+        "w": 50,
+        "h": 149
+      },
+      "confidence": 0.9,
+      "parent_id": "r5"
+    },
+    {
+      "id": "r12",
+      "label": "wall",
+      "bbox": {
+        "x": 0,
+        "y": 0,
+        "w": 707,
+        "h": 353
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r13",
+      "label": "wall",
+      "bbox": {
+        "x": 927,
+        "y": 307,
+        "w": 73,
+        "h": 221
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r14",
+      "label": "window",
+      "bbox": {
+        "x": 0,
+        "y": 128,
+        "w": 34,
+        "h": 571
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r15",
+      "label": "mullion",
+      "bbox": {
+        "x": 0,
+        "y": 254,
+        "w": 18,
+        "h": 14
+      },
+      "confidence": 0.9,
+      "parent_id": "r14"
+    },
+    {
+      "id": "r16",
+      "label": "mullion",
+      "bbox": {
+        "x": 0,
+        "y": 565,
+        "w": 30,
+        "h": 18
+      },
+      "confidence": 0.9,
+      "parent_id": "r14"
+    }
+  ]
+}

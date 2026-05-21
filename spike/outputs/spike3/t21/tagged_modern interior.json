@@ -1,0 +1,376 @@
+{
+  "regions": [
+    {
+      "id": "r1",
+      "label": "ground",
+      "bbox": {
+        "x": 0,
+        "y": 307,
+        "w": 1000,
+        "h": 693
+      },
+      "confidence": 1.0,
+      "parent_id": null
+    },
+    {
+      "id": "r2",
+      "label": "sky",
+      "bbox": {
+        "x": 0,
+        "y": 0,
+        "w": 1000,
+        "h": 188
+      },
+      "confidence": 1.0,
+      "parent_id": null
+    },
+    {
+      "id": "r3",
+      "label": "wall",
+      "bbox": {
+        "x": 0,
+        "y": 344,
+        "w": 143,
+        "h": 36
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r4",
+      "label": "roof",
+      "bbox": {
+        "x": 0,
+        "y": 358,
+        "w": 208,
+        "h": 195
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r5",
+      "label": "wall",
+      "bbox": {
+        "x": 0,
+        "y": 551,
+        "w": 142,
+        "h": 205
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r6",
+      "label": "window",
+      "bbox": {
+        "x": 121,
+        "y": 526,
+        "w": 98,
+        "h": 169
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r7",
+      "label": "wall",
+      "bbox": {
+        "x": 200,
+        "y": 489,
+        "w": 50,
+        "h": 181
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r8",
+      "label": "roof",
+      "bbox": {
+        "x": 201,
+        "y": 272,
+        "w": 252,
+        "h": 46
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r9",
+      "label": "wall",
+      "bbox": {
+        "x": 257,
+        "y": 268,
+        "w": 29,
+        "h": 27
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r10",
+      "label": "wall",
+      "bbox": {
+        "x": 376,
+        "y": 264,
+        "w": 22,
+        "h": 21
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r11",
+      "label": "window",
+      "bbox": {
+        "x": 286,
+        "y": 320,
+        "w": 44,
+        "h": 61
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r12",
+      "label": "door",
+      "bbox": {
+        "x": 331,
+        "y": 315,
+        "w": 25,
+        "h": 62
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r13",
+      "label": "window",
+      "bbox": {
+        "x": 358,
+        "y": 308,
+        "w": 46,
+        "h": 53
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r14",
+      "label": "wall",
+      "bbox": {
+        "x": 481,
+        "y": 344,
+        "w": 43,
+        "h": 128
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r15",
+      "label": "window",
+      "bbox": {
+        "x": 500,
+        "y": 354,
+        "w": 25,
+        "h": 110
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r16",
+      "label": "wall",
+      "bbox": {
+        "x": 524,
+        "y": 361,
+        "w": 79,
+        "h": 125
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r17",
+      "label": "wall",
+      "bbox": {
+        "x": 599,
+        "y": 358,
+        "w": 149,
+        "h": 133
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r18",
+      "label": "door",
+      "bbox": {
+        "x": 662,
+        "y": 385,
+        "w": 38,
+        "h": 94
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r19",
+      "label": "roof",
+      "bbox": {
+        "x": 450,
+        "y": 204,
+        "w": 284,
+        "h": 41
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r20",
+      "label": "wall",
+      "bbox": {
+        "x": 491,
+        "y": 265,
+        "w": 113,
+        "h": 94
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r21",
+      "label": "window",
+      "bbox": {
+        "x": 507,
+        "y": 264,
+        "w": 30,
+        "h": 85
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r22",
+      "label": "window",
+      "bbox": {
+        "x": 579,
+        "y": 268,
+        "w": 24,
+        "h": 93
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r23",
+      "label": "wall",
+      "bbox": {
+        "x": 601,
+        "y": 258,
+        "w": 122,
+        "h": 103
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r24",
+      "label": "window",
+      "bbox": {
+        "x": 644,
+        "y": 267,
+        "w": 10,
+        "h": 57
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r25",
+      "label": "window",
+      "bbox": {
+        "x": 672,
+        "y": 264,
+        "w": 11,
+        "h": 54
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r26",
+      "label": "window",
+      "bbox": {
+        "x": 689,
+        "y": 260,
+        "w": 16,
+        "h": 70
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r27",
+      "label": "wall",
+      "bbox": {
+        "x": 732,
+        "y": 393,
+        "w": 268,
+        "h": 184
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r28",
+      "label": "door",
+      "bbox": {
+        "x": 846,
+        "y": 444,
+        "w": 37,
+        "h": 78
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r29",
+      "label": "furniture",
+      "bbox": {
+        "x": 432,
+        "y": 540,
+        "w": 36,
+        "h": 46
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r30",
+      "label": "furniture",
+      "bbox": {
+        "x": 461,
+        "y": 530,
+        "w": 33,
+        "h": 41
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    },
+    {
+      "id": "r31",
+      "label": "furniture",
+      "bbox": {
+        "x": 489,
+        "y": 521,
+        "w": 36,
+        "h": 36
+      },
+      "confidence": 0.9,
+      "parent_id": null
+    }
+  ]
+}

@@ -87,10 +87,33 @@ def _call_live(screenshot_bytes: bytes, render_bytes: bytes) -> TagRegionsRespon
     return TagRegionsResponse.model_validate(result)
 
 
+_NORMALIZED_MAX = 1000
+
+
+def _scale_bbox_to_pixels(
+    bbox_x: int, bbox_y: int, bbox_w: int, bbox_h: int,
+    img_w: int, img_h: int,
+) -> tuple[int, int, int, int]:
+    """Convert a Gemini 0-1000 normalized bbox to pixel coords for img_w x img_h.
+
+    Gemini 3 Pro returns spatial bboxes in normalized 0-1000 space regardless
+    of the input image dimensions. The render is the authoritative coordinate
+    space for downstream consumers (SAM2, inpainting), so we scale here.
+    """
+    sx = img_w / _NORMALIZED_MAX
+    sy = img_h / _NORMALIZED_MAX
+    px = int(round(bbox_x * sx))
+    py = int(round(bbox_y * sy))
+    pw = int(round(bbox_w * sx))
+    ph = int(round(bbox_h * sy))
+    return px, py, pw, ph
+
+
 def _draw_regions(
     render_bytes: bytes, response: TagRegionsResponse
 ) -> bytes:
     img = Image.open(io.BytesIO(render_bytes)).convert("RGBA")
+    img_w, img_h = img.size
     overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
 
@@ -101,7 +124,10 @@ def _draw_regions(
 
     for region in response.regions:
         color = _LABEL_COLORS.get(region.label, (255, 255, 255))
-        x, y, w, h = region.bbox.x, region.bbox.y, region.bbox.w, region.bbox.h
+        x, y, w, h = _scale_bbox_to_pixels(
+            region.bbox.x, region.bbox.y, region.bbox.w, region.bbox.h,
+            img_w, img_h,
+        )
         # Translucent fill + opaque outline so dense regions stay readable.
         draw.rectangle(
             [x, y, x + w, y + h],
@@ -211,7 +237,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.live:
         import json as _json
-        json_path = out_dir / "smoke_test.json"
+        json_path = out_dir / f"tagged_{input_path.stem}.json"
         json_path.write_text(
             _json.dumps(response.model_dump(), indent=2), encoding="utf-8"
         )
