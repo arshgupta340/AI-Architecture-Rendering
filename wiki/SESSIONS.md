@@ -20,6 +20,35 @@ Entry template (also in `CLAUDE.md` § Session-log protocol):
 
 ---
 
+## 2026-05-22 — T24 first live Spike 4 end-to-end run
+
+**Scope:** Drive the full Spike 4 pipeline end-to-end on real data for the first time. Pre-populate render + tags cache (free), then run segment + apply_material live on Modal A10G.
+
+**Decisions:**
+- T24 user-authorized $0.45 spend for the first live Spike 4 run. Pre-cache pre-populated to skip the $0.06 of Gemini + Nano Banana that we already paid for in T21/T22.
+- Spike 4 integration: PASSES. Pipeline runs end-to-end without errors; material quality limited by SD Inpaint 1.5, which is exactly why the master plan calls for FLUX Fill + IP-Adapter for v1.
+
+**Tried:**
+- Wrote a one-shot Python snippet to pre-populate `spike/.cache/render/` and `spike/.cache/tags/` from `spike/outputs/spike2/render.png` and `spike/outputs/spike3/t21/tagged_render.json`. T23's `parse_tolerant` round-tripped the tags cleanly into canonical post-parse JSON.
+- Ran `spike/end_to_end_edit.py --live --screenshot spike/outputs/spike2/source.png --region-label wall --material spike/test_assets/travertine.jpeg --output spike/outputs/spike4/first_live/edit_result.png`.
+- All 6 stages completed: render (cache hit) → tag (cache hit, 94 regions) → pick wall_1 (conf 0.95, bbox_norm (655,0,204,574) → bbox_px (825,0,257,487)) → SAM2 segment (mask 8.2% coverage, 3.4 KB) → SD Inpaint apply_material (tile 448 KB, 512×512) → paste_tile composite (1.6 MB output).
+- Initially misread the thumbnail and thought the composite had transformed the entire image; on closer inspection only the masked wall region (upper-right facade) was modified — `Image.composite` is working correctly.
+- Considered re-running with a tighter bbox or different material; deferred to keep the report focused.
+
+**Outcome:**
+- First live Spike 4 run on record. End-to-end orchestration confirmed working.
+- Travertine swap *applied* but doesn't visibly *read* as travertine — SD Inpaint 1.5 has no material conditioning. Known limitation, addressed by FLUX Fill + IP-Adapter in v1.
+- Cost ledger updated: $0.31 → $0.76.
+- Report: [`spike/REPORTS/T24.md`](../spike/REPORTS/T24.md). spike-4 page status flipped to "T24 done".
+- Cache state: render + tags + mask + tile for this specific (screenshot, wall, travertine) combo now warm. Re-running this exact combo is $0.00. Re-running with a different region or material is ~$0.45.
+
+**Follow-ups:**
+- Swap SD Inpaint 1.5 for FLUX Fill + IP-Adapter (the v1 stack) so material conditioning actually uses the swatch image. This is the biggest single quality win still on the table.
+- Try other (region, material) combos using the warm cache to map out the failure surface for ~$0.45 each.
+- Tighten wall bboxes from `tag_regions` so SAM2 doesn't receive bboxes that span sky/background.
+
+---
+
 ## 2026-05-20 — T23 promote defensive tag_regions handling into production
 
 **Scope:** Move the ad-hoc `_save_raw_response` and the duplicate-`y`-bbox JSON repair hook out of T22's one-off scripts (`spike/run_t22.py`, `spike/salvage_urban_tags.py`) and into `spike/schemas.py`. Wire production paths (`test_vlm_tagging.py`, `end_to_end_edit.py`) to use them so Spike 4 integration inherits the defensiveness.

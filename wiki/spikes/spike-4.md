@@ -1,13 +1,13 @@
 ---
 type: spike
-status: scaffolded (T18–T20 done); awaiting live runs
-budget: ~$0.50/run (+ Modal GPU $0.35–0.70)
-gate: subjective — does the result feel like the product hypothesis?
+status: T24 done — first live end-to-end run successful. Integration PASSES; material quality limited by SD Inpaint 1.5 (expected, v1 swaps to FLUX Fill + IP-Adapter)
+budget: ~$0.45/run with warm cache (segment + apply_material on A10G); ~$0.51 cold
+gate: subjective — does the result feel like the product hypothesis? — pipeline integration: PASSES
 ---
 
 # Spike 4 — End-to-end edit pipeline
 
-**Status:** scaffolding complete (T18–T20). Mock tests green. **No live runs yet.** Blocked on [[spike-2.5]] renderer pick + [[spike-3]] gate pass + Modal authorization.
+**Status:** T24 complete. First live end-to-end run succeeded — all 4 Modal stages + local composite executed without errors on real data. Material swap (travertine on a wall) was functionally correct but visually weak because SD Inpaint 1.5 has no material conditioning; v1 swaps to FLUX Fill + IP-Adapter, exactly as the master plan specified.
 
 ## Hypothesis
 
@@ -61,16 +61,29 @@ Default `--dry-run` prints the call graph; `--live` warns with cost estimate (~$
 
 Cache is redirected to `tmp_path` so tests don't poison the real cache.
 
-## What's blocking the live run
+## T24 — first live run (DONE 2026-05-22)
 
-1. **Renderer not yet chosen.** [[spike-2.5]] B3 must produce a winner first.
-2. **Tagger gate not passed.** [[spike-3]] T21 must succeed (coord fix + ≥4/5 screenshots scoring) before SAM2 gets usable bboxes from real tagger output.
-3. **Modal authorization.** GPU spend is $0.35–0.70/run plus ~$0.50 in API calls. Outside the $0.05 session cap.
+Full write-up: [`REPORTS/T24.md`](../../spike/REPORTS/T24.md).
 
-## Known concerns for the live run
+- Pre-populated render + tags cache from existing on-disk artifacts (T21 pair 1) → free, no Nano Banana or Gemini calls.
+- Ran `end_to_end_edit.py --live` with `--screenshot spike/outputs/spike2/source.png --region-label wall --material spike/test_assets/travertine.jpeg`.
+- All 6 stages completed: render (cached) → tag (cached) → pick wall_1 (conf 0.95) → SAM2 segment (mask 8.2% coverage) → SD Inpaint apply_material → paste_tile composite.
+- Output: `spike/outputs/spike4/first_live/edit_result.png` (1.6 MB, 1259×848). Mask + tile preserved alongside.
+- Cost: $0.05 SAM2 + $0.40 SD Inpaint = $0.45.
+- Result: pipeline works end-to-end. Travertine swap is *applied* but doesn't *look* like travertine — SD Inpaint 1.5 has no material conditioning. Expected per master plan.
 
-- **SAM2 mask quality from VLM bboxes.** Loose bboxes (per T17 Issue C) → SAM2 segments whatever's most salient inside the box → could grab the wrong thing. Mitigation: improve tagger first (T21), or add a point-prompt refinement step.
-- **Composite blending.** Material seams at region boundaries may need feathering / color-matching. `composite.py` is a starting point; tune after the first real run shows the failure mode.
+## What's NOT blocking anymore
+
+- ~~Renderer not yet chosen~~ — Nano Banana Pro is the de facto Spike 4 renderer; bake-off still pending on B3 but doesn't gate Spike 4 integration.
+- ~~Tagger gate not passed~~ — T22 cleared the production-shape gate; T23 defended the parser.
+- ~~Modal authorization~~ — granted for T24.
+
+## Still relevant concerns
+
+- **SAM2 mask quality from VLM bboxes.** wall_1 bbox started at y=0 (included sky). SAM2 correctly excluded the sky from the mask, but a tighter bbox would help. Prompt iteration TBD.
+- **Material conditioning.** SD Inpaint 1.5 doesn't use the swatch image — only the material *name* string. v1 needs FLUX Fill + IP-Adapter to actually transfer travertine's appearance from `travertine.jpeg`.
+- **Resolution ceiling.** SD Inpaint downsamples to 512×512. v1 needs native-resolution inpainting or tiling.
+- **Composite blending.** No seam artifacts observed at the wall edges on this run. Tune later if other regions surface them.
 - **Region overlap.** If two regions overlap (e.g., a mullion inside a window), material applied to "window" must not also paint over the mullion. The pipeline currently picks one region; multi-region applies are future work.
 
 ## Success looks like

@@ -28,9 +28,11 @@ Append-only log of every paid API call the overnight agent makes.
 2026-05-20 T22 | T22 | Google | gemini-3-pro-preview | 0.01 | tag urban_exterior (47 regions, malformed JSON with duplicate "y" keys — schema validation failed)
 2026-05-20 T22 | T22 | Google | gemini-3-pro-preview | 0.01 | tag complex_windows (118 regions, 103 individual windows)
 2026-05-20 T22 | T22 | Google | gemini-3-pro-preview | 0.01 | retry tag urban_exterior (47 regions, SAME malformed JSON — confirmed reproducible)
+2026-05-22 T24 | T24 | Modal | SAM2 (A10G) | 0.05 | segment wall bbox on spike2 photoreal (mask 8.2% coverage, ~30s cold)
+2026-05-22 T24 | T24 | Modal | SD Inpaint 1.5 (A10G) | 0.40 | apply_material "travertine" at 512x512 (~60s incl. cold start + 1.7GB weight download)
 ```
 
-**Running total: $0.31**
+**Running total: $0.76**
 
 Notes:
 - T21 user-authorized overage: $0.05 → $0.06.
@@ -38,3 +40,4 @@ Notes:
 - T22 user-authorized: ~$0.20 (4 × $0.04 render + 4 × $0.01 tag).
 - T22 urban_exterior retry: +$0.01 user-authorized to test reproducibility (which it is).
 - urban_exterior was salvaged from the raw response via `spike/salvage_urban_tags.py` (no additional API cost) — 44 of 47 regions parsed with the custom JSON hook.
+- T24 user-authorized: ~$0.45 for first live Spike 4 end-to-end run (segment + apply_material on Modal A10G; render + tag stages hit pre-populated cache for $0).
