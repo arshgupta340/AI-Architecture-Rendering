@@ -64,6 +64,8 @@ from spike.renderers.magnific import MagnificMysticRenderer  # noqa: E402
 from spike.renderers.nano_banana import NanoBananaProRenderer  # noqa: E402
 from spike.renderers.recraft import RecraftV3Renderer  # noqa: E402
 from spike.renderers.replicate_models import (  # noqa: E402
+    FluxCannyProReplicateRenderer,
+    FluxDepthProReplicateRenderer,
     HiDreamE1Renderer,
     QwenImageEditRenderer,
 )
@@ -73,6 +75,8 @@ ALL_RENDERER_CLASSES: tuple[type[Renderer], ...] = (
     NanoBananaProRenderer,
     Flux2ProRenderer,
     FluxFillProRenderer,
+    FluxCannyProReplicateRenderer,
+    FluxDepthProReplicateRenderer,
     MagnificMysticRenderer,
     RecraftV3Renderer,
     QwenImageEditRenderer,

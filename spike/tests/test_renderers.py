@@ -33,6 +33,8 @@ from spike.renderers.magnific import MagnificMysticRenderer
 from spike.renderers.nano_banana import NanoBananaProRenderer
 from spike.renderers.recraft import RecraftV3Renderer
 from spike.renderers.replicate_models import (
+    FluxCannyProReplicateRenderer,
+    FluxDepthProReplicateRenderer,
     HiDreamE1Renderer,
     QwenImageEditRenderer,
 )
@@ -348,27 +350,34 @@ def test_recraft_http_error_propagates(tiny_png, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "renderer_cls,owner,name",
+    "renderer_cls,owner,name,image_field",
     [
-        (QwenImageEditRenderer, "qwen", "qwen-image-edit"),
-        (HiDreamE1Renderer, "prunaai", "hidream-e1-1"),
+        (QwenImageEditRenderer, "qwen", "qwen-image-edit", "image"),
+        (HiDreamE1Renderer, "prunaai", "hidream-e1-1", "image"),
+        (FluxCannyProReplicateRenderer, "black-forest-labs", "flux-canny-pro", "control_image"),
+        (FluxDepthProReplicateRenderer, "black-forest-labs", "flux-depth-pro", "control_image"),
     ],
 )
-def test_replicate_missing_env_raises(renderer_cls, owner, name, tiny_png, monkeypatch):
+def test_replicate_missing_env_raises(
+    renderer_cls, owner, name, image_field, tiny_png, monkeypatch
+):
     monkeypatch.delenv("REPLICATE_API_TOKEN", raising=False)
     with pytest.raises(RuntimeError, match="REPLICATE_API_TOKEN not set"):
         renderer_cls().render(tiny_png, "anything")
 
 
 @pytest.mark.parametrize(
-    "renderer_cls,owner,name",
+    "renderer_cls,owner,name,image_field",
     [
-        (QwenImageEditRenderer, "qwen", "qwen-image-edit"),
-        (HiDreamE1Renderer, "prunaai", "hidream-e1-1"),
+        (QwenImageEditRenderer, "qwen", "qwen-image-edit", "image"),
+        (HiDreamE1Renderer, "prunaai", "hidream-e1-1", "image"),
+        (FluxCannyProReplicateRenderer, "black-forest-labs", "flux-canny-pro", "control_image"),
+        (FluxDepthProReplicateRenderer, "black-forest-labs", "flux-depth-pro", "control_image"),
     ],
 )
 def test_replicate_request_shape_and_response(
-    renderer_cls, owner, name, tiny_png, tiny_png_bytes, another_tiny_png, monkeypatch
+    renderer_cls, owner, name, image_field,
+    tiny_png, tiny_png_bytes, another_tiny_png, monkeypatch,
 ):
     monkeypatch.setenv("REPLICATE_API_TOKEN", "test-token")
     monkeypatch.setattr("spike.renderers.replicate_models.time.sleep", lambda *_: None)
@@ -410,10 +419,10 @@ def test_replicate_request_shape_and_response(
     input_block = body["input"]
     assert input_block["prompt"] == "soft daylight"
     assert input_block["seed"] == 99
-    # Image is a data URL
-    assert isinstance(input_block["image"], str)
-    assert input_block["image"].startswith("data:image/png;base64,")
-    encoded = input_block["image"].split(",", 1)[1]
+    # Image lives under whichever field the renderer class declared, as a data URL.
+    assert isinstance(input_block[image_field], str)
+    assert input_block[image_field].startswith("data:image/png;base64,")
+    encoded = input_block[image_field].split(",", 1)[1]
     assert base64.b64decode(encoded) == tiny_png_bytes
 
     # Poll URL came from submit's urls.get

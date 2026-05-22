@@ -1,12 +1,19 @@
 """Replicate-hosted renderers for the Spike 2.5 bake-off.
 
-Two image-to-image models accessed via Replicate's HTTP API:
+Image-to-image models accessed via Replicate's HTTP API:
 
 - `QwenImageEditRenderer` — `qwen/qwen-image-edit` (instruction-based edit,
   diffusion variant of Qwen-VL with strong layout preservation).
 - `HiDreamE1Renderer` — `prunaai/hidream-e1-1` (HiDream-E1.1, accepts
   natural-language prompts directly; supersedes the older e1 client that
   required structured prompt formatting).
+- `FluxCannyProReplicateRenderer` — `black-forest-labs/flux-canny-pro`.
+  Server-side Canny edge detection conditions FLUX on the screenshot's edge
+  map for strong silhouette preservation. BFL's own direct API removed this
+  endpoint in 2026; Replicate is the only remaining hosted path.
+- `FluxDepthProReplicateRenderer` — `black-forest-labs/flux-depth-pro`.
+  Server-side depth-map conditioning — preserves volumetric layout. Same
+  situation as Canny Pro: only accessible via Replicate post-2026.
 
 Note: Recraft V3 on Replicate is text-to-image only (verified May 2026 via
 Replicate's published endpoint schema). The corresponding renderer class
@@ -233,4 +240,49 @@ class HiDreamE1Renderer(_ReplicateRendererBase):
         "image_guidance_scale",
         "output_format",
         "output_quality",
+    )
+
+
+class FluxCannyProReplicateRenderer(_ReplicateRendererBase):
+    """FLUX Canny Pro via Replicate — geometry preservation via server-side Canny.
+
+    Sole hosted path after BFL's direct API dropped Canny endpoints in 2026.
+    Input image lives in `control_image` (Replicate accepts data URLs).
+    """
+
+    name: ClassVar[str] = "flux_canny_pro_replicate"
+    cost_per_call_usd: ClassVar[float] = 0.05
+    model_owner: ClassVar[str] = "black-forest-labs"
+    model_name: ClassVar[str] = "flux-canny-pro"
+    image_field: ClassVar[str] = "control_image"
+    prompt_field: ClassVar[str] = "prompt"
+    passthrough_keys: ClassVar[tuple[str, ...]] = (
+        "steps",
+        "guidance",
+        "output_format",
+        "safety_tolerance",
+        "prompt_upsampling",
+    )
+
+
+class FluxDepthProReplicateRenderer(_ReplicateRendererBase):
+    """FLUX Depth Pro via Replicate — geometry preservation via depth conditioning.
+
+    Same situation as Canny Pro: only available through Replicate post-2026.
+    `control_image` is the depth-source screenshot (Replicate computes the
+    depth map server-side).
+    """
+
+    name: ClassVar[str] = "flux_depth_pro_replicate"
+    cost_per_call_usd: ClassVar[float] = 0.05
+    model_owner: ClassVar[str] = "black-forest-labs"
+    model_name: ClassVar[str] = "flux-depth-pro"
+    image_field: ClassVar[str] = "control_image"
+    prompt_field: ClassVar[str] = "prompt"
+    passthrough_keys: ClassVar[tuple[str, ...]] = (
+        "steps",
+        "guidance",
+        "output_format",
+        "safety_tolerance",
+        "prompt_upsampling",
     )
