@@ -1,13 +1,13 @@
 ---
 type: spike
-status: T24 done — first live end-to-end run successful. Integration PASSES; material quality limited by SD Inpaint 1.5 (expected, v1 swaps to FLUX Fill + IP-Adapter)
-budget: ~$0.45/run with warm cache (segment + apply_material on A10G); ~$0.51 cold
+status: T24 + T25 done — pipeline integration PASSES on two inpainter backends. FLUX Fill (Replicate) preferred at $0.05/call native-res. Material conditioning gap (no IP-Adapter) is the last v1 inpainter piece.
+budget: ~$0.10/run with FLUX (warm cache, segment + flux_fill_replicate); ~$0.45/run with SD Inpaint
 gate: subjective — does the result feel like the product hypothesis? — pipeline integration: PASSES
 ---
 
 # Spike 4 — End-to-end edit pipeline
 
-**Status:** T24 complete. First live end-to-end run succeeded — all 4 Modal stages + local composite executed without errors on real data. Material swap (travertine on a wall) was functionally correct but visually weak because SD Inpaint 1.5 has no material conditioning; v1 swaps to FLUX Fill + IP-Adapter, exactly as the master plan specified.
+**Status:** T24 + T25 complete. Pipeline runs end-to-end with either inpainter backend; FLUX Fill Pro via Replicate is the better one (8× cheaper than SD Inpaint, native resolution rather than 512×512). Material conditioning is still text-only on both backends — that's the IP-Adapter-shaped hole the v1 inpainter will need to fill.
 
 ## Hypothesis
 
@@ -60,6 +60,23 @@ Default `--dry-run` prints the call graph; `--live` warns with cost estimate (~$
 - Output composite is non-empty PNG bytes.
 
 Cache is redirected to `tmp_path` so tests don't poison the real cache.
+
+## T25 — FLUX Fill (Replicate) as a second apply_material backend (DONE 2026-05-22)
+
+Full write-up: [`REPORTS/T25.md`](../../spike/REPORTS/T25.md).
+
+- Added `--inpainter {sd_inpaint, flux_fill_replicate}` to `spike/end_to_end_edit.py`. Default is `sd_inpaint` so T20 + T24 paths are unchanged.
+- FLUX path calls `black-forest-labs/flux-fill-pro` on Replicate directly (image + mask + text prompt). Encoded as base64 data URLs, polled to completion, downloaded.
+- Separate cache scope per inpainter (`tile` vs `tile_flux`) preserves T24's SD cache.
+- 4 new pytest tests; full suite 52/52 green.
+- Live test on the same (screenshot, region=wall, material=travertine) as T24. FLUX cost: $0.05; SD cost: $0.40. FLUX tile: 1259×848 native; SD tile: 512×512 forced.
+- Visible result on the masked wall: FLUX dramatically beats SD on resolution + edge fidelity (window cuts and balcony framing stay crisp); both still produce "cream wall" rather than distinctive travertine because the swatch isn't conditioning the output.
+
+### T25 verdict
+
+- ✅ **Inpainter integration**: two backends wired, dispatcher tested, cache scoping correct.
+- ✅ **Resolution + edge fidelity**: FLUX is the right call. The 512×512 SD round-trip was destroying detail; FLUX preserves it.
+- ❌ **Material conditioning**: still text-only. IP-Adapter is the next required step. Recorded as a follow-up in the report.
 
 ## T24 — first live run (DONE 2026-05-22)
 

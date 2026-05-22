@@ -20,6 +20,35 @@ Entry template (also in `CLAUDE.md` § Session-log protocol):
 
 ---
 
+## 2026-05-22 — T25 FLUX Fill (Replicate) as a second apply_material backend
+
+**Scope:** Add `--inpainter {sd_inpaint, flux_fill_replicate}` to `spike/end_to_end_edit.py`. Wire a direct call to `black-forest-labs/flux-fill-pro` via Replicate for the FLUX path. Live test on the spike2 photoreal pair (reusing T24's cache) and compare to T24's SD output. No IP-Adapter yet — text-only conditioning, same as SD path.
+
+**Decisions:**
+- FLUX Fill Pro via Replicate selected over (a) BFL API direct (account unfunded per B3-RUN-1) and (b) full Modal-hosted FLUX + IP-Adapter (multi-hour, multi-risk). Replicate path is single-day, no GPU mgmt, $0.05/call.
+- Separate cache scope per inpainter (`tile` vs `tile_flux`) so T24's cached SD result is preserved and the two backends can be compared on the same warm (render, tag, mask) inputs.
+
+**Tried:**
+- Direct call (bypassing the `FluxFillProRenderer` class in `spike/renderers/replicate_models.py`) because that class takes file paths and B3 fires without a mask. Reused the polling pattern.
+- Added `python-dotenv` import to `end_to_end_edit.py` so `spike/.env` provides `REPLICATE_API_TOKEN` without manual sourcing. Falls back gracefully if dotenv isn't installed.
+- First live run hit `RuntimeError: REPLICATE_API_TOKEN not set` because the script wasn't loading `.env`. Fixed and re-ran — second attempt succeeded.
+- 4 new pytest tests covering: full pipeline with FLUX inpainter (asserting Replicate URL + data URL encoding + prompt shape + Modal apply_material NOT called), missing-token-raises-clean, invalid `--inpainter` rejected by argparse, dry-run prints lower estimate. 52/52 pass.
+- Built a 3-up crop comparison of the masked wall region from original / SD / FLUX composites. Confirms FLUX wins on resolution + edge fidelity; both still struggle on material conditioning (no IP-Adapter).
+
+**Outcome:**
+- Spike 4 pipeline now supports two inpainters via CLI flag. T24's $0.40-per-call cost dropped to $0.05.
+- FLUX tile is 1259×848 native (vs SD's 512×512 forced downsample). 3.4× bytes, dramatically sharper window cuts and balconies.
+- Material conditioning gap unchanged: without IP-Adapter, the swatch image isn't used; both inpainters work from the material *name* text token only. FLUX produces a slightly sharper cream surface, not distinctive travertine.
+- Spike 4 status: pipeline integration solid, inpainter quality acceptable at the resolution/edge level, material conditioning still pending IP-Adapter.
+- Cost ledger: $0.84 → $0.89. T25 marginal $0.05 under the $0.30–0.50 authorized budget — leaves $0.25–0.45 headroom for additional FLUX comparisons.
+
+**Follow-ups:**
+- IP-Adapter for FLUX (the remaining v1 piece): either find a Replicate model wrapping FLUX Fill + IP-Adapter, or build it on Modal. Replicate path preferred if available.
+- More cheap FLUX comparisons: floor/ceiling on the interior dining pair, wall on the complex_windows tower, etc. Cache is warm; each new combo is ~$0.05.
+- Cache pre-pop helper: T24 + T25 both did it manually. Worth a small reusable script.
+
+---
+
 ## 2026-05-22 — T24 first live Spike 4 end-to-end run
 
 **Scope:** Drive the full Spike 4 pipeline end-to-end on real data for the first time. Pre-populate render + tags cache (free), then run segment + apply_material live on Modal A10G.

@@ -387,4 +387,201 @@ def test_end_to_end_unknown_label_short_circuits(
                 ]
             )
 
-    fake_modal.Function.from_name.assert_not_called()
+
+# --------------------------------------------------------------------------- #
+# --inpainter flux_fill_replicate — Replicate path                            #
+# --------------------------------------------------------------------------- #
+
+
+def _fake_requests_module(*, post_response, get_responses):
+    """Build a fake `requests` module the SUT will pick up via import."""
+    fake = types.ModuleType("requests")
+    fake.post = MagicMock(return_value=post_response)
+    fake.get = MagicMock(side_effect=get_responses)
+    # HTTPError class so production code's `raise_for_status` path still works.
+    class _HTTPError(Exception):
+        pass
+    fake.HTTPError = _HTTPError
+    return fake
+
+
+def _fake_http_response(*, status_code=200, json_body=None, content=b""):
+    resp = MagicMock()
+    resp.status_code = status_code
+    resp.json.return_value = json_body or {}
+    resp.content = content
+    resp.raise_for_status.return_value = None
+    return resp
+
+
+def test_end_to_end_flux_inpainter_uses_replicate(
+    isolated_cache,
+    screenshot_file,
+    material_file,
+    fake_render_bytes,
+    fake_mask_bytes,
+    fake_tile_bytes,
+    fake_tag_response,
+    tmp_path,
+    monkeypatch,
+):
+    """With --inpainter flux_fill_replicate, apply_material goes to Replicate.
+
+    Modal is mocked for render/tag/segment only; apply_material is intercepted
+    via the `requests` module (POST then poll then download). Verifies the
+    Replicate request shape: correct URL, Authorization header, image+mask
+    as data URLs, FLUX prompt prefix.
+    """
+    monkeypatch.setenv("REPLICATE_API_TOKEN", "test-token")
+    monkeypatch.setattr("spike.end_to_end_edit.time.sleep", lambda *_: None)
+
+    # Modal mocks for render/tag/segment only.
+    fake_fns = {
+        "render_from_model_view": MagicMock(remote=MagicMock(return_value=fake_render_bytes)),
+        "tag_regions": MagicMock(remote=MagicMock(return_value=fake_tag_response)),
+        "segment": MagicMock(remote=MagicMock(return_value=fake_mask_bytes)),
+        # apply_material on Modal MUST NOT be called when --inpainter is flux.
+        "apply_material": MagicMock(remote=MagicMock(
+            side_effect=AssertionError("Modal apply_material must not be called in flux path")
+        )),
+    }
+    fake_modal = types.ModuleType("modal")
+    fake_modal.Function = MagicMock()
+    fake_modal.Function.from_name = MagicMock(side_effect=lambda app, fn: fake_fns[fn])
+
+    # Replicate mocks: POST returns submit body, GET returns ready then bytes.
+    submit_resp = _fake_http_response(json_body={
+        "id": "pred-flux-1",
+        "status": "starting",
+        "urls": {"get": "https://api.replicate.com/v1/predictions/pred-flux-1"},
+    })
+    ready_resp = _fake_http_response(json_body={
+        "status": "succeeded",
+        "output": ["https://signed.example/flux-fill.png"],
+    })
+    download_resp = _fake_http_response(content=fake_tile_bytes)
+    fake_requests = _fake_requests_module(
+        post_response=submit_resp,
+        get_responses=[ready_resp, download_resp],
+    )
+
+    output_path = tmp_path / "out" / "flux_edit_result.png"
+
+    with patch.dict(sys.modules, {"modal": fake_modal, "requests": fake_requests}):
+        rc = end_to_end_edit.main([
+            "--live",
+            "--inpainter", "flux_fill_replicate",
+            "--screenshot", str(screenshot_file),
+            "--region-label", "wall",
+            "--material", str(material_file),
+            "--output", str(output_path),
+        ])
+
+    assert rc == 0
+    assert output_path.exists()
+
+    # --- Verify Replicate request shape ------------------------------------------
+    fake_requests.post.assert_called_once()
+    post_args, post_kwargs = fake_requests.post.call_args
+    assert post_args[0] == (
+        "https://api.replicate.com/v1/models/black-forest-labs/flux-fill-pro/predictions"
+    )
+    assert post_kwargs["headers"]["Authorization"] == "Token test-token"
+    body = post_kwargs["json"]
+    assert "input" in body
+    inp = body["input"]
+    assert inp["image"].startswith("data:image/png;base64,")
+    assert inp["mask"].startswith("data:image/png;base64,")
+    # Prompt was constructed from material name "travertine tile" (file stem).
+    assert "travertine tile" in inp["prompt"]
+    assert "photorealistic" in inp["prompt"]
+
+    # First GET is the poll URL; second is the download URL.
+    poll_url = fake_requests.get.call_args_list[0].args[0]
+    assert poll_url == "https://api.replicate.com/v1/predictions/pred-flux-1"
+    download_url = fake_requests.get.call_args_list[1].args[0]
+    assert download_url == "https://signed.example/flux-fill.png"
+
+    # Modal apply_material was never invoked in this path.
+    fake_fns["apply_material"].remote.assert_not_called()
+
+
+def test_end_to_end_flux_missing_token_raises(
+    isolated_cache,
+    screenshot_file,
+    material_file,
+    fake_render_bytes,
+    fake_mask_bytes,
+    fake_tag_response,
+    tmp_path,
+    monkeypatch,
+):
+    """Live flux path without REPLICATE_API_TOKEN raises before any HTTP call."""
+    monkeypatch.delenv("REPLICATE_API_TOKEN", raising=False)
+
+    fake_fns = {
+        "render_from_model_view": MagicMock(remote=MagicMock(return_value=fake_render_bytes)),
+        "tag_regions": MagicMock(remote=MagicMock(return_value=fake_tag_response)),
+        "segment": MagicMock(remote=MagicMock(return_value=fake_mask_bytes)),
+        "apply_material": MagicMock(remote=MagicMock(
+            side_effect=AssertionError("Modal apply_material must not be called in flux path")
+        )),
+    }
+    fake_modal = types.ModuleType("modal")
+    fake_modal.Function = MagicMock()
+    fake_modal.Function.from_name = MagicMock(side_effect=lambda app, fn: fake_fns[fn])
+
+    # Build a fake requests module that fails loudly if used.
+    fake_requests = _fake_requests_module(
+        post_response=MagicMock(side_effect=AssertionError("must not POST without token")),
+        get_responses=[],
+    )
+
+    output_path = tmp_path / "out" / "should_not_exist.png"
+
+    with patch.dict(sys.modules, {"modal": fake_modal, "requests": fake_requests}):
+        with pytest.raises(RuntimeError, match="REPLICATE_API_TOKEN not set"):
+            end_to_end_edit.main([
+                "--live",
+                "--inpainter", "flux_fill_replicate",
+                "--screenshot", str(screenshot_file),
+                "--region-label", "wall",
+                "--material", str(material_file),
+                "--output", str(output_path),
+            ])
+
+    fake_requests.post.assert_not_called()
+
+
+def test_end_to_end_invalid_inpainter_choice_rejected_by_argparse(
+    screenshot_file, material_file
+):
+    """argparse `choices=` should reject unknown --inpainter values."""
+    with pytest.raises(SystemExit):
+        end_to_end_edit.main([
+            "--live",
+            "--inpainter", "midjourney",
+            "--screenshot", str(screenshot_file),
+            "--region-label", "wall",
+            "--material", str(material_file),
+        ])
+
+
+def test_dry_run_with_flux_inpainter_uses_replicate_cost(
+    screenshot_file, material_file, capsys
+):
+    """Dry-run with --inpainter flux_fill_replicate prints the lower estimate."""
+    rc = end_to_end_edit.main([
+        "--dry-run",
+        "--inpainter", "flux_fill_replicate",
+        "--screenshot", str(screenshot_file),
+        "--region-label", "wall",
+        "--material", str(material_file),
+    ])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "inpainter:     flux_fill_replicate" in out
+    assert "via flux_fill_replicate" in out
+    assert "REPLICATE_API_TOKEN" in out
+    # Total cost line: 0.04 + 0.02 + 0.05 + 0.05 = $0.16
+    assert "$0.16" in out

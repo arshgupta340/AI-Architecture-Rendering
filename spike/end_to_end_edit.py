@@ -39,7 +39,9 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import os
 import sys
+import time
 from pathlib import Path
 
 # Make `spike.*` importable when this script is run as
@@ -51,18 +53,45 @@ if str(_REPO_ROOT) not in sys.path:
 from spike import cache, composite as composite_mod  # noqa: E402
 from spike.schemas import Region, TagRegionsResponse, save_raw_response  # noqa: E402
 
+# Load spike/.env so renderer/inpainter env vars (REPLICATE_API_TOKEN,
+# GOOGLE_API_KEY, etc.) are picked up without the user sourcing first.
+# Shell env wins over .env values, matching compare_renderers.py's behavior.
+try:
+    from dotenv import load_dotenv as _load_dotenv  # noqa: E402
+
+    _load_dotenv(_REPO_ROOT / "spike" / ".env")
+except ImportError:
+    # python-dotenv not installed — fine in test envs that set env directly.
+    pass
+
 
 # Rough per-call costs in USD. Used only for the printed cost estimate before
 # a live run; the real authoritative ledger is `spike/REPORTS/cost_ledger.md`.
 # These are upper-bound estimates so a sleepy architect is never surprised.
+# Per-inpainter cost — apply_material is the one stage with a choice. The
+# rest are the same regardless of inpainter.
+_INPAINTER_COSTS_USD = {
+    "sd_inpaint": 0.40,         # Stable Diffusion 1.5 Inpainting on Modal A10G, ~60s incl. cold start
+    "flux_fill_replicate": 0.05,  # black-forest-labs/flux-fill-pro via Replicate
+}
 _COST_ESTIMATE_USD = {
     "render_from_model_view": 0.04,   # Nano Banana Pro image gen
     "tag_regions": 0.02,              # Gemini 3 Pro structured output
     "segment": 0.05,                  # SAM2 on A10G, ~30s cold
-    "apply_material": 0.40,           # SD Inpaint on A10G, ~60s incl. cold start
+    "apply_material": _INPAINTER_COSTS_USD["sd_inpaint"],  # default; rewritten per --inpainter
     "paste_tile": 0.0,                # local CPU
 }
-_COST_TOTAL_ESTIMATE = sum(_COST_ESTIMATE_USD.values())  # ~$0.51
+_COST_TOTAL_ESTIMATE = sum(_COST_ESTIMATE_USD.values())  # ~$0.51 (SD default)
+
+
+# Replicate endpoint for flux-fill-pro. Inlined here rather than reusing the
+# B3 FluxFillProRenderer class because (a) the renderer takes a file path
+# and we have bytes in memory, (b) Spike 4 needs to pass a mask while B3
+# fires without one. Cleanest path is a direct API call in this file.
+_REPLICATE_BASE = "https://api.replicate.com/v1"
+_FLUX_FILL_PRO_PATH = "models/black-forest-labs/flux-fill-pro/predictions"
+_REPLICATE_POLL_INTERVAL_S = 2.0
+_REPLICATE_POLL_TIMEOUT_S = 300.0
 
 
 def _short_hash(data: bytes) -> str:
@@ -127,7 +156,12 @@ def _print_call_graph(
     material_path: Path,
     style_prompt: str,
     output_path: Path,
+    *,
+    inpainter: str = "sd_inpaint",
 ) -> None:
+    apply_cost = _INPAINTER_COSTS_USD[inpainter]
+    other_cost = sum(v for k, v in _COST_ESTIMATE_USD.items() if k != "apply_material")
+    total_cost = other_cost + apply_cost
     print("=" * 72)
     print("end_to_end_edit.py -- DRY RUN (no network, no Modal calls)")
     print("=" * 72)
@@ -136,6 +170,7 @@ def _print_call_graph(
     print(f"  material:      {material_path}")
     print(f"  style prompt:  {style_prompt!r}")
     print(f"  output:        {output_path}")
+    print(f"  inpainter:     {inpainter}")
     print("")
     print("Pipeline:")
     print("  1. render_from_model_view(screenshot_bytes, style_prompt)")
@@ -148,13 +183,16 @@ def _print_call_graph(
     print("  4. segment(render_bytes, prompt={'type':'bbox', ...})")
     print(f"       est ${_COST_ESTIMATE_USD['segment']:.2f}")
     print("       -> mask_bytes (cached by sha256(render+bbox))")
-    print("  5. apply_material(render_bytes, mask_bytes, material_name)")
-    print(f"       est ${_COST_ESTIMATE_USD['apply_material']:.2f}")
-    print("       -> tile_bytes (cached by sha256(render+mask+material))")
+    print(f"  5. apply_material via {inpainter}")
+    print(f"       est ${apply_cost:.2f}")
+    if inpainter == "sd_inpaint":
+        print("       -> tile_bytes (cached at scope=tile)")
+    else:
+        print("       -> tile_bytes (cached at scope=tile_flux); needs REPLICATE_API_TOKEN")
     print("  6. paste_tile(render_bytes, mask_bytes, tile_bytes) [local]")
     print("       -> final composite PNG -> output path")
     print("")
-    print(f"ESTIMATED COST PER LIVE RUN: ~${_COST_TOTAL_ESTIMATE:.2f} USD")
+    print(f"ESTIMATED COST PER LIVE RUN: ~${total_cost:.2f} USD")
     print("Re-run with --live to actually execute. Cached stages cost $0.")
     print("=" * 72)
 
@@ -229,21 +267,138 @@ def _run_segment_bbox(
     return cache.get_or_compute(key, _compute, scope="mask")
 
 
-def _run_apply_material(
+def _flux_prompt_for_material(material_name: str) -> str:
+    """Material prompt used for the Replicate FLUX Fill path.
+
+    Kept structurally similar to modal_app.apply_material's SD prompt so
+    differences between outputs reflect the model, not the prompt.
+    """
+    return (
+        f"photorealistic {material_name} wall surface, architectural facade, "
+        "natural daylight, sharp surface texture, high material detail, "
+        "professional architectural photography"
+    )
+
+
+def _apply_material_via_replicate_flux_fill(
     render_bytes: bytes,
     mask_bytes: bytes,
     material_name: str,
 ) -> bytes:
-    key = (
-        f"tile_{_short_hash(render_bytes)}_"
-        f"{_short_hash(mask_bytes)}_{material_name}"
+    """Call black-forest-labs/flux-fill-pro on Replicate with image + mask.
+
+    Replicate accepts inputs as base64 data URLs, so no upload step is
+    needed. The poll loop matches the shape used by
+    spike/renderers/replicate_models.py (which is also tested there).
+    Returns the inpainted image bytes at the input's native resolution.
+    """
+    import base64
+
+    import requests
+
+    api_key = os.environ.get("REPLICATE_API_TOKEN")
+    if not api_key:
+        raise RuntimeError("REPLICATE_API_TOKEN not set")
+
+    headers = {
+        "Authorization": f"Token {api_key}",
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
+    image_data_url = "data:image/png;base64," + base64.b64encode(render_bytes).decode("ascii")
+    mask_data_url = "data:image/png;base64," + base64.b64encode(mask_bytes).decode("ascii")
+    prompt = _flux_prompt_for_material(material_name)
+
+    submit_url = f"{_REPLICATE_BASE}/{_FLUX_FILL_PRO_PATH}"
+    body = {
+        "input": {
+            "image": image_data_url,
+            "mask": mask_data_url,
+            "prompt": prompt,
+            "output_format": "png",
+            "safety_tolerance": 2,
+        }
+    }
+    submit = requests.post(submit_url, json=body, headers=headers, timeout=30)
+    submit.raise_for_status()
+    submit_body = submit.json()
+    poll_url = (submit_body.get("urls") or {}).get("get")
+    if not poll_url:
+        pred_id = submit_body.get("id")
+        if not pred_id:
+            raise RuntimeError(
+                f"Replicate submit returned no poll url or id: {submit_body!r}"
+            )
+        poll_url = f"{_REPLICATE_BASE}/predictions/{pred_id}"
+
+    deadline = time.monotonic() + _REPLICATE_POLL_TIMEOUT_S
+    while time.monotonic() < deadline:
+        resp = requests.get(poll_url, headers=headers, timeout=30)
+        resp.raise_for_status()
+        st = resp.json()
+        status = st.get("status")
+        if status == "succeeded":
+            output = st.get("output")
+            if isinstance(output, str):
+                output_url = output
+            elif isinstance(output, list) and output and isinstance(output[0], str):
+                output_url = output[0]
+            else:
+                raise RuntimeError(f"flux-fill-pro output not a URL: {output!r}")
+            dl = requests.get(output_url, timeout=60)
+            dl.raise_for_status()
+            return dl.content
+        if status in {"failed", "canceled"}:
+            raise RuntimeError(
+                f"flux-fill-pro prediction {status}: error={st.get('error')!r}"
+            )
+        time.sleep(_REPLICATE_POLL_INTERVAL_S)
+    raise RuntimeError(
+        f"flux-fill-pro polling timed out after {_REPLICATE_POLL_TIMEOUT_S}s"
     )
 
-    def _compute() -> bytes:
-        fn = _modal_lookup("apply_material")
-        return fn.remote(render_bytes, mask_bytes, material_name)
 
-    return cache.get_or_compute(key, _compute, scope="tile")
+def _run_apply_material(
+    render_bytes: bytes,
+    mask_bytes: bytes,
+    material_name: str,
+    *,
+    inpainter: str = "sd_inpaint",
+) -> bytes:
+    """Dispatch to the chosen inpainter. Cache scope differs per inpainter
+    so outputs don't collide (e.g., re-running T24's SD tile via FLUX would
+    otherwise overwrite the cached SD result and vice versa).
+    """
+    if inpainter == "sd_inpaint":
+        scope = "tile"
+        key = (
+            f"tile_{_short_hash(render_bytes)}_"
+            f"{_short_hash(mask_bytes)}_{material_name}"
+        )
+
+        def _compute() -> bytes:
+            fn = _modal_lookup("apply_material")
+            return fn.remote(render_bytes, mask_bytes, material_name)
+
+    elif inpainter == "flux_fill_replicate":
+        scope = "tile_flux"
+        key = (
+            f"tile_flux_{_short_hash(render_bytes)}_"
+            f"{_short_hash(mask_bytes)}_{material_name}"
+        )
+
+        def _compute() -> bytes:
+            return _apply_material_via_replicate_flux_fill(
+                render_bytes, mask_bytes, material_name
+            )
+
+    else:
+        raise ValueError(
+            f"unknown --inpainter {inpainter!r}; expected one of "
+            f"{sorted(_INPAINTER_COSTS_USD)!r}"
+        )
+
+    return cache.get_or_compute(key, _compute, scope=scope)
 
 
 def _run_live(
@@ -252,14 +407,22 @@ def _run_live(
     material_path: Path,
     style_prompt: str,
     output_path: Path,
+    *,
+    inpainter: str = "sd_inpaint",
 ) -> None:
-    print(f"[end_to_end_edit] LIVE run — estimated cost ~${_COST_TOTAL_ESTIMATE:.2f}")
-    print(f"[end_to_end_edit] cache scope: spike/.cache/{{render,tags,mask,tile}}/")
+    apply_cost = _INPAINTER_COSTS_USD[inpainter]
+    other_cost = sum(v for k, v in _COST_ESTIMATE_USD.items() if k != "apply_material")
+    est_total = other_cost + apply_cost
+    print(
+        f"[end_to_end_edit] LIVE run — inpainter={inpainter!r}, "
+        f"est ~${est_total:.2f} (apply_material ~${apply_cost:.2f})"
+    )
+    print(f"[end_to_end_edit] cache scope: spike/.cache/{{render,tags,mask,tile,tile_flux}}/")
     screenshot_bytes = screenshot_path.read_bytes()
-    # We use the material file *name* (stem) as the material prompt token for
-    # apply_material — the Modal function takes a material_name string, not a
-    # swatch image (SD Inpaint isn't material-conditioned in the spike). The
-    # swatch path is preserved so v1 can switch to FLUX Fill + IP-Adapter.
+    # We use the material file *name* (stem) as the material prompt token. Neither
+    # SD Inpaint 1.5 nor flux-fill-pro (without IP-Adapter) takes the swatch image
+    # as conditioning; both read only the material name. Full image-conditioned
+    # material transfer needs IP-Adapter, which lives outside this driver.
     material_name = material_path.stem.replace("_", " ")
 
     print("[1/6] render_from_model_view …")
@@ -290,8 +453,10 @@ def _run_live(
     mask_bytes = _run_segment_bbox(render_bytes, region)
     print(f"      mask: {len(mask_bytes):,} bytes")
 
-    print(f"[5/6] apply_material name={material_name!r} …")
-    tile_bytes = _run_apply_material(render_bytes, mask_bytes, material_name)
+    print(f"[5/6] apply_material name={material_name!r} via {inpainter} …")
+    tile_bytes = _run_apply_material(
+        render_bytes, mask_bytes, material_name, inpainter=inpainter
+    )
     print(f"      tile: {len(tile_bytes):,} bytes")
 
     print("[6/6] paste_tile (local) …")
@@ -334,6 +499,18 @@ def main(argv: list[str] | None = None) -> int:
         default=str(_REPO_ROOT / "spike" / "outputs" / "spike4" / "edit_result.png"),
         help="Where to write the final composite PNG.",
     )
+    p.add_argument(
+        "--inpainter",
+        default="sd_inpaint",
+        choices=sorted(_INPAINTER_COSTS_USD),
+        help=(
+            "Which apply_material backend to use. "
+            "'sd_inpaint' is the Modal-hosted Stable Diffusion 1.5 inpaint "
+            "(~$0.40/call, 512x512 native). "
+            "'flux_fill_replicate' is black-forest-labs/flux-fill-pro on "
+            "Replicate (~$0.05/call, native resolution; needs REPLICATE_API_TOKEN)."
+        ),
+    )
     mode = p.add_mutually_exclusive_group()
     mode.add_argument(
         "--dry-run",
@@ -374,6 +551,7 @@ def main(argv: list[str] | None = None) -> int:
             material_path=material_path,
             style_prompt=args.style_prompt,
             output_path=output_path,
+            inpainter=args.inpainter,
         )
         return 0
 
@@ -389,6 +567,7 @@ def main(argv: list[str] | None = None) -> int:
         material_path=material_path,
         style_prompt=args.style_prompt,
         output_path=output_path,
+        inpainter=args.inpainter,
     )
     return 0
 
