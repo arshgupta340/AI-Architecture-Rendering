@@ -9,6 +9,16 @@ renderer subclass and only instantiates the ones whose `env_var` is present in
 the environment, so you can run a partial bake-off by populating only the
 providers you care about.
 
+**Revised May 2026.** Several provider APIs changed since the original T03–T06
+client scaffolding: BFL deprecated `flux-pro-1.1-canny` and `flux-pro-1.1-kontext`
+in favor of `flux-2-pro`, moved its base host from `api.bfl.ml` to `api.bfl.ai`,
+and removed the public Depth Pro endpoint; Magnific (now Freepik-owned) moved
+to `api.magnific.com` with a new auth header and `structure_reference` body
+field; Recraft's Replicate listing for V3 is text-to-image only with no
+image-to-image variant, so the `RecraftV3ReplicateRenderer` class has been
+removed (use the native Recraft API instead). The seven renderers below
+reflect the current valid set.
+
 ## Google (Nano Banana Pro via Modal)
 
 Google AI Studio hosts Gemini 2.5 Flash Image (aka "Nano Banana Pro"), the
@@ -22,32 +32,47 @@ gates on `GOOGLE_API_KEY` locally and calls the existing Modal function
 Modal CLI auth (`modal token new`, or `MODAL_TOKEN_ID` + `MODAL_TOKEN_SECRET`)
 is required at call time but is not checked at import.
 
-## Black Forest Labs (FLUX Pro 1.1 — Canny & Kontext)
+## Black Forest Labs (FLUX 2 Pro + FLUX Fill Pro)
 
-Black Forest Labs is the company behind FLUX. Their hosted API at
-https://api.bfl.ml/ exposes the closed-weights Pro variants we care about for
-geometry preservation. Sign up at the dashboard (https://api.bfl.ml/auth/profile)
-and top up — there is **no free tier**, pricing is approximately
-**$0.05 per image** for both `flux-pro-1.1-canny` (geometry-preserving via
-server-side Canny conditioning) and `flux-pro-1.1-kontext` (instruction-edit
-image-to-image). Both endpoints use a submit-then-poll flow.
-`spike/renderers/flux_bfl.py` defines `FluxCannyProRenderer` and
-`FluxKontextProRenderer`, both reading `BFL_API_KEY` from the environment.
+Black Forest Labs is the company behind FLUX. As of May 2026 the canonical
+base URL is `https://api.bfl.ai/v1/` (the older `api.bfl.ml` host still
+resolves but is no longer documented). Sign up at https://dashboard.bfl.ai/
+and top up — there is **no free tier**. The two BFL renderers in the bake-off:
 
-## Replicate (Qwen-Image-Edit, HiDream-E1, Recraft V3)
+- `Flux2ProRenderer` calls `POST /v1/flux-2-pro`. This is the current
+  recommended image-edit endpoint; it replaces both the deprecated
+  `flux-pro-1.1-canny` and `flux-pro-1.1-kontext` paths. Listed at
+  approximately **$0.03 per image**. The screenshot is sent in `input_image`
+  (base64); optional inputs include `seed`, `width`, `height`,
+  `safety_tolerance`, `output_format`.
+- `FluxFillProRenderer` calls `POST /v1/flux-pro-1.0-fill`. Mask-based
+  inpainting endpoint, fired without a mask in B3 to characterize what FLUX
+  Fill produces in this configuration. Listed at approximately
+  **$0.05 per image**. The screenshot is sent in `image`; `mask` is omitted.
+
+Both endpoints use a submit-then-poll flow: the submit response includes a
+`polling_url` we GET until `status == "Ready"`, with the result PNG URL at
+`result.sample`. Both classes read `BFL_API_KEY` from the environment and
+authenticate via the `x-key` header. Both live in `spike/renderers/flux_bfl.py`.
+
+## Replicate (Qwen-Image-Edit, HiDream-E1.1)
 
 Replicate is a generic model-hosting platform at https://replicate.com/. We
-use it as a single entry point for three different image-edit models we don't
-want to host ourselves: `qwen/qwen-image-edit`, `prunaai/hidream-e1`, and
-`recraft-ai/recraft-v3`. Pricing is per-model and metered to the second of GPU
-time; the bake-off uses rough per-image estimates of **$0.03** (Qwen),
-**$0.04** (HiDream-E1), and **$0.04** (Recraft V3 on Replicate) — see the
-`cost_per_call_usd` attribute on each class for the value of record. New
-accounts get a small free credit; after that you must add a card. Get a token
-at https://replicate.com/account/api-tokens.
-`spike/renderers/replicate_models.py` defines `QwenImageEditRenderer`,
-`HiDreamE1Renderer`, and `RecraftV3ReplicateRenderer`, all sharing
-`REPLICATE_API_TOKEN`.
+use it as a single entry point for two image-edit models we don't want to host
+ourselves: `qwen/qwen-image-edit` and `prunaai/hidream-e1-1`. Pricing is
+per-model and metered to the second of GPU time; the bake-off uses rough
+per-image estimates of **$0.03** (Qwen) and **$0.04** (HiDream-E1.1) — see the
+`cost_per_call_usd` attribute on each class for the value of record. The
+HiDream pin moved from `hidream-e1` to `hidream-e1-1` because e1.1 accepts
+natural-language prompts directly (e1.0 required structured prompt formatting
+our defaults don't follow). New accounts get a small free credit; after that
+you must add a card. Get a token at https://replicate.com/account/api-tokens.
+`spike/renderers/replicate_models.py` defines `QwenImageEditRenderer` and
+`HiDreamE1Renderer`, both sharing `REPLICATE_API_TOKEN`.
+
+**Removed:** `RecraftV3ReplicateRenderer` was deleted in May 2026 because
+Replicate's `recraft-ai/recraft-v3` endpoint is text-to-image only — its
+`input` schema has no `image` field. Use the native Recraft client below.
 
 ## fal.ai (reserved)
 
@@ -61,27 +86,33 @@ with Replicate (a few cents per FLUX-class image). No free tier worth relying
 on. **No renderer class consumes `FAL_KEY` today** — leave it blank unless
 you're prototyping a new client.
 
-## Magnific (Freepik / Magnific.ai — Mystic / Relight)
+## Magnific (Freepik / Magnific.ai — Mystic)
 
-Magnific (https://magnific.ai/, now owned by Freepik) sells "Mystic" image
-generation and the older "Relight" image-conditioned upscaler/restyler. API
-access is currently **invite / waitlist-gated**; Freepik Premium accounts can
-also call equivalent endpoints via the Freepik API. Pricing on the Mystic
-endpoint is roughly **$0.10 per image** (the most expensive renderer in the
-bake-off, but the one with the strongest "architectural visualization" prior).
-No free tier through the API. `spike/renderers/magnific.py:MagnificMysticRenderer`
-reads `MAGNIFIC_API_KEY` and posts to `https://api.magnific.ai/v1/mystic`.
+Magnific (https://magnific.com/, owned by Freepik since late 2024) sells
+"Mystic" image generation through a public API. The endpoint as of May 2026 is
+`POST https://api.magnific.com/v1/ai/mystic`; the older `api.magnific.ai` host
+is no longer the documented path. Authentication is via the
+`x-magnific-api-key` header (not `Authorization: Bearer`). Pricing is roughly
+**$0.10 per image** for the Mystic endpoint — the most expensive renderer in
+the bake-off, but the one with the strongest "architectural visualization"
+prior. A small free credit allotment ships with new accounts.
+`spike/renderers/magnific.py:MagnificMysticRenderer` reads `MAGNIFIC_API_KEY`
+and sends the screenshot in `structure_reference` (base64, shape-conditioning
+input) alongside `prompt`. Submit returns
+`{"data": {"task_id": "<uuid>", "status": "CREATED", "generated": []}}`; we
+poll `GET /v1/ai/mystic/<task_id>` until `data.status == "COMPLETED"`, at
+which point the result URL lives at `data.generated[0]`.
 
 ## Recraft (native API — Recraft V3 image-to-image)
 
 Recraft (https://www.recraft.ai/) exposes its own V3 model at
-`https://external.api.recraft.ai/v1/`, separate from the Replicate-hosted copy.
-The native API is synchronous (no polling), supports multipart-form uploads,
-and bills around **$0.04 per image** for `recraftv3`. New accounts get a small
-free monthly credit allotment (Recraft's "Free" plan); paid plans start around
-$10/month for higher quotas. Get a token from the profile -> API page.
-`spike/renderers/recraft.py:RecraftV3Renderer` reads `RECRAFT_API_TOKEN`. Note
-that `RecraftV3ReplicateRenderer` (above) calls the same underlying model
-through Replicate's infrastructure — the bake-off includes both so we can
-compare the native and Replicate-hosted code paths for latency and quality
-drift.
+`https://external.api.recraft.ai/v1/`. The native API is synchronous (no
+polling), supports multipart-form uploads, and bills around **$0.04 per image**
+for `recraftv3`. New accounts get a small free monthly credit allotment
+(Recraft's "Free" plan); paid plans start around $10/month for higher quotas.
+Get a token from the profile → API page.
+`spike/renderers/recraft.py:RecraftV3Renderer` reads `RECRAFT_API_TOKEN`. Per
+Recraft's endpoint table (May 2026), the `/v1/images/imageToImage` endpoint
+only accepts `recraftv3` and `recraftv3_vector` as model identifiers — the
+newer V4 and V4.1 models are text-to-image only and live on
+`/v1/images/generations`. There is no image-to-image V4 variant.

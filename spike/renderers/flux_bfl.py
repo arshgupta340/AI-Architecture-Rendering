@@ -1,25 +1,25 @@
 """FLUX renderers via Black Forest Labs' BFL API.
 
-Two endpoints, two renderer classes:
+As of the May 2026 docs rev, BFL's older Canny / Kontext Pro endpoints are
+deprecated and the canonical image-edit path is FLUX 2 Pro. We expose two
+renderer classes:
 
-- `FluxCannyProRenderer` — `POST https://api.bfl.ml/v1/flux-pro-1.1-canny`. The
-  screenshot is sent as a control image; BFL extracts Canny edges server-side
-  and conditions generation on them. This is the geometry-preserving variant
-  we expect to score well on `silhouette_iou` and `edge_density_delta` in the
-  bake-off.
-- `FluxKontextProRenderer` — `POST https://api.bfl.ml/v1/flux-pro-1.1-kontext`.
-  Edit-style endpoint that takes an input image plus a text instruction; less
-  geometry-rigid than Canny but better at semantic edits ("turn the wall into
-  brick").
+- `Flux2ProRenderer` — `POST https://api.bfl.ai/v1/flux-2-pro`. General
+  image-edit; takes an `input_image` (base64) plus a `prompt` and produces a
+  re-rendered image. Replaces the legacy Kontext Pro / Canny Pro entries that
+  used to live here.
+- `FluxFillProRenderer` — `POST https://api.bfl.ai/v1/flux-pro-1.0-fill`.
+  Mask-based inpainting endpoint. B3 does not have a mask flow, so this
+  renderer is fired with image + prompt only and no `mask` field. BFL's
+  behavior on an absent `mask` is undocumented — included in the bake-off
+  per explicit user request to see what it produces.
 
-Both endpoints return `{"id": "...", "polling_url": "..."}`. We then poll
-`https://api.bfl.ml/v1/get_result?id=<id>` until `status == "Ready"`, at which
-point `result.sample` is a signed URL to the generated PNG. We GET that URL
-and return the raw bytes.
+Both endpoints use a submit-then-poll flow. Submit response includes a
+`polling_url` we GET repeatedly until status `"Ready"`; the result PNG lives
+at `result.sample` (convention preserved from the older `get_result`
+endpoint, which both new endpoints still route through).
 
-No network at import time. The `requests` import is deferred to `render()`
-so this module loads cleanly without `requests` on `sys.path` (it is, but the
-discipline matches the rest of the package).
+No network at import time. `requests` is lazy-imported inside `render()`.
 """
 
 from __future__ import annotations
@@ -32,9 +32,9 @@ from typing import ClassVar
 
 from spike.renderers.base import Renderer
 
-_BFL_BASE = "https://api.bfl.ml/v1"
+_BFL_BASE = "https://api.bfl.ai/v1"
 _POLL_INTERVAL_S = 1.5
-_POLL_TIMEOUT_S = 120.0
+_POLL_TIMEOUT_S = 180.0
 
 
 def _encode_image_b64(path: Path) -> str:
@@ -50,11 +50,8 @@ def _poll_for_result(
     timeout_s: float = _POLL_TIMEOUT_S,
     interval_s: float = _POLL_INTERVAL_S,
 ) -> str:
-    """Poll BFL's get_result endpoint until ready, return the signed sample URL.
-
-    Raises RuntimeError on terminal failure states or timeout.
-    """
-    import requests  # lazy: keep module import cheap
+    """Poll BFL until ready, return the signed sample URL."""
+    import requests  # lazy
 
     deadline = time.monotonic() + timeout_s
     while time.monotonic() < deadline:
@@ -67,9 +64,8 @@ def _poll_for_result(
             if not sample:
                 raise RuntimeError(f"BFL ready but no sample URL in response: {body!r}")
             return sample
-        if status in {"Error", "Failed", "Content Moderated", "Request Moderated"}:
+        if status in {"Error", "Failed", "Content Moderated", "Request Moderated", "Task not found"}:
             raise RuntimeError(f"BFL task failed: status={status!r} body={body!r}")
-        # Pending / Queued / Processing → keep polling
         time.sleep(interval_s)
     raise RuntimeError(f"BFL polling timed out after {timeout_s}s for {poll_url!r}")
 
@@ -83,14 +79,17 @@ def _download_bytes(url: str) -> bytes:
 
 
 class _BflRendererBase(Renderer):
-    """Shared HTTP plumbing for the two BFL FLUX endpoints."""
+    """Shared HTTP plumbing for BFL endpoints (submit-then-poll)."""
 
     env_var: ClassVar[str] = "BFL_API_KEY"
     provider: ClassVar[str] = "bfl"
 
-    # Subclasses set these:
     endpoint_path: ClassVar[str]
-    image_field: ClassVar[str]  # "control_image" for canny, "input_image" for kontext
+    image_field: ClassVar[str]
+
+    # Subset of provider knobs that can pass through from **kwargs. Each
+    # subclass overrides this to whitelist its own legal fields.
+    passthrough_keys: ClassVar[tuple[str, ...]] = ()
 
     def _build_payload(
         self,
@@ -106,15 +105,7 @@ class _BflRendererBase(Renderer):
         }
         if seed is not None:
             payload["seed"] = int(seed)
-        # Pass through any provider-specific knobs (steps, guidance, etc.).
-        for key in (
-            "steps",
-            "guidance",
-            "safety_tolerance",
-            "output_format",
-            "prompt_upsampling",
-            "aspect_ratio",
-        ):
+        for key in self.passthrough_keys:
             if key in kwargs:
                 payload[key] = kwargs[key]
         return payload
@@ -147,27 +138,50 @@ class _BflRendererBase(Renderer):
         submit.raise_for_status()
         submit_body = submit.json()
         task_id = submit_body.get("id")
-        if not task_id:
-            raise RuntimeError(f"BFL submit missing task id: {submit_body!r}")
-        poll_url = submit_body.get("polling_url") or f"{_BFL_BASE}/get_result?id={task_id}"
+        poll_url = submit_body.get("polling_url")
+        if not poll_url:
+            if not task_id:
+                raise RuntimeError(
+                    f"BFL submit missing both id and polling_url: {submit_body!r}"
+                )
+            poll_url = f"{_BFL_BASE}/get_result?id={task_id}"
 
         sample_url = _poll_for_result(poll_url, headers)
         return _download_bytes(sample_url)
 
 
-class FluxCannyProRenderer(_BflRendererBase):
-    """FLUX Pro 1.1 Canny — geometry-preserving image-to-image."""
+class Flux2ProRenderer(_BflRendererBase):
+    """FLUX 2 Pro — general image-edit. Replaces the legacy Kontext Pro path."""
 
-    name: ClassVar[str] = "flux_canny_pro"
-    cost_per_call_usd: ClassVar[float] = 0.05  # BFL listed price, ~$0.05/image
-    endpoint_path: ClassVar[str] = "flux-pro-1.1-canny"
-    image_field: ClassVar[str] = "control_image"
-
-
-class FluxKontextProRenderer(_BflRendererBase):
-    """FLUX Pro 1.1 Kontext — instruction-based image editing."""
-
-    name: ClassVar[str] = "flux_kontext_pro"
-    cost_per_call_usd: ClassVar[float] = 0.05  # BFL listed price, ~$0.05/image
-    endpoint_path: ClassVar[str] = "flux-pro-1.1-kontext"
+    name: ClassVar[str] = "flux_2_pro"
+    cost_per_call_usd: ClassVar[float] = 0.03
+    endpoint_path: ClassVar[str] = "flux-2-pro"
     image_field: ClassVar[str] = "input_image"
+    passthrough_keys: ClassVar[tuple[str, ...]] = (
+        "width",
+        "height",
+        "safety_tolerance",
+        "output_format",
+    )
+
+
+class FluxFillProRenderer(_BflRendererBase):
+    """FLUX Fill Pro — mask-based inpainting endpoint, fired with no mask.
+
+    BFL's docs declare `mask` optional; behavior on omission is undocumented.
+    Included in the B3 bake-off at user request to characterize what the
+    endpoint produces in this configuration.
+    """
+
+    name: ClassVar[str] = "flux_fill_pro"
+    cost_per_call_usd: ClassVar[float] = 0.05
+    endpoint_path: ClassVar[str] = "flux-pro-1.0-fill"
+    image_field: ClassVar[str] = "image"
+    passthrough_keys: ClassVar[tuple[str, ...]] = (
+        "mask",
+        "steps",
+        "prompt_upsampling",
+        "guidance",
+        "output_format",
+        "safety_tolerance",
+    )

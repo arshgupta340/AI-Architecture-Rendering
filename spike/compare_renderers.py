@@ -57,28 +57,26 @@ from run_b1_baseline import (  # noqa: E402 -- after sys.path tweak
     make_overlay,
 )
 
-# Import every renderer. Module-load is network-free by contract (T03–T06).
+# Import every renderer. Module-load is network-free by contract.
 from spike.renderers.base import Renderer  # noqa: E402
-from spike.renderers.flux_bfl import FluxCannyProRenderer, FluxKontextProRenderer  # noqa: E402
+from spike.renderers.flux_bfl import Flux2ProRenderer, FluxFillProRenderer  # noqa: E402
 from spike.renderers.magnific import MagnificMysticRenderer  # noqa: E402
 from spike.renderers.nano_banana import NanoBananaProRenderer  # noqa: E402
 from spike.renderers.recraft import RecraftV3Renderer  # noqa: E402
 from spike.renderers.replicate_models import (  # noqa: E402
     HiDreamE1Renderer,
     QwenImageEditRenderer,
-    RecraftV3ReplicateRenderer,
 )
 
 # Order here drives the order in the grid + CSV.
 ALL_RENDERER_CLASSES: tuple[type[Renderer], ...] = (
     NanoBananaProRenderer,
-    FluxCannyProRenderer,
-    FluxKontextProRenderer,
+    Flux2ProRenderer,
+    FluxFillProRenderer,
     MagnificMysticRenderer,
     RecraftV3Renderer,
     QwenImageEditRenderer,
     HiDreamE1Renderer,
-    RecraftV3ReplicateRenderer,
 )
 
 DEFAULT_STYLE = (
@@ -169,6 +167,14 @@ def main() -> int:
         default="spike/outputs/spike2_5/b3",
         help="Output directory (default: spike/outputs/spike2_5/b3).",
     )
+    ap.add_argument(
+        "--dry-run",
+        action="store_true",
+        help=(
+            "Print the renderer manifest and exit without firing any HTTP. "
+            "Use this to verify .env wiring without spending."
+        ),
+    )
     args = ap.parse_args()
 
     src_path = Path(args.input)
@@ -179,13 +185,20 @@ def main() -> int:
     out_dir = Path(args.out_dir)
 
     # Always print the manifest first. If nothing is live, exit 0 without
-    # creating any files — this is the safe dry-run default for tonight.
+    # creating any files — this is the safe dry-run default.
     _print_manifest(ALL_RENDERER_CLASSES)
     live = _available_renderers()
     if not live:
         print(
             "\n[b3] No provider env vars set. Nothing to render. "
             "Exiting without writing outputs."
+        )
+        return 0
+
+    if args.dry_run:
+        print(
+            f"\n[b3] --dry-run: would fire {len(live)} renderer(s) "
+            f"({', '.join(r.name for r in live)}). No HTTP made. Exiting."
         )
         return 0
 

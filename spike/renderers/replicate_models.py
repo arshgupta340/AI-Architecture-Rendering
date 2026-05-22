@@ -1,13 +1,17 @@
 """Replicate-hosted renderers for the Spike 2.5 bake-off.
 
-Three image-to-image models accessed via Replicate's HTTP API:
+Two image-to-image models accessed via Replicate's HTTP API:
 
 - `QwenImageEditRenderer` — `qwen/qwen-image-edit` (instruction-based edit,
   diffusion variant of Qwen-VL with strong layout preservation).
-- `HiDreamE1Renderer` — `prunaai/hidream-e1` (HiDream-E1 instruction-edit
-  model, geometry-friendly).
-- `RecraftV3ReplicateRenderer` — `recraft-ai/recraft-v3` exposed through
-  Replicate (parallel path to the native Recraft client in `recraft.py`).
+- `HiDreamE1Renderer` — `prunaai/hidream-e1-1` (HiDream-E1.1, accepts
+  natural-language prompts directly; supersedes the older e1 client that
+  required structured prompt formatting).
+
+Note: Recraft V3 on Replicate is text-to-image only (verified May 2026 via
+Replicate's published endpoint schema). The corresponding renderer class
+has been removed; use `spike/renderers/recraft.py:RecraftV3Renderer`, which
+hits Recraft's native `/v1/images/imageToImage` endpoint, instead.
 
 Replicate's API is a submit-then-poll flow:
 
@@ -214,12 +218,12 @@ class QwenImageEditRenderer(_ReplicateRendererBase):
 
 
 class HiDreamE1Renderer(_ReplicateRendererBase):
-    """HiDream-E1 on Replicate — instruction-edit diffusion model."""
+    """HiDream-E1.1 on Replicate — instruction-edit diffusion model."""
 
-    name: ClassVar[str] = "hidream_e1"
+    name: ClassVar[str] = "hidream_e1_1"
     cost_per_call_usd: ClassVar[float] = 0.04  # Replicate listed rate, approximate
     model_owner: ClassVar[str] = "prunaai"
-    model_name: ClassVar[str] = "hidream-e1"
+    model_name: ClassVar[str] = "hidream-e1-1"
     image_field: ClassVar[str] = "image"
     prompt_field: ClassVar[str] = "prompt"
     passthrough_keys: ClassVar[tuple[str, ...]] = (
@@ -229,25 +233,4 @@ class HiDreamE1Renderer(_ReplicateRendererBase):
         "image_guidance_scale",
         "output_format",
         "output_quality",
-    )
-
-
-class RecraftV3ReplicateRenderer(_ReplicateRendererBase):
-    """Recraft V3 on Replicate — same model as `recraft.py` but via Replicate."""
-
-    name: ClassVar[str] = "recraft_v3_replicate"
-    cost_per_call_usd: ClassVar[float] = 0.04  # Recraft V3 listed rate ~$0.04/image
-    model_owner: ClassVar[str] = "recraft-ai"
-    model_name: ClassVar[str] = "recraft-v3"
-    # Recraft on Replicate is text-to-image; the screenshot is conditioning
-    # only in style-reference mode. We still send it via `image` and let
-    # callers override with kwargs if they need pure text-to-image.
-    image_field: ClassVar[str] = "image"
-    prompt_field: ClassVar[str] = "prompt"
-    passthrough_keys: ClassVar[tuple[str, ...]] = (
-        "style",
-        "substyle",
-        "size",
-        "negative_prompt",
-        "output_format",
     )

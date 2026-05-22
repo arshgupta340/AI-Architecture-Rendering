@@ -28,14 +28,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from spike.renderers.flux_bfl import FluxCannyProRenderer, FluxKontextProRenderer
+from spike.renderers.flux_bfl import Flux2ProRenderer, FluxFillProRenderer
 from spike.renderers.magnific import MagnificMysticRenderer
 from spike.renderers.nano_banana import NanoBananaProRenderer
 from spike.renderers.recraft import RecraftV3Renderer
 from spike.renderers.replicate_models import (
     HiDreamE1Renderer,
     QwenImageEditRenderer,
-    RecraftV3ReplicateRenderer,
 )
 
 
@@ -72,11 +71,13 @@ def _fake_response(
 # --------------------------------------------------------------------------- #
 
 
+# Each parametrize case pins one renderer class to its expected endpoint path
+# and to the body-field name it puts the input image under.
 @pytest.mark.parametrize(
     "renderer_cls,expected_endpoint,expected_image_field",
     [
-        (FluxCannyProRenderer, "flux-pro-1.1-canny", "control_image"),
-        (FluxKontextProRenderer, "flux-pro-1.1-kontext", "input_image"),
+        (Flux2ProRenderer, "flux-2-pro", "input_image"),
+        (FluxFillProRenderer, "flux-pro-1.0-fill", "image"),
     ],
 )
 def test_flux_missing_env_raises(
@@ -88,16 +89,17 @@ def test_flux_missing_env_raises(
 
 
 @pytest.mark.parametrize(
-    "renderer_cls,expected_endpoint,expected_image_field",
+    "renderer_cls,expected_endpoint,expected_image_field,extra_kwargs",
     [
-        (FluxCannyProRenderer, "flux-pro-1.1-canny", "control_image"),
-        (FluxKontextProRenderer, "flux-pro-1.1-kontext", "input_image"),
+        (Flux2ProRenderer, "flux-2-pro", "input_image", {"safety_tolerance": 2}),
+        (FluxFillProRenderer, "flux-pro-1.0-fill", "image", {"steps": 30}),
     ],
 )
 def test_flux_request_shape_and_response(
     renderer_cls,
     expected_endpoint,
     expected_image_field,
+    extra_kwargs,
     tiny_png,
     tiny_png_bytes,
     another_tiny_png,
@@ -108,10 +110,10 @@ def test_flux_request_shape_and_response(
     submit_resp = _fake_response(
         json_body={
             "id": "task-123",
-            "polling_url": "https://api.bfl.ml/v1/get_result?id=task-123",
+            "polling_url": "https://api.bfl.ai/v1/get_result?id=task-123",
         }
     )
-    pending_resp = _fake_response(json_body={"status": "Processing"})
+    pending_resp = _fake_response(json_body={"status": "Pending"})
     ready_resp = _fake_response(
         json_body={
             "status": "Ready",
@@ -122,21 +124,18 @@ def test_flux_request_shape_and_response(
 
     fake_requests = MagicMock()
     fake_requests.post.return_value = submit_resp
-    # Two polls: first pending, second ready, then a download GET.
     fake_requests.get.side_effect = [pending_resp, ready_resp, download_resp]
 
-    # Patch sleep so the polling loop is instant.
     monkeypatch.setattr("spike.renderers.flux_bfl.time.sleep", lambda *_: None)
 
     with patch.dict(sys.modules, {"requests": fake_requests}):
-        out = renderer_cls().render(tiny_png, "studio render", seed=42, steps=30)
+        out = renderer_cls().render(tiny_png, "studio render", seed=42, **extra_kwargs)
 
     assert out == another_tiny_png
 
-    # Submit URL + headers + body shape
     assert fake_requests.post.call_count == 1
     submit_args, submit_kwargs = fake_requests.post.call_args
-    assert submit_args[0] == f"https://api.bfl.ml/v1/{expected_endpoint}"
+    assert submit_args[0] == f"https://api.bfl.ai/v1/{expected_endpoint}"
     headers = submit_kwargs["headers"]
     assert headers["x-key"] == "test-key"
     assert headers["Content-Type"] == "application/json"
@@ -144,14 +143,12 @@ def test_flux_request_shape_and_response(
     payload = submit_kwargs["json"]
     assert payload["prompt"] == "studio render"
     assert payload["seed"] == 42
-    assert payload["steps"] == 30
-    # The image field must be base64-encoded image bytes
+    for k, v in extra_kwargs.items():
+        assert payload[k] == v
     assert payload[expected_image_field] == base64.b64encode(tiny_png_bytes).decode("ascii")
 
-    # First poll URL came from the submit response
     first_get_url = fake_requests.get.call_args_list[0].args[0]
-    assert first_get_url == "https://api.bfl.ml/v1/get_result?id=task-123"
-    # Final GET was the signed sample URL
+    assert first_get_url == "https://api.bfl.ai/v1/get_result?id=task-123"
     last_get_url = fake_requests.get.call_args_list[-1].args[0]
     assert last_get_url == "https://signed.example/out.png"
 
@@ -166,7 +163,7 @@ def test_flux_http_error_propagates(tiny_png, monkeypatch):
 
     with patch.dict(sys.modules, {"requests": fake_requests}):
         with pytest.raises(_real_requests.HTTPError):
-            FluxCannyProRenderer().render(tiny_png, "anything")
+            Flux2ProRenderer().render(tiny_png, "anything")
 
 
 def test_flux_failure_status_raises(tiny_png, monkeypatch):
@@ -174,7 +171,7 @@ def test_flux_failure_status_raises(tiny_png, monkeypatch):
     monkeypatch.setattr("spike.renderers.flux_bfl.time.sleep", lambda *_: None)
 
     submit_resp = _fake_response(
-        json_body={"id": "task-x", "polling_url": "https://api.bfl.ml/v1/get_result?id=task-x"}
+        json_body={"id": "task-x", "polling_url": "https://api.bfl.ai/v1/get_result?id=task-x"}
     )
     failed_resp = _fake_response(json_body={"status": "Error"})
 
@@ -184,7 +181,7 @@ def test_flux_failure_status_raises(tiny_png, monkeypatch):
 
     with patch.dict(sys.modules, {"requests": fake_requests}):
         with pytest.raises(RuntimeError, match="BFL task failed"):
-            FluxCannyProRenderer().render(tiny_png, "anything")
+            Flux2ProRenderer().render(tiny_png, "anything")
 
 
 # --------------------------------------------------------------------------- #
@@ -205,39 +202,53 @@ def test_magnific_request_shape_and_response(
     monkeypatch.setattr("spike.renderers.magnific.time.sleep", lambda *_: None)
 
     submit_resp = _fake_response(
-        json_body={"id": "mg-abc", "status": "queued"}
+        json_body={
+            "data": {
+                "task_id": "mg-abc",
+                "status": "CREATED",
+                "generated": [],
+            }
+        }
+    )
+    in_progress_resp = _fake_response(
+        json_body={"data": {"status": "IN_PROGRESS", "generated": []}}
     )
     ready_resp = _fake_response(
         json_body={
-            "status": "succeeded",
-            "output": ["https://signed.example/m.png"],
+            "data": {
+                "status": "COMPLETED",
+                "generated": ["https://signed.example/m.png"],
+            }
         }
     )
     download_resp = _fake_response(content=another_tiny_png)
 
     fake_requests = MagicMock()
     fake_requests.post.return_value = submit_resp
-    fake_requests.get.side_effect = [ready_resp, download_resp]
+    fake_requests.get.side_effect = [in_progress_resp, ready_resp, download_resp]
 
     with patch.dict(sys.modules, {"requests": fake_requests}):
         out = MagnificMysticRenderer().render(
-            tiny_png, "scandi interior", seed=7, creativity=3
+            tiny_png, "scandi interior", seed=7, adherence=70
         )
 
     assert out == another_tiny_png
 
     submit_args, submit_kwargs = fake_requests.post.call_args
-    assert submit_args[0] == "https://api.magnific.ai/v1/mystic"
-    assert submit_kwargs["headers"]["Authorization"] == "Bearer test-key"
+    assert submit_args[0] == "https://api.magnific.com/v1/ai/mystic"
+    assert submit_kwargs["headers"]["x-magnific-api-key"] == "test-key"
     payload = submit_kwargs["json"]
     assert payload["prompt"] == "scandi interior"
-    assert payload["seed"] == 7
-    assert payload["creativity"] == 3
-    assert payload["image"] == base64.b64encode(tiny_png_bytes).decode("ascii")
+    # seed translates to fixed_generation=True (Magnific has no seed field)
+    assert payload["fixed_generation"] is True
+    assert payload["adherence"] == 70
+    assert payload["structure_reference"] == base64.b64encode(tiny_png_bytes).decode("ascii")
+    # We intentionally do not send `image` (legacy field) or `seed` directly
+    assert "image" not in payload
+    assert "seed" not in payload
 
-    # Default poll URL is /mystic/<id> since submit didn't return poll_url
     poll_url = fake_requests.get.call_args_list[0].args[0]
-    assert poll_url == "https://api.magnific.ai/v1/mystic/mg-abc"
+    assert poll_url == "https://api.magnific.com/v1/ai/mystic/mg-abc"
 
 
 def test_magnific_http_error_propagates(tiny_png, monkeypatch):
@@ -340,8 +351,7 @@ def test_recraft_http_error_propagates(tiny_png, monkeypatch):
     "renderer_cls,owner,name",
     [
         (QwenImageEditRenderer, "qwen", "qwen-image-edit"),
-        (HiDreamE1Renderer, "prunaai", "hidream-e1"),
-        (RecraftV3ReplicateRenderer, "recraft-ai", "recraft-v3"),
+        (HiDreamE1Renderer, "prunaai", "hidream-e1-1"),
     ],
 )
 def test_replicate_missing_env_raises(renderer_cls, owner, name, tiny_png, monkeypatch):
@@ -354,8 +364,7 @@ def test_replicate_missing_env_raises(renderer_cls, owner, name, tiny_png, monke
     "renderer_cls,owner,name",
     [
         (QwenImageEditRenderer, "qwen", "qwen-image-edit"),
-        (HiDreamE1Renderer, "prunaai", "hidream-e1"),
-        (RecraftV3ReplicateRenderer, "recraft-ai", "recraft-v3"),
+        (HiDreamE1Renderer, "prunaai", "hidream-e1-1"),
     ],
 )
 def test_replicate_request_shape_and_response(
