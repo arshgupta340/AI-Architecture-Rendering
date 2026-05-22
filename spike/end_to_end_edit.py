@@ -49,7 +49,7 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 from spike import cache, composite as composite_mod  # noqa: E402
-from spike.schemas import Region, TagRegionsResponse  # noqa: E402
+from spike.schemas import Region, TagRegionsResponse, save_raw_response  # noqa: E402
 
 
 # Rough per-call costs in USD. Used only for the printed cost estimate before
@@ -186,19 +186,25 @@ def _run_render(
 def _run_tag_regions(
     screenshot_bytes: bytes,
     render_bytes: bytes,
+    *,
+    raw_save_dir: Path | None = None,
 ) -> TagRegionsResponse:
+    """Tag regions on (screenshot, render); save raw before validation.
+
+    Cache stores canonical post-tolerant-parse JSON. The raw response is
+    persisted to `raw_save_dir/tags_raw.json` (when given) on every cache
+    miss, before any validation — so a future Gemini-output bug can be
+    salvaged offline without re-spending the API call.
+    """
     key = f"tags_{_short_hash(screenshot_bytes)}_{_short_hash(render_bytes)}"
 
     def _compute() -> bytes:
         fn = _modal_lookup("tag_regions")
         result = fn.remote(screenshot_bytes, render_bytes)
-        # Cache as JSON bytes so cache stays bytes-only (see cache.py contract).
-        if isinstance(result, TagRegionsResponse):
-            return result.model_dump_json().encode("utf-8")
-        if isinstance(result, (str, bytes)):
-            # Already JSON; validate then re-serialize for canonical form.
-            return TagRegionsResponse.model_validate_json(result).model_dump_json().encode("utf-8")
-        return TagRegionsResponse.model_validate(result).model_dump_json().encode("utf-8")
+        if raw_save_dir is not None:
+            save_raw_response(raw_save_dir, result)
+        response = TagRegionsResponse.parse_tolerant(result)
+        return response.model_dump_json().encode("utf-8")
 
     raw = cache.get_or_compute(key, _compute, scope="tags")
     return TagRegionsResponse.model_validate_json(raw)
@@ -261,8 +267,13 @@ def _run_live(
     print(f"      render: {len(render_bytes):,} bytes")
 
     print("[2/6] tag_regions …")
-    tags = _run_tag_regions(screenshot_bytes, render_bytes)
-    print(f"      regions: {len(tags.regions)}")
+    raw_save_dir = output_path.parent
+    tags = _run_tag_regions(
+        screenshot_bytes, render_bytes, raw_save_dir=raw_save_dir
+    )
+    dropped = tags.__dict__.get("_dropped_region_ids") or []
+    extra = f" ({len(dropped)} dropped: {dropped})" if dropped else ""
+    print(f"      regions: {len(tags.regions)}{extra}")
 
     print(f"[3/6] pick region label={region_label!r} …")
     region = _pick_region(tags, region_label)

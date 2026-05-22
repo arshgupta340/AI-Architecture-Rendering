@@ -17,7 +17,7 @@
     1544,
     1806
   ],
-  "salvage_note": "Original Gemini response had malformed bboxes with duplicate 'y' keys instead of 'h'. Salvaged via custom JSON object_pairs_hook treating the second 'y' as 'h'. Dropped any region whose bbox still lacked w or h after that fix.",
+  "salvage_note": "Recovered from Gemini's duplicate-`y` bbox bug via TagRegionsResponse.parse_tolerant. Bboxes shaped {x, y, w, y} are reinterpreted as {x, y, w, h=second_y}. The 'h' values are likely y2 (bottom-right y), so recovered bboxes may be over-tall; (x, y, w) and labels are valid. See wiki/DECISIONS.md#gemini-bbox-malformed-json.",
   "dropped_region_ids": [
     "veg11",
     "veg12",

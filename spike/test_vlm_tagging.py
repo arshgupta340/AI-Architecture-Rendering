@@ -38,7 +38,7 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from spike.schemas import TagRegionsResponse  # noqa: E402
+from spike.schemas import TagRegionsResponse, save_raw_response  # noqa: E402
 
 
 # Deterministic-ish color per label so eyeballing is easy.
@@ -64,27 +64,27 @@ def _load_fixture(path: Path) -> TagRegionsResponse:
     return TagRegionsResponse.model_validate(raw)
 
 
-def _call_live(screenshot_bytes: bytes, render_bytes: bytes) -> TagRegionsResponse:
+def _call_live(
+    screenshot_bytes: bytes,
+    render_bytes: bytes,
+    *,
+    raw_save_dir: Path | None = None,
+) -> TagRegionsResponse:
+    """Invoke the deployed `tag_regions` Modal function and parse defensively.
+
+    If `raw_save_dir` is given, the Gemini response is persisted there
+    (as `tags_raw.json`) BEFORE pydantic validation, so a schema failure
+    or partial recovery can be inspected offline. Production callers
+    should always pass this — never lose paid data to a schema mismatch.
+    """
     # Import inside the function so module import works without modal auth.
     import modal
 
     fn = modal.Function.from_name("arch-rendering-spike", "tag_regions")
     result = fn.remote(screenshot_bytes, render_bytes)
-    # Modal returns whatever the function returns. If it's already a
-    # TagRegionsResponse we use it; otherwise validate from dict/json.
-    import json as _json
-
-    if isinstance(result, TagRegionsResponse):
-        return result
-    if isinstance(result, (str, bytes)):
-        raw = _json.loads(result)
-        # Gemini may return a bare list instead of {"regions": [...]}
-        if isinstance(raw, list):
-            raw = {"regions": raw}
-        return TagRegionsResponse.model_validate(raw)
-    if isinstance(result, list):
-        return TagRegionsResponse.model_validate({"regions": result})
-    return TagRegionsResponse.model_validate(result)
+    if raw_save_dir is not None:
+        save_raw_response(raw_save_dir, result)
+    return TagRegionsResponse.parse_tolerant(result)
 
 
 _NORMALIZED_MAX = 1000
@@ -213,7 +213,17 @@ def main(argv: list[str] | None = None) -> int:
             f"[test_vlm_tagging] LIVE: tag_regions("
             f"{screenshot_path.name}, {input_path.name})"
         )
-        response = _call_live(screenshot_bytes, render_bytes)
+        out_dir = Path(args.output_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        response = _call_live(
+            screenshot_bytes, render_bytes, raw_save_dir=out_dir
+        )
+        dropped = response.__dict__.get("_dropped_region_ids") or []
+        if dropped:
+            print(
+                f"[test_vlm_tagging] tolerant-parse dropped "
+                f"{len(dropped)} unrecoverable region(s): {dropped}"
+            )
     else:
         fixture_path = Path(args.fixture)
         if not fixture_path.is_file():

@@ -32,7 +32,7 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from spike.schemas import TagRegionsResponse  # noqa: E402
+from spike.schemas import TagRegionsResponse, save_raw_response  # noqa: E402
 from spike.test_vlm_tagging import _draw_regions  # noqa: E402
 
 SCREENSHOTS = [
@@ -47,34 +47,8 @@ _RENDER_COST_USD = 0.04  # Nano Banana Pro per image
 _TAG_COST_USD = 0.01     # Gemini 3 Pro per call
 
 
-def _validate_tag_response(result) -> TagRegionsResponse:
-    """Mirror of test_vlm_tagging._call_live response handling."""
-    if isinstance(result, TagRegionsResponse):
-        return result
-    if isinstance(result, (str, bytes)):
-        raw = json.loads(result)
-        if isinstance(raw, list):
-            raw = {"regions": raw}
-        return TagRegionsResponse.model_validate(raw)
-    if isinstance(result, list):
-        return TagRegionsResponse.model_validate({"regions": result})
-    return TagRegionsResponse.model_validate(result)
-
-
 def _slugify(stem: str) -> str:
     return stem.replace(" ", "_").replace("-_Copy", "").lower()
-
-
-def _save_raw_response(out_dir: Path, raw) -> Path:
-    """Persist the Gemini response BEFORE pydantic validation, so a schema
-    failure doesn't cost us the data we already paid for."""
-    raw_path = out_dir / "tags_raw.json"
-    if isinstance(raw, (str, bytes)):
-        raw_text = raw.decode("utf-8") if isinstance(raw, bytes) else raw
-        raw_path.write_text(raw_text, encoding="utf-8")
-    else:
-        raw_path.write_text(json.dumps(raw, indent=2, default=str), encoding="utf-8")
-    return raw_path
 
 
 def _run_one(screenshot_path: Path, *, reuse_render: bool = False) -> dict:
@@ -107,9 +81,12 @@ def _run_one(screenshot_path: Path, *, reuse_render: bool = False) -> dict:
     print(f"  [2/3] tag_regions -> Gemini 3 Pro ...")
     tag_fn = modal.Function.from_name("arch-rendering-spike", "tag_regions")
     raw = tag_fn.remote(screenshot_bytes, render_bytes, screenshot_mime=mime, render_mime="image/png")
-    raw_path = _save_raw_response(out_dir, raw)
+    raw_path = save_raw_response(out_dir, raw)
     print(f"        raw response saved -> {raw_path}")
-    tags = _validate_tag_response(raw)
+    tags = TagRegionsResponse.parse_tolerant(raw)
+    dropped = tags.__dict__.get("_dropped_region_ids") or []
+    if dropped:
+        print(f"        tolerant-parse dropped {len(dropped)} region(s): {dropped}")
     tags_path = out_dir / "tags.json"
     tags_path.write_text(json.dumps(tags.model_dump(), indent=2), encoding="utf-8")
     print(f"        {len(tags.regions)} regions -> {tags_path}")

@@ -20,6 +20,32 @@ Entry template (also in `CLAUDE.md` § Session-log protocol):
 
 ---
 
+## 2026-05-20 — T23 promote defensive tag_regions handling into production
+
+**Scope:** Move the ad-hoc `_save_raw_response` and the duplicate-`y`-bbox JSON repair hook out of T22's one-off scripts (`spike/run_t22.py`, `spike/salvage_urban_tags.py`) and into `spike/schemas.py`. Wire production paths (`test_vlm_tagging.py`, `end_to_end_edit.py`) to use them so Spike 4 integration inherits the defensiveness.
+
+**Decisions:** none new. Implements the existing [[DECISIONS#gemini-bbox-malformed-json]] policy in production code.
+
+**Tried:**
+- Added `save_raw_response(out_dir, raw, *, filename)` and `TagRegionsResponse.parse_tolerant(raw)` to `spike/schemas.py`. The latter takes `str`, `bytes`, `list`, `dict`, or an existing instance and survives Gemini's duplicate-`y` malformation via a JSON `object_pairs_hook`.
+- Rewrote `test_vlm_tagging.py:_call_live` and `end_to_end_edit.py:_run_tag_regions` to take an optional `raw_save_dir` and use `parse_tolerant`. Both surface any dropped region IDs to the operator.
+- Consolidated `run_t22.py` and `salvage_urban_tags.py` to route through the shared helpers — net code reduction, one source of truth for the parser.
+- Added `spike/tests/test_schemas.py` with 16 tests across `save_raw_response`, `_bbox_pairs_hook`, and `parse_tolerant`. The duplicate-`y` regression test uses the exact byte sequence Gemini produced on urban_exterior so any future refactor breaking duplicate-key handling fails CI.
+- Considered making `_dropped_region_ids` a real Pydantic field — deferred as cosmetic; `__dict__` stash works.
+
+**Outcome:**
+- 50/50 tests pass (34 pre-existing + 16 new).
+- Salvage script reruns produce **bit-identical** result to T22 (44 salvaged, 3 dropped on urban_exterior). Behavior-preserving refactor confirmed.
+- Spike 4 live integration is now safe to attempt — `_run_tag_regions` defends against the duplicate-`y` bug and persists raw data before validation.
+- Report: [`spike/REPORTS/T23.md`](../spike/REPORTS/T23.md).
+
+**Follow-ups:**
+- Mullion-on-grid prompt iteration on complex_windows (~$0.01).
+- Rename the two mislabeled SketchUp screenshots.
+- Promote `_dropped_region_ids` to a real model field if it becomes load-bearing (cosmetic for now).
+
+---
+
 ## 2026-05-20 — T22 production-shape Spike 3 eval + house-keeping commits
 
 **Scope:** Render the 4 new screenshots via Nano Banana Pro, then tag each (screenshot, render) pair via Gemini 3 Pro to close the loop on T21's load-bearing finding. Also commit a backlog of untracked work: wiki bootstrap, project CLAUDE.md, docs/plans/, spike2.5/B2 outputs, .claude/ settings.

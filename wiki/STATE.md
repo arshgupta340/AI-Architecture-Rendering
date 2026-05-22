@@ -9,7 +9,7 @@ updated: 2026-05-20
 
 ## Phase
 
-**Spike 3 gate PASSES on production-shape eval (T22 done).** Spike 4 integration unblocked. Spike 2.5 still pending eval + B3 keys.
+**Spike 3 gate PASSES + production paths defended (T22 + T23 done).** Spike 4 integration unblocked AND now safe against Gemini's known output bugs. Spike 2.5 still pending eval + B3 keys.
 
 ## Branch
 
@@ -22,7 +22,7 @@ updated: 2026-05-20
 | [[spikes/spike-1]] | rejected (historical) | — |
 | [[spikes/spike-2]] | done (incumbent baseline) | replaced by Spike 2.5 |
 | [[spikes/spike-2.5]] | B1: rubric written, manual scoring pending. B2: tightened sweep run + 2 variant directories committed, evaluation pending. B3: scaffolded, awaiting API keys. | acquire BFL / Magnific / Replicate / Recraft keys → run B3 |
-| [[spikes/spike-3]] | T22 done: production-shape gate PASSES on 4/5 pairs (1 strong pass, 3 pass, 1 partial — mullion miss on dense grid). Urban_exterior surfaced a Gemini JSON malformation bug; salvaged. | Optional T23: promote raw-response saving + tolerant parser into test_vlm_tagging.py (no API cost). Optional mullion-on-grid prompt iteration (~$0.01). Otherwise integrate into Spike 4. |
+| [[spikes/spike-3]] | T22 + T23 done. Production-shape gate PASSES on 4/5 pairs; production paths (`test_vlm_tagging.py`, `end_to_end_edit.py`) now save raw before validation and tolerate Gemini's duplicate-`y` bbox bug. 50/50 tests green. | Optional mullion-on-grid prompt iteration (~$0.01). Otherwise integrate into Spike 4. |
 | [[spikes/spike-4]] | scaffolded, end-to-end mock tests green | depends on Spike 2.5 winner + Modal GPU authorization ($0.35–0.70/run) |
 
 ## Cost ledger
@@ -49,10 +49,10 @@ T21 and T22 spend was user-authorized. T22 retry ($0.01) also user-authorized fo
 
 ## Recent commits
 
-`4238de3` .claude settings · `97f3bb2` spike2.5/B2 outputs · `81c9524` docs+wiki bootstrap · `ddd0ac4` [T21] mark complete · `e02a7b8` [T21] prompt revision + 5-image eval · `3ccb1d0` [T17] revise. (T22 commits pending.)
+`49c51d8` spike2.5/B3 .env + NB Pro panel · `e2b661b` [T22] mark complete · `67a2f61` [T22] production-shape eval · `4238de3` .claude settings · `97f3bb2` spike2.5/B2 outputs · `81c9524` docs+wiki bootstrap. (T23 commits pending.)
 
 ## What to do next
 
 1. Read [[ROADMAP]] for milestone-level priorities.
-2. Read [[SESSIONS]] (newest entry) for what just happened (T22 + house-keeping commits).
-3. Next natural step: promote the raw-response-saving + tolerant parser into `spike/test_vlm_tagging.py` (no API cost) so Spike 4 inherits the defensiveness. Then proceed to B3 keys or Spike 4 live.
+2. Read [[SESSIONS]] (newest entry) for what just happened (T23 — defensive tag_regions parser promoted into production paths).
+3. Next natural step: either (a) Spike 4 live integration (now safe), (b) Spike 2.5 B3 keys for the renderer bake-off, or (c) cheap mullion-on-grid prompt iteration.

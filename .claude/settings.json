@@ -21,7 +21,8 @@
       "Bash(.venv/Scripts/python.exe --version)",
       "Bash(.venv/Scripts/python.exe -m pip --version)",
       "Bash(spike/.venv/Scripts/python.exe -c ' *)",
-      "Bash(unset GOOGLE_API_KEY BFL_API_KEY MAGNIFIC_API_KEY RECRAFT_API_TOKEN REPLICATE_API_TOKEN)"
+      "Bash(unset GOOGLE_API_KEY BFL_API_KEY MAGNIFIC_API_KEY RECRAFT_API_TOKEN REPLICATE_API_TOKEN)",
+      "PowerShell(& \"spike\\\\.venv\\\\Scripts\\\\python.exe\" -m pytest \"spike/tests/test_renderers.py\" -v --no-header 2>&1)"
     ]
   }
 }
