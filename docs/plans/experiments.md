@@ -6,7 +6,7 @@ Status legend: `[ ]` pending · `[~]` in progress · `[x]` passed gate · `[!]` 
 
 ## The ladder
 
-### [ ] E1 — Rhino native-extraction probe ($0) — KEYSTONE
+### [x] E1 — Rhino native-extraction probe ($0) — KEYSTONE → [report](../../spike/REPORTS/E1.md)
 Via the connected Rhino MCP (`run_python` / `run_csharp` / `get_viewport_image`), from a real model:
 export `beauty.png`, `depth.png` (ZBufferCapture → GrayscaleDib, then linearize), `id_mask.png`
 (per-object flat color via conduit override or temporary material swap; AA off; transparency→0),
@@ -53,3 +53,5 @@ Feed an E1 ground-truth mask directly into the existing `spike/composite.py` + a
 ## Result log
 
 *(append one line per executed experiment: date, spend, gate result, link to artifacts)*
+
+- **2026-06-12 — E1 — $0 — GATE PASSED.** 93.1% of object pixels decode exactly; 257 mullion instances with pixel-accurate masks at 2–4px; true z-buffer captured. Required a white-reference second pass (Rhino's "unlit" mode still applies a 0.7-slope headlight) and atomic capture. Real model: SFUrban. Artifacts: `spike/outputs/e1_rhino_probe/`, decoder `spike/host_probe_rhino.py`, [REPORTS/E1.md](../../spike/REPORTS/E1.md).
