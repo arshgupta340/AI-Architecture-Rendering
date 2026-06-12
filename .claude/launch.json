@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "canvas-prototype",
+      "runtimeExecutable": "spike\\.venv\\Scripts\\python.exe",
+      "runtimeArgs": ["apps/canvas-prototype/server.py"],
+      "port": 8765
+    }
+  ]
+}

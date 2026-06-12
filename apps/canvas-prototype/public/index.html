@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Canvas Prototype — Photoshop for Architects</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <div class="brand">AI Architecture Rendering <span>canvas prototype</span></div>
+  <div class="hint" id="status">loading…</div>
+</header>
+
+<main>
+  <aside id="layers-panel">
+    <h2>Layers</h2>
+    <div id="layer-list"></div>
+    <div class="panel-foot" id="layer-empty">No material layers yet.<br>
+      Click a region, pick a swatch.</div>
+  </aside>
+
+  <section id="stage">
+    <div id="canvas-wrap">
+      <canvas id="view"></canvas>
+      <canvas id="overlay"></canvas>
+      <div id="tooltip"></div>
+      <div id="spinner" class="hidden"><div class="ring"></div>
+        <div id="spinner-text">applying material…</div></div>
+    </div>
+  </section>
+
+  <aside id="inspector">
+    <h2>Selection</h2>
+    <div id="sel-info" class="panel-foot">Hover to inspect, click to select a region.</div>
+    <div id="sel-actions"></div>
+    <h2>Materials</h2>
+    <div id="swatch-grid"></div>
+    <button id="apply-btn" disabled>Apply material</button>
+    <div id="apply-note" class="panel-foot"></div>
+  </aside>
+</main>
+
+<script src="/app.js"></script>
+</body>
+</html>
