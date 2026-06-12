@@ -59,6 +59,11 @@ SEMANTIC_PALETTE = {
     "door": (150, 60, 200), "floorplate": (120, 120, 120), "pergola": (80, 200, 120),
     "seating": (240, 140, 40), "context": (70, 70, 90), "massing": (140, 100, 80),
     "other": (200, 200, 200), "vegetation": (40, 140, 60),
+    # CSI-ruleset semantics (rhino_capture.py)
+    "window": (80, 160, 230), "roof": (90, 60, 40), "trim": (250, 250, 200),
+    "ground": (60, 110, 50), "paving": (110, 110, 100), "stair": (200, 120, 200),
+    "foundation": (100, 100, 130), "floor": (160, 130, 90),
+    "wall_interior": (240, 170, 150),
 }
 
 
@@ -79,15 +84,30 @@ def decode(out_dir: Path = OUT, tol: float = 1.7) -> dict:
     r_in, g_in, b_in = inn[:, :, 0], inn[:, :, 1], inn[:, :, 2]
     g_s = np.clip(np.round(g_in / GRID) * GRID, 0, 255)
     b_s = np.clip(np.round(b_in / GRID) * GRID, 0, 255)
-    ok = fg & (np.abs(r_in) < 4) & (np.abs(g_in - g_s) < tol) & (np.abs(b_in - b_s) < tol)
+
+    # r-plane extension (rhino_capture.py): captures with >2704 objects use
+    # r = 5*(i//2704) and keys "r,g,b" for r>0 ("g,b" stays the r==0 form).
+    has_r_planes = any(k.count(",") == 2 for k in table)
+    if has_r_planes:
+        r_s = np.clip(np.round(r_in / GRID) * GRID, 0, 255)
+        ok = (fg & (np.abs(r_in - r_s) < 2.5)
+              & (np.abs(g_in - g_s) < tol) & (np.abs(b_in - b_s) < tol))
+    else:
+        r_s = np.zeros_like(r_in)
+        ok = (fg & (np.abs(r_in) < 4)
+              & (np.abs(g_in - g_s) < tol) & (np.abs(b_in - b_s) < tol))
+
+    def to_key(key_n: int) -> str:
+        r, g, b = key_n // 1_000_000, (key_n // 1000) % 1000, key_n % 1000
+        return f"{g},{b}" if r == 0 else f"{r},{g},{b}"
 
     sem_px: collections.Counter = collections.Counter()
     obj_px: collections.Counter = collections.Counter()
-    code = (g_s * 1000 + b_s).astype(int)
+    code = (r_s * 1_000_000 + g_s * 1000 + b_s).astype(int)
     keys, counts = np.unique(code[ok], return_counts=True)
     matched = 0
     for key_n, n in zip(keys, counts):
-        key = f"{key_n // 1000},{key_n % 1000}"
+        key = to_key(key_n)
         if key in table:
             sem_px[table[key]["semantic"]] += int(n)
             obj_px[key] = int(n)
@@ -97,7 +117,7 @@ def decode(out_dir: Path = OUT, tol: float = 1.7) -> dict:
     inst = np.zeros((h, w), np.uint16)
     key_to_idx = {k: i + 1 for i, k in enumerate(table)}
     for key_n in keys:
-        key = f"{key_n // 1000},{key_n % 1000}"
+        key = to_key(key_n)
         if key in table:
             m = ok & (code == key_n)
             vis[m] = SEMANTIC_PALETTE.get(table[key]["semantic"], (255, 255, 255))
