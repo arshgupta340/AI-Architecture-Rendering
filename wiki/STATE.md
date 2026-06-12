@@ -34,7 +34,10 @@ updated: 2026-06-12
 
 ## Experiment ladder status
 
-E1 (Rhino MCP probe, $0, keystone) → E2 (render shootout, ~$3, **needs FAL_KEY from user**) → E3 (swatch shootout, ~$3) → E4 (Vision-Banana-style probe, ~$1) → E5 (Florence-2→SAM 3, ~$1) → E6 (ID-mask end-to-end, $0). All pending as of this snapshot.
+- **E1 — PASSED ($0, 2026-06-12).** Rhino MCP probe on the real SFUrban model: 93.1% of object pixels decode exactly; 257 mullion instances with pixel-accurate masks at 2–4px (the class Gemini scored zero on in T21); true z-buffer captured. Required white-reference second pass + atomic capture. [REPORTS/E1.md](../spike/REPORTS/E1.md), decoder `spike/host_probe_rhino.py`.
+- **E6 — PASSED ($0, 2026-06-12).** Single ground-truth wall instance → `composite.paste_tile` → exact-instance edit, zero leakage; tag+segment deleted. Evidence `spike/outputs/e1_rhino_probe/e6_sidebyside.png`.
+- E2 (render shootout, ~$3, **needs FAL_KEY from user**) → E3 (swatch shootout, ~$3) pending.
+- E4 (Vision-Banana-style probe, ~$1, GOOGLE_API_KEY available) and E5 (Florence-2→SAM 3, ~$1) runnable next.
 
 ## Cost ledger
 

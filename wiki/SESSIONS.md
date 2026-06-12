@@ -39,7 +39,9 @@ Entry template (also in `CLAUDE.md` § Session-log protocol):
 - Committed the pending B3 renderer consolidation (`9fe1b40`).
 - Plan of record: `~/.claude/plans/okay-now-i-want-floating-feigenbaum.md` (to be folded into docs/plans/ in Phase 1).
 
-**Follow-ups:** Execute Phase 1 docs; run E1 via Rhino MCP; user to provide FAL_KEY for E2/E3; watch Gemini API changelog for a public Vision Banana endpoint.
+**Follow-ups:** User to provide FAL_KEY for E2/E3; E4/E5 runnable next; watch Gemini API changelog for a public Vision Banana endpoint.
+
+**Same-session execution (Phases 0–2 partial):** B3 consolidation committed (`9fe1b40`); doc suite + wiki pivot committed (`06fd790`); **E1 PASSED** (`391669b`) — Rhino MCP extraction on the real SFUrban model, 93.1% exact pixel decode, 257 mullion instances pixel-accurate, true depth; required a white-reference pass (Rhino "unlit" = 0.7-slope headlight) and atomic capture; **E6 PASSED** (`0d368c9`) — ground-truth wall mask through `composite.paste_tile`, exact-instance edit, tag+segment bypassed. Keystone validated on day one of the pivot.
 
 ---
 
