@@ -60,8 +60,14 @@ updated: 2026-06-12
 - Veras v4.5 Smart Selection runs on **Vision Banana** (DeepMind, non-public) — watch the [Gemini API changelog](https://ai.google.dev/gemini-api/docs/changelog) for a public endpoint.
 - Veras ships every 4–6 weeks; est. 6–12 months from closing the swatch+layers gap.
 
+## Phase 3 — first deliverables BUILT (2026-06-12, two parallel agents)
+
+- **P3.1 — `spike/rhino_capture.py`** (+ README + tests): the proven atomic capture as a production module; CSI/keyword semantic rules auto-sniffed; r-plane ID extension to 140k objects; live-verified 90.5% decode; doc state fully restored. Suite: 62 tests green.
+- **P3.2 — `apps/canvas-prototype/`**: the product loop in a browser on real data — hover/click regions, swatch library, apply → RGBA layer (FLUX.2 Edit + paste_tile; travertine no-spend demo path), layer stack with eye-toggle (≈14ms redraw), replace-not-stack, localStorage persistence. 22/22 API checks; live brick call proved the paid path ($0.06). Run: `spike\.venv\Scripts\python.exe apps/canvas-prototype/server.py` → http://localhost:8765 (first run: `prepare_data.py`).
+
 ## What to do next
 
-1. **Phase 3.1 — Rhino capture path**: Grasshopper component (3–5 days) or thin .rhp wrapping the proven atomic-capture script (`spike/host_probe_rhino.py` docstring + `spike/outputs/e2_house/` flow).
-2. **Phase 3.2 — Layer-model + canvas prototype** on the e2_house ground-truth data: region hover/click → swatch → `flux2_edit + paste_tile` → layer toggle. The make-or-break scene-graph design.
-3. Tile-scale control for materials; 2px mask feather; multi-view material lock test (M4).
+1. Wire P3.1 → P3.2 directly: capture POSTs straight into the canvas server (`/api/capture`), making "click Capture in Rhino → canvas opens" one motion.
+2. Material library: tile-scale prompt hints; 2px mask feather on composite seams; more real swatches (ambientCG ingest).
+3. Multi-view material lock (M4): capture 2–3 views of the house, same swatch + per-view masks, check consistency (anchor-reference technique).
+4. Tier-2 follow-ups (lower priority): E5 re-score on the photoreal render; Revit add-in scoping.

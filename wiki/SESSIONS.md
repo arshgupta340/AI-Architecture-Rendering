@@ -7,6 +7,18 @@ updated: 2026-05-19
 
 Append-only conversation log. **Newest at top.** One entry per chat session.
 
+## 2026-06-12 — Experiment ladder executed end-to-end + Phase 3 first builds
+
+**Scope:** Ran the full E1–E6 ladder in one day, then built the Rhino capture module and the canvas layer-model prototype via two parallel agents.
+
+**Decisions:** Production recipes locked — render = FLUX depth ControlNet on the true z-buffer (only candidate that registers pixel-for-pixel; criterion: geometry preservation = mask registration); apply-material = FLUX.2 Edit multi-ref(render, swatch) composited through the host mask ($0.06/swap; MatSwap contingency unnecessary for v1). Input model switched mid-stream from SFUrban (site-scale, linework noise) to kCs_SampleHouseProject (CSI layers) after staging review.
+
+**Tried:** E1 ($0, SFUrban): 93.1% exact decode, 257 mullion instances — required white-reference pass (Rhino "unlit" = 0.7-slope headlight) + atomic capture. E6 ($0): ground-truth mask → paste_tile, zero leakage. E4 ($0.13): prompted Nano Banana segmentation = semantically right, geometrically redrawn (mullion IoU 0.003) — Veras's edge is the non-public tuning. E5 (~$0.50): hosted Grounded-SAM mullion IoU 0.02 on raw screenshots; re-test on photoreal pending. E2 (~$0.40, house model): depth wins the edge-overlay audit; fal canny pool dead; explicit image_size required. E3 (~$0.30): travertine gate passed; IP-Adapter/Kontext/Fill-text all failed as research predicted.
+
+**Outcome:** All gates decided at ≈$2.28 of the $50 budget. Phase 3 deliverables: `spike/rhino_capture.py` (90.5% decode live verification, 62 tests) and `apps/canvas-prototype/` (hover/click/swatch/layers on real data, 22/22 checks, live brick call $0.06). ~15 commits on `overnight/spike-builder-2026-05-17`.
+
+**Follow-ups:** capture→canvas direct wiring; material library + tile-scale control; multi-view material lock; E5 photoreal re-score; FAL_KEY placeholder in `.env.example` + fal paragraph in PROVIDERS.md.
+
 Entry template (also in `CLAUDE.md` § Session-log protocol):
 
 ```
