@@ -1,0 +1,55 @@
+{
+ "detections": [
+  {
+   "bbox": [
+    781,
+    351,
+    1068,
+    586
+   ],
+   "confidence": 0.48033225536346436,
+   "label": "window mullion frame grid"
+  },
+  {
+   "bbox": [
+    124,
+    131,
+    1507,
+    648
+   ],
+   "confidence": 0.31945091485977173,
+   "label": "window mullion frame grid"
+  },
+  {
+   "bbox": [
+    1108,
+    127,
+    1325,
+    415
+   ],
+   "confidence": 0.30481669306755066,
+   "label": "window mullion frame grid"
+  },
+  {
+   "bbox": [
+    597,
+    277,
+    1028,
+    434
+   ],
+   "confidence": 0.20508447289466858,
+   "label": "mu frame"
+  },
+  {
+   "bbox": [
+    7,
+    127,
+    1508,
+    652
+   ],
+   "confidence": 0.2614672780036926,
+   "label": "window mullion frame grid"
+  }
+ ],
+ "result_image": "https://replicate.delivery/xezq/AbHIeLLPxz0ABaTYwhB7iIZ1ivJ50I00FCpCxFVUaqwGeWuWA/result.png"
+}

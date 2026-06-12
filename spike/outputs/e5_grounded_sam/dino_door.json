@@ -1,0 +1,55 @@
+{
+ "detections": [
+  {
+   "bbox": [
+    0,
+    183,
+    194,
+    656
+   ],
+   "confidence": 0.5021486878395081,
+   "label": "door"
+  },
+  {
+   "bbox": [
+    5,
+    129,
+    1510,
+    655
+   ],
+   "confidence": 0.32926008105278015,
+   "label": "door"
+  },
+  {
+   "bbox": [
+    782,
+    351,
+    1067,
+    586
+   ],
+   "confidence": 0.30588412284851074,
+   "label": "door"
+  },
+  {
+   "bbox": [
+    598,
+    279,
+    1027,
+    433
+   ],
+   "confidence": 0.20797313749790192,
+   "label": "door"
+  },
+  {
+   "bbox": [
+    0,
+    183,
+    166,
+    526
+   ],
+   "confidence": 0.2000533491373062,
+   "label": "door"
+  }
+ ],
+ "result_image": "https://replicate.delivery/xezq/hzCzc17hSzpTKBmparJquX1GeIDzz0AUj1NqvnX2CVxOeWuWA/result.png"
+}

@@ -1,0 +1,85 @@
+{
+ "detections": [
+  {
+   "bbox": [
+    781,
+    351,
+    1067,
+    584
+   ],
+   "confidence": 0.589368462562561,
+   "label": "building wall facade"
+  },
+  {
+   "bbox": [
+    1020,
+    126,
+    1326,
+    425
+   ],
+   "confidence": 0.28773871064186096,
+   "label": "wall facade"
+  },
+  {
+   "bbox": [
+    0,
+    182,
+    194,
+    656
+   ],
+   "confidence": 0.27618369460105896,
+   "label": "wall facade"
+  },
+  {
+   "bbox": [
+    6,
+    126,
+    1506,
+    652
+   ],
+   "confidence": 0.24816296994686127,
+   "label": "wall facade"
+  },
+  {
+   "bbox": [
+    1108,
+    127,
+    1325,
+    414
+   ],
+   "confidence": 0.41449278593063354,
+   "label": "wall facade"
+  },
+  {
+   "bbox": [
+    1017,
+    295,
+    1143,
+    417
+   ],
+   "confidence": 0.23617860674858093,
+   "label": "wall facade"
+  },
+  {
+   "bbox": [
+    1036,
+    295,
+    1143,
+    391
+   ],
+   "confidence": 0.27172937989234924,
+   "label": "wall facade"
+  },
+  {
+   "bbox": [
+    1109,
+    128,
+    1307,
+    375
+   ],
+   "confidence": 0.2024775594472885,
+   "label": "facade"
+  }
+ ],
+ "result_image": "https://replicate.delivery/xezq/4SPGsUf6IB2rHqO6wVfoYaL4m6zLjdLk3GcfHA3mMwla3tctA/result.png"
+}

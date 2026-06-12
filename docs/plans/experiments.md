@@ -34,7 +34,7 @@ Prompt public `gemini-3-pro-image-preview` with color-coded segmentation instruc
 - **Score:** mask IoU vs E1 ground truth; side-by-side vs T21 Gemini-bbox results.
 - **Purpose:** intelligence on the approach Veras ships (they use the non-public tuned variant); decides whether prompting the base model is a viable tier-2 shortcut.
 
-### [ ] E5 — Fallback tagging upgrade (~$1 / self-host)
+### [x] E5 — Fallback tagging upgrade (~$0.50) — ran; re-test on photoreal post-E2 → [report](../../spike/REPORTS/E5.md)
 Florence-2 → SAM 3 on the same renders. Acid test: the `complex windows` mullion-grid facade (T21: 69 windows, 0 mullions from Gemini).
 
 - **Decision output:** pick the tier-2 stack from E4 vs E5 results.
@@ -54,6 +54,7 @@ Feed an E1 ground-truth mask directly into the existing `spike/composite.py` + a
 
 *(append one line per executed experiment: date, spend, gate result, link to artifacts)*
 
+- **2026-06-12 — E5 — ~$0.50 — ran (raw-screenshot case).** Grounded-SAM on Replicate: mullion IoU 0.02 / recall 0.47 (coarse blobs), wall/glass missed, door query crashes. Better than E4 on mullions, far from edit-grade. Domain mismatch (photo-trained detector, CAD-shaded input) dominates — re-run on E2's photoreal render before tier-2 verdict. [REPORTS/E5.md](../../spike/REPORTS/E5.md).
 - **2026-06-12 — E4 — $0.13 — DECISIVE NEGATIVE.** Prompted Nano Banana Pro produces a semantically coherent but geometrically redrawn segmentation (buildings shifted/rescaled; mullion IoU 0.003 vs E1 ground truth). Vision Banana's value is the instruction tuning, which is non-public — tier 2 must be discriminative (E5). [REPORTS/E4.md](../../spike/REPORTS/E4.md).
 - **2026-06-12 — E6 — $0 — GATE PASSED.** Largest wall instance from E1's `instance_ids.png` (`mask_for(semantic=='wall')`, 2,162px, single GUID on `ENSCAPE::EXTERIOR WALL::CONCRETE PANELS`) fed directly into `composite.paste_tile` with a travertine tile — exact-instance edit, zero leakage onto mullions/neighbors, tag+segment stages bypassed entirely. Evidence: `spike/outputs/e1_rhino_probe/e6_sidebyside.png`.
 - **2026-06-12 — E1 — $0 — GATE PASSED.** 93.1% of object pixels decode exactly; 257 mullion instances with pixel-accurate masks at 2–4px; true z-buffer captured. Required a white-reference second pass (Rhino's "unlit" mode still applies a 0.7-slope headlight) and atomic capture. Real model: SFUrban. Artifacts: `spike/outputs/e1_rhino_probe/`, decoder `spike/host_probe_rhino.py`, [REPORTS/E1.md](../../spike/REPORTS/E1.md).

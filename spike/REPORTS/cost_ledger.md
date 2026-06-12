@@ -39,6 +39,7 @@ Append-only log of every paid API call the overnight agent makes.
 2026-05-22 T25 | T25 | Replicate | black-forest-labs/flux-fill-pro | 0.05 | apply_material "travertine" via FLUX Fill (1259x848 native res tile, 1.5 MB)
 2026-06-03 USER | masterplan-render | Google | nano-banana-pro-preview | 0.36 | user-authorized one-shot render of 8 masterplan views (mixed materiality, blue glass, bright midday); 8 renders + 1 re-render of perspective 3 (camera-lock fix) = 9 NB Pro calls @ ~$0.04
 2026-06-12 E4 | E4 | Google | nano-banana-pro-preview | 0.13 | Vision-Banana-style color-coded segmentation probe on E1 beauty.png; semantically coherent, geometrically drifted (mullion IoU 0.003) — see REPORTS/E4.md
+2026-06-12 E5 | E5 | Replicate | grounding-dino + sam-2 + grounded_sam | 0.50 | est. ~35 small predictions incl. detours/retries; discriminative tier-2 probe vs E1 ground truth — see REPORTS/E5.md
 ```
 
 **Running total: $1.25**

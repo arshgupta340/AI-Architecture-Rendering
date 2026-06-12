@@ -1,0 +1,45 @@
+{
+ "detections": [
+  {
+   "bbox": [
+    119,
+    156,
+    1509,
+    654
+   ],
+   "confidence": 0.4757264256477356,
+   "label": "window glass pane"
+  },
+  {
+   "bbox": [
+    782,
+    353,
+    1067,
+    593
+   ],
+   "confidence": 0.3104265034198761,
+   "label": "window glass pane"
+  },
+  {
+   "bbox": [
+    890,
+    450,
+    1513,
+    657
+   ],
+   "confidence": 0.2753503918647766,
+   "label": "window glass pane"
+  },
+  {
+   "bbox": [
+    4,
+    4,
+    1510,
+    655
+   ],
+   "confidence": 0.25994157791137695,
+   "label": "window glass pane"
+  }
+ ],
+ "result_image": "https://replicate.delivery/xezq/qb2yBfvHhfpdW0SZ5YVorWWFej3FRTps85AE4mJVUKZ63tctA/result.png"
+}
