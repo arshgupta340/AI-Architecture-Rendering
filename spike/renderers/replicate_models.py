@@ -1,24 +1,29 @@
 """Replicate-hosted renderers for the Spike 2.5 bake-off.
 
-Image-to-image models accessed via Replicate's HTTP API:
+All FLUX variants + Qwen + HiDream route through Replicate. Consolidating
+behind one auth path (`REPLICATE_API_TOKEN`) simplifies billing — top up
+one account and every Replicate-hosted renderer in the field becomes live.
 
-- `QwenImageEditRenderer` — `qwen/qwen-image-edit` (instruction-based edit,
-  diffusion variant of Qwen-VL with strong layout preservation).
-- `HiDreamE1Renderer` — `prunaai/hidream-e1-1` (HiDream-E1.1, accepts
-  natural-language prompts directly; supersedes the older e1 client that
-  required structured prompt formatting).
-- `FluxCannyProReplicateRenderer` — `black-forest-labs/flux-canny-pro`.
-  Server-side Canny edge detection conditions FLUX on the screenshot's edge
-  map for strong silhouette preservation. BFL's own direct API removed this
-  endpoint in 2026; Replicate is the only remaining hosted path.
-- `FluxDepthProReplicateRenderer` — `black-forest-labs/flux-depth-pro`.
-  Server-side depth-map conditioning — preserves volumetric layout. Same
-  situation as Canny Pro: only accessible via Replicate post-2026.
+Models in this module:
 
-Note: Recraft V3 on Replicate is text-to-image only (verified May 2026 via
-Replicate's published endpoint schema). The corresponding renderer class
-has been removed; use `spike/renderers/recraft.py:RecraftV3Renderer`, which
-hits Recraft's native `/v1/images/imageToImage` endpoint, instead.
+- `Flux2ProRenderer` — `black-forest-labs/flux-2-pro`. General image-edit;
+  accepts an `input_images` array (Replicate quirk — the field is plural and
+  takes a list even when conditioning on one image). Schema: required is
+  just `prompt`; image is optional but we always send it.
+- `FluxFillProRenderer` — `black-forest-labs/flux-fill-pro`. Mask-based
+  inpainting, fired here without a mask to characterize default behavior.
+  Field: `image` (single URI), `prompt` required.
+- `FluxCannyProRenderer` — `black-forest-labs/flux-canny-pro`. Server-side
+  Canny edge conditioning. Field: `control_image` + `prompt` required.
+- `FluxDepthProRenderer` — `black-forest-labs/flux-depth-pro`. Depth-map
+  conditioning. Same schema as Canny Pro.
+- `QwenImageEditRenderer` — `qwen/qwen-image-edit`. Instruction-edit.
+- `HiDreamE1Renderer` — `prunaai/hidream-e1.1`. Natural-language prompt
+  instruction-edit (supersedes the older `hidream-e1`).
+
+Removed previously: `RecraftV3ReplicateRenderer` (Replicate's Recraft V3
+endpoint is text-to-image only). Use `spike/renderers/recraft.py:RecraftV3Renderer`
+against the native Recraft API for image-to-image.
 
 Replicate's API is a submit-then-poll flow:
 
@@ -225,12 +230,28 @@ class QwenImageEditRenderer(_ReplicateRendererBase):
 
 
 class HiDreamE1Renderer(_ReplicateRendererBase):
-    """HiDream-E1.1 on Replicate — instruction-edit diffusion model."""
+    """HiDream-E1.1 on Replicate — instruction-edit diffusion model.
+
+    Model slug uses a literal period (`hidream-e1.1`), not a hyphen.
+    Replicate's metadata endpoint resolves the slug fine, but the
+    `/v1/models/<owner>/<name>/predictions` path returns 404 — the period
+    breaks routing for the prediction endpoint specifically. We work around
+    this by using version-pinned predictions (`/v1/predictions` with the
+    `version` field), which the base class enables when `model_version` is
+    set.
+
+    Version hash captured 2026-05-22 from
+    https://api.replicate.com/v1/models/prunaai/hidream-e1.1 → latest_version.id.
+    Re-fetch if predictions start failing — Replicate retires old versions.
+    """
 
     name: ClassVar[str] = "hidream_e1_1"
     cost_per_call_usd: ClassVar[float] = 0.04  # Replicate listed rate, approximate
     model_owner: ClassVar[str] = "prunaai"
-    model_name: ClassVar[str] = "hidream-e1-1"
+    model_name: ClassVar[str] = "hidream-e1.1"
+    model_version: ClassVar[str] = (
+        "433436facdc1172b6efcb801eb6f345d7858a32200d24e5febaccfb4b44ad66f"
+    )
     image_field: ClassVar[str] = "image"
     prompt_field: ClassVar[str] = "prompt"
     passthrough_keys: ClassVar[tuple[str, ...]] = (
@@ -243,14 +264,15 @@ class HiDreamE1Renderer(_ReplicateRendererBase):
     )
 
 
-class FluxCannyProReplicateRenderer(_ReplicateRendererBase):
+class FluxCannyProRenderer(_ReplicateRendererBase):
     """FLUX Canny Pro via Replicate — geometry preservation via server-side Canny.
 
     Sole hosted path after BFL's direct API dropped Canny endpoints in 2026.
-    Input image lives in `control_image` (Replicate accepts data URLs).
+    Input image lives in `control_image`; the existing base class encodes it
+    as a data URL automatically.
     """
 
-    name: ClassVar[str] = "flux_canny_pro_replicate"
+    name: ClassVar[str] = "flux_canny_pro"
     cost_per_call_usd: ClassVar[float] = 0.05
     model_owner: ClassVar[str] = "black-forest-labs"
     model_name: ClassVar[str] = "flux-canny-pro"
@@ -265,15 +287,13 @@ class FluxCannyProReplicateRenderer(_ReplicateRendererBase):
     )
 
 
-class FluxDepthProReplicateRenderer(_ReplicateRendererBase):
+class FluxDepthProRenderer(_ReplicateRendererBase):
     """FLUX Depth Pro via Replicate — geometry preservation via depth conditioning.
 
     Same situation as Canny Pro: only available through Replicate post-2026.
-    `control_image` is the depth-source screenshot (Replicate computes the
-    depth map server-side).
     """
 
-    name: ClassVar[str] = "flux_depth_pro_replicate"
+    name: ClassVar[str] = "flux_depth_pro"
     cost_per_call_usd: ClassVar[float] = 0.05
     model_owner: ClassVar[str] = "black-forest-labs"
     model_name: ClassVar[str] = "flux-depth-pro"
@@ -286,3 +306,74 @@ class FluxDepthProReplicateRenderer(_ReplicateRendererBase):
         "safety_tolerance",
         "prompt_upsampling",
     )
+
+
+class FluxFillProRenderer(_ReplicateRendererBase):
+    """FLUX Fill Pro via Replicate — mask-based inpainting, fired with no mask.
+
+    Replicate's schema makes `image` and `prompt` the only required fields;
+    `mask` is optional. Routed through Replicate for billing consolidation
+    (BFL direct also offers this endpoint but at separate auth).
+    """
+
+    name: ClassVar[str] = "flux_fill_pro"
+    cost_per_call_usd: ClassVar[float] = 0.05
+    model_owner: ClassVar[str] = "black-forest-labs"
+    model_name: ClassVar[str] = "flux-fill-pro"
+    image_field: ClassVar[str] = "image"
+    prompt_field: ClassVar[str] = "prompt"
+    passthrough_keys: ClassVar[tuple[str, ...]] = (
+        "mask",
+        "steps",
+        "guidance",
+        "outpaint",
+        "output_format",
+        "safety_tolerance",
+        "prompt_upsampling",
+    )
+
+
+class Flux2ProRenderer(_ReplicateRendererBase):
+    """FLUX 2 Pro via Replicate — general image-edit.
+
+    Replicate's flux-2-pro accepts a plural `input_images` ARRAY (max 8)
+    rather than a single image field, so this subclass overrides
+    `_build_input` to wrap the encoded data URL in a list. All other
+    request/response handling is inherited from the base.
+    """
+
+    name: ClassVar[str] = "flux_2_pro"
+    cost_per_call_usd: ClassVar[float] = 0.03
+    model_owner: ClassVar[str] = "black-forest-labs"
+    model_name: ClassVar[str] = "flux-2-pro"
+    # image_field is bypassed for this renderer; we use input_images (array).
+    image_field: ClassVar[str] = "input_images"
+    prompt_field: ClassVar[str] = "prompt"
+    passthrough_keys: ClassVar[tuple[str, ...]] = (
+        "width",
+        "height",
+        "aspect_ratio",
+        "resolution",
+        "output_format",
+        "output_quality",
+        "safety_tolerance",
+    )
+
+    def _build_input(
+        self,
+        image_data_url: str,
+        prompt: str,
+        *,
+        seed: int | None,
+        **kwargs,
+    ) -> dict:
+        payload: dict = {
+            self.prompt_field: prompt,
+            self.image_field: [image_data_url],
+        }
+        if seed is not None:
+            payload["seed"] = int(seed)
+        for key in self.passthrough_keys:
+            if key in kwargs:
+                payload[key] = kwargs[key]
+        return payload

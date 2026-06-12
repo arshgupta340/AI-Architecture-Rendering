@@ -37,9 +37,10 @@ Append-only log of every paid API call the overnight agent makes.
 2026-05-22 B3-RUN-1 | B3 first live | Magnific | mystic | 0.00 | 401 Unauthorized at api.magnific.com (key value not accepted; likely Freepik-issued vs Magnific-native key)
 2026-05-22 B3-RUN-1 | B3 first live | Replicate | hidream-e1-1 (wrong slug) | 0.00 | 404 Not Found — correct slug is prunaai/hidream-e1.1 with literal period; client fixed
 2026-05-22 T25 | T25 | Replicate | black-forest-labs/flux-fill-pro | 0.05 | apply_material "travertine" via FLUX Fill (1259x848 native res tile, 1.5 MB)
+2026-06-03 USER | masterplan-render | Google | nano-banana-pro-preview | 0.36 | user-authorized one-shot render of 8 masterplan views (mixed materiality, blue glass, bright midday); 8 renders + 1 re-render of perspective 3 (camera-lock fix) = 9 NB Pro calls @ ~$0.04
 ```
 
-**Running total: $0.89**
+**Running total: $1.25**
 
 Notes:
 - T21 user-authorized overage: $0.05 → $0.06.
@@ -50,3 +51,4 @@ Notes:
 - T24 user-authorized: ~$0.45 for first live Spike 4 end-to-end run (segment + apply_material on Modal A10G; render + tag stages hit pre-populated cache for $0).
 - B3-RUN-1 user-authorized: ~$0.43 marginal budget; actual marginal spend was $0.08 (2 of 9 renderers succeeded, 7 failed with 4xx errors that don't bill). See `spike/outputs/spike2_5/b3/scores.csv` for per-renderer status.
 - T25 user-authorized $0.30–0.50 for FLUX-vs-SD comparison budget; actual marginal spend was $0.05 for one comparison run. 4–9 more runs in budget if we want to map further (region, material) combos via FLUX.
+- 2026-06-03 user-authorized ~$1.20 for an 8-view masterplan render (separate from the spike bake-off); actual spend ~$0.36 across 9 NB Pro calls. Outputs in `spike/outputs/masterplan_renders/`.

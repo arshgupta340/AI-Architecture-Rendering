@@ -59,13 +59,13 @@ from run_b1_baseline import (  # noqa: E402 -- after sys.path tweak
 
 # Import every renderer. Module-load is network-free by contract.
 from spike.renderers.base import Renderer  # noqa: E402
-from spike.renderers.flux_bfl import Flux2ProRenderer, FluxFillProRenderer  # noqa: E402
-from spike.renderers.magnific import MagnificMysticRenderer  # noqa: E402
 from spike.renderers.nano_banana import NanoBananaProRenderer  # noqa: E402
 from spike.renderers.recraft import RecraftV3Renderer  # noqa: E402
 from spike.renderers.replicate_models import (  # noqa: E402
-    FluxCannyProReplicateRenderer,
-    FluxDepthProReplicateRenderer,
+    Flux2ProRenderer,
+    FluxCannyProRenderer,
+    FluxDepthProRenderer,
+    FluxFillProRenderer,
     HiDreamE1Renderer,
     QwenImageEditRenderer,
 )
@@ -75,9 +75,8 @@ ALL_RENDERER_CLASSES: tuple[type[Renderer], ...] = (
     NanoBananaProRenderer,
     Flux2ProRenderer,
     FluxFillProRenderer,
-    FluxCannyProReplicateRenderer,
-    FluxDepthProReplicateRenderer,
-    MagnificMysticRenderer,
+    FluxCannyProRenderer,
+    FluxDepthProRenderer,
     RecraftV3Renderer,
     QwenImageEditRenderer,
     HiDreamE1Renderer,
@@ -179,6 +178,15 @@ def main() -> int:
             "Use this to verify .env wiring without spending."
         ),
     )
+    ap.add_argument(
+        "--skip-existing",
+        action="store_true",
+        help=(
+            "Skip any renderer whose output file already exists under "
+            "--out-dir. Use this to resume after a partial run without "
+            "re-paying for renders that already succeeded."
+        ),
+    )
     args = ap.parse_args()
 
     src_path = Path(args.input)
@@ -223,6 +231,24 @@ def main() -> int:
     rows: list[dict[str, object]] = []
 
     for r in live:
+        out_path = out_dir / f"{r.name}.png"
+
+        if args.skip_existing and out_path.is_file():
+            print(f"\n[b3] -> {r.name} ... SKIP (output already exists)")
+            render_img = Image.open(out_path).convert("RGB")
+            overlay_img = make_overlay(edges_img, render_img)
+            raw_panels.append(label_image(render_img, r.name))
+            overlay_panels.append(label_image(overlay_img, f"{r.name} (edges)"))
+            rows.append({
+                "renderer": r.name,
+                "provider": r.provider,
+                "cost_per_call_usd": r.cost_per_call_usd,
+                "status": "skipped_existing",
+                "elapsed_s": "0.00",
+                "output_file": str(out_path),
+            })
+            continue
+
         print(f"\n[b3] -> {r.name} ...")
         row: dict[str, object] = {
             "renderer": r.name,
@@ -243,7 +269,6 @@ def main() -> int:
             continue
 
         elapsed = time.monotonic() - t0
-        out_path = out_dir / f"{r.name}.png"
         out_path.write_bytes(render_bytes)
         print(f"[b3]    ok in {elapsed:.1f}s -> {out_path}")
 

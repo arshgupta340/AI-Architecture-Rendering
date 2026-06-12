@@ -1,2 +1,9 @@
 renderer,provider,cost_per_call_usd,status,elapsed_s,output_file,critical_failures,high_failures,medium_failures,low_failures,photorealism_1_to_10,material_believability_1_to_10,lighting_coherence_1_to_10,silhouette_iou,edge_density_delta,notes
-nano_banana_pro,google,0.039,ok,20.70,spike\outputs\spike2_5\b3\nano_banana_pro.png,,,,,,,,,,
+nano_banana_pro,google,0.039,skipped_existing,0.00,spike\outputs\spike2_5\b3\nano_banana_pro.png,,,,,,,,,,
+flux_2_pro,replicate,0.03,ok,127.75,spike\outputs\spike2_5\b3\flux_2_pro.png,,,,,,,,,,
+flux_fill_pro,replicate,0.05,ok,127.58,spike\outputs\spike2_5\b3\flux_fill_pro.png,,,,,,,,,,
+flux_canny_pro,replicate,0.05,ok,127.60,spike\outputs\spike2_5\b3\flux_canny_pro.png,,,,,,,,,,
+flux_depth_pro,replicate,0.05,ok,127.76,spike\outputs\spike2_5\b3\flux_depth_pro.png,,,,,,,,,,
+recraft_v3,recraft,0.04,skipped_existing,0.00,spike\outputs\spike2_5\b3\recraft_v3.png,,,,,,,,,,
+qwen_image_edit,replicate,0.03,ok,127.73,spike\outputs\spike2_5\b3\qwen_image_edit.png,,,,,,,,,,
+hidream_e1_1,replicate,0.04,error,42.73,,,,,,,,,,,HTTPError('404 Client Error: Not Found for url: https://api.replicate.com/v1/models/prunaai/hidream-e1.1/predictions')
