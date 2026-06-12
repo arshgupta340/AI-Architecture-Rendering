@@ -1,11 +1,17 @@
 ---
 type: strategy
-updated: 2026-05-19
+updated: 2026-06-12
 ---
 
 # Strategy — Photoshop route vs VLM route
 
-## The frame
+> **2026-06-12 update — plugin-first pivot.** The frame below is superseded in one important way: the VLM route is no longer the *only* plumbing. The primary tier now extracts ground truth (ID masks, depth, semantics) from the host via plugins, deleting the tag+segment AI stages; the VLM route survives as the fallback tier for screenshot-only input (web demo, Forma, no-plugin users). See [[DECISIONS#plugin-first-pivot]] and [master plan v2](../docs/plans/master-plan.md). The open questions Q1–Q3 below are now answered:
+>
+> - **Q1 (no renderer passes the gate):** superseded — the render stage moves to true-depth+Canny conditioning (E2 tests this); hybrid two-pass remains the fallback.
+> - **Q2 (tagging unreliable):** answered — on tier 1 tagging is deleted (host ground truth); on tier 2 the stack upgrades to Florence-2 → SAM 3 (E5) with a Vision-Banana-style probe (E4) as the wildcard.
+> - **Q3 (when to prototype the UX):** answered — the layer-model + canvas prototype starts after E1 produces real ground-truth exports, not after a live Spike-4-style success. Real masks remove the main reason to wait.
+
+## The frame (v1, historical)
 
 Two threads of work appear in the codebase. New readers often ask which one we "really" want. Short answer: **both, in sequence — they're complementary layers, not competing options.**
 

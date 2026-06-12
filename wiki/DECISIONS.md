@@ -20,6 +20,23 @@ Each entry follows the same shape so it can be scanned in 15 seconds:
 
 ---
 
+## 2026-06-12 — Plugin-first pivot: extract ground truth from the host, delete the tag+segment AI stages {#plugin-first-pivot}
+
+**Decision:** The primary input path is a host plugin (Rhino → Revit → SketchUp) exporting `{beauty.png, id_mask.png (per-object flat color), depth.png (true z-buffer where available), objects.json (id → category/layer/material)}`. On this tier the VLM-tagging and SAM2-segmentation stages are **deleted** — host data is ground truth. The screenshot pipeline is retained as a fallback tier (web demo, Forma, no-plugin users) with its tagging stack upgraded (Florence-2 → SAM 3). AI is reserved for the two things only it can do: photoreal synthesis and material application.
+
+**Context:** User-requested foundational pressure test (2026-06-11/12). Measured evidence: Gemini tagging ≈0.4 mAP, 0 mullions on a mullion-grid facade (T21), 0 windows on raw screenshots; SAM 2 documented to lose thin structures. Four Sonnet research agents confirmed: Rhino exposes a true z-buffer + per-object draw control; Revit has native categories including `OST_CurtainWallMullions` — the exact label the VLM kept missing; G-buffer-conditioned diffusion is research-validated and unshipped from any BIM host; Veras (closest competitor) is screenshot-level only.
+
+**Alternatives considered:**
+- Stay screenshot-first and upgrade models (better VLM, SAM 3) — keeps paying an accuracy tax on data the host has for free; mullion-level precision likely never reaches ground truth.
+- Hybrid with screenshot primary, plugin "premium" — splits engineering effort while leaving the flagship experience on the weaker data.
+- Wait for Vision Banana public API — timeline unknown; Veras has partner access we don't.
+
+**Reasoning:** Cheapest-information-first still holds: the keystone experiment (E1, Rhino MCP extraction probe) costs $0 and a few hours. The pivot deletes the two weakest stages instead of improving them, upgrades render conditioning from screenshot-i2i to true depth+edges, and gives MatSwap true normal maps if material fidelity needs it. Competitive window: nobody ships host-extracted G-buffer conditioning; Veras est. 6–12 months from closing the swatch+layers gap. User confirmed full pivot appetite, all three hosts relevant, $50 experiment budget.
+
+**Revisit if:** E1 fails (ID masks not pixel-accurate on thin members, depth unusable); or plugin install friction kills adoption in beta; or a public Vision-Banana-class API makes screenshot-tier tagging good enough that plugin extraction stops being a differentiator.
+
+---
+
 ## 2026-05-20 — Defend against Gemini malformed bbox JSON; never lose paid data to schema validation {#gemini-bbox-malformed-json}
 
 **Decision:** Wherever we call `tag_regions` (or any Gemini structured-output call), the caller must persist the raw response *before* attempting pydantic validation, and must use a tolerant JSON parser that handles known model output bugs (currently: duplicate `y` keys in bboxes). Schema validation is best-effort; data loss on schema failure is not acceptable.

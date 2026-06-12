@@ -1,90 +1,56 @@
 ---
 type: roadmap
-updated: 2026-05-19
+updated: 2026-06-12
 ---
 
 # Roadmap
 
-Near-term and medium-term milestones with entry/exit criteria. Alternates inline so we don't have to re-derive them.
-
-The authoritative live task board is still [spike/TASKS.md](../spike/TASKS.md). This page is the *strategic* roadmap — milestones, not tasks.
+Strategic milestones under the plugin-first pivot ([[DECISIONS#plugin-first-pivot]], [master plan v2](../docs/plans/master-plan.md)). The live experiment board is [docs/plans/experiments.md](../docs/plans/experiments.md). The pre-pivot M1–M3 (Spike 3 gate / B3 bake-off / Spike 4 live run) are retired — their goals were absorbed or superseded; see git history of this file.
 
 ---
 
-## M1 — Spike 3 gate evaluation (T21)
+## M1 — Prove the keystone: host ground-truth extraction (E1 + E6)
 
-**Goal:** Decide whether Gemini 3 Pro tagging is good enough to drive Spike 4's material-swap UX.
+**Goal:** Demonstrate that Rhino can export pixel-accurate per-object ID masks + usable true depth + an object/material table, and that those masks drive the existing edit pipeline with tag+segment deleted.
 
-**Entry:** T17 smoke test pass (done, 2026-05-19). Coordinate-space fix in place.
+**Entry:** Rhino running with the MCP bridge; a real model open. $0.
 
-**Work:**
-1. Fix coordinate-space handling (Gemini's 0–1000 → pixel rescale) in `test_vlm_tagging.py:_draw_regions` and `end_to_end_edit.py`. See [[references/coordinate-systems]].
-2. Revise `tag_regions` prompt in `modal_app.py` — tighter per-element bboxes, clarify `parent_id` is containment not overlap, forbid inventing elements like "door inside a window".
-3. Acquire 4 additional diverse test screenshots (modern interior, traditional exterior, mixed materials, urban exterior w/ trees/cars/people).
-4. Run live tagger on all 5; score each manually against the gate.
+**Exit gate:** E1 — masks accurate at 1:1 zoom incl. thin mullions, depth usable after linearization; E6 — edit quality ≥ the T24/T25 SAM2-mask baseline.
 
-**Exit gate:** ≥80% of major elements (wall, window, mullion, floor, ceiling, door) correctly labeled with tight, pixel-accurate bboxes on ≥4/5 screenshots.
-
-**Cost:** ~$0.05 (5 × $0.01 Gemini calls). **Brings cumulative to $0.06 — exceeds session cap; needs user authorization.**
-
-**Alternates:**
-- If can't get 5 diverse screenshots, run on 3 (the existing render + 2 new) — narrower gate, faster feedback.
-- If prompt revision fails to fix wall-bbox looseness, fall back to per-mullion / per-window-pane granularity (smaller, easier-to-label units) and rebuild "wall" by subtraction.
-
-**Fallback if gate fails:** see [[STRATEGY#Q2]] — per-region click-confirmation UX, or color-based seed segmentation fallback.
+**Fallback if E1 fails:** conduit issues → try the display-mode-INI approach or temporary material swap; if depth is the blocker, proceed with masks-only (depth from monocular estimation) — the semantic/mask win alone justifies the tier.
 
 ---
 
-## M2 — Spike 2.5 B3 live bake-off
+## M2 — Pick the generative stack (E2 + E3 + E4 + E5)
 
-**Goal:** Pick the production renderer.
+**Goal:** Lock the render conditioning (true-depth+canny vs FLUX.2 Edit vs Nano Banana) and the swatch-conditioning method (hosted multi-ref vs MatSwap contingency); pick the tier-2 tagging stack.
 
-**Entry:** M1 doesn't strictly block this — they're parallelizable. But user needs to provide API keys.
+**Entry:** E1 artifacts; `FAL_KEY` from user. ~$8 of the $50 budget.
 
-**Work:**
-1. Acquire keys: `BFL_API_KEY`, `MAGNIFIC_API_KEY`, `REPLICATE_API_TOKEN`, `RECRAFT_API_TOKEN` (also `GOOGLE_API_KEY` for the incumbent Nano Banana path). See [PROVIDERS.md](../spike/PROVIDERS.md) for signup links.
-2. Run `spike/compare_renderers.py --input <screenshot>` on `building.png` plus ≥1 second test asset. Save outputs under `spike/outputs/spike2_5/b3/`.
-3. Manual scoring against rubric — critical failure count first, photorealism (1–10) second.
-4. Update `wiki/spikes/spike-2.5.md` § B3 with results + chosen winner.
+**Exit gates:** E2 — ≥1 renderer with zero critical failures; E3 — blind viewer names the material; E4/E5 — tier-2 stack chosen by IoU vs E1 ground truth.
 
-**Exit gate:** one renderer with zero critical failures + manual photorealism ≥7/10 on both test images.
-
-**Cost:** ~$3–5 for the full run (8 renderers × 2 screenshots × per-call costs). **Needs explicit user authorization.**
-
-**Alternates:**
-- If multiple renderers tie, run a tie-breaker on 2 additional screenshots before deciding.
-- If all renderers fail the gate, see [[STRATEGY#Q1]] — hybrid two-pass, or accept-and-correct UX.
-- If the user's budget is tight, run a $1 subset (3 cheapest challengers) first; only escalate to the full 8 if results warrant.
+**Fallbacks:** E3 all-fail → MatSwap on Modal (pre-authorized). E2 all-fail → hybrid two-pass (structure pass + material pass).
 
 ---
 
-## M3 — End-to-end live edit (Spike 4)
+## M3 — Rhino capture plugin + layer-model canvas prototype
 
-**Goal:** Demonstrate the full pipeline working live on one screenshot: shaded screenshot → render → tag → segment → swap material → composite.
+**Goal:** Replace the MCP probe with a real capture path (Grasshopper component fast path 3–5 days; full .rhp ~2 weeks) and prototype the scene-graph layer model + canvas on E1's real exports — the make-or-break design decision.
 
-**Entry:** M1 + M2 both passed. Renderer and tagger both production-ready. Modal GPU usage authorized by the user.
+**Entry:** M1 + M2 passed.
 
-**Work:**
-1. Wire the selected production renderer (M2 winner) into `end_to_end_edit.py`.
-2. One live run on `building.png` swapping a wall to travertine.
-3. Visual inspection — does it look right? Do non-wall regions stay untouched?
-4. Write up findings; identify the next bottleneck (likely material library size, or SAM2 mask quality, or composite blending).
-
-**Exit gate:** subjective — does the result feel like the product hypothesis? If yes, move toward UI work and plugin scaffolding (web MVP per [master plan](../docs/plans/master-plan.md)).
-
-**Cost:** ~$0.50/run live (per `end_to_end_edit.py` estimate) + Modal GPU spend ($0.35–0.70). **Needs authorization.**
-
-**Alternates:**
-- If results are close but blending is poor, iterate on `composite.py` (alpha edges, color-match correction) without re-running the full pipeline.
-- If SAM2 masks from VLM bboxes are too loose, add a refinement pass (point prompts from bbox center, or click-to-refine UX).
+**Exit gate:** the killer flow works on one real Rhino model: capture → render → click region → swatch → layer; toggle < 1s from cache; re-swap replaces, not stacks.
 
 ---
 
-## Beyond M3 (sketches, not commitments)
+## M4 — Multi-view material lock + second host (Revit)
 
-- **Material library seeding** — ambientCG ingest script, swatch tile generation. Currently a placeholder in the master plan.
-- **Layer/undo data model** — non-destructive region→material assignments. Paper-design only today.
-- **Web canvas MVP** — Next.js + Konva per the master plan stack. Don't start before M3.
-- **Host plugins** — Rhino → SketchUp → Revit → Forma. Each is its own scope.
+**Goal:** Materials lock across N saved views (anchor-reference technique); Revit add-in brings native BIM semantics (zero layer-discipline needed).
 
-See the [master plan](../docs/plans/master-plan.md) for the full long-tail.
+**Exit gate:** change one material → propagates coherently to all views; Revit capture produces category-labeled masks out of the box.
+
+---
+
+## Beyond (sketches, not commitments)
+
+Material library seeding (ambientCG → swatches; manufacturer-SKU partnerships as moat) · web canvas MVP productionization (Next.js + Konva) · SketchUp plugin · private beta (~10 architects) · material write-back into the host (`ModifyRenderMaterial` / `doc.Paint`) · watch: Vision Banana public API, HiFi-Inpaint-class FLUX material transfer.

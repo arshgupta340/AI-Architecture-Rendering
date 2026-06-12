@@ -20,6 +20,45 @@ Entry template (also in `CLAUDE.md` § Session-log protocol):
 
 ---
 
+## 2026-06-12 — Foundational pressure test → plugin-first pivot
+
+**Scope:** Pressure-tested the screenshot-first architecture end-to-end via four Sonnet research agents (native host extraction, competitive landscape, generative SOTA, Vision Banana); decided a full plugin-first pivot with the screenshot pipeline retained as fallback tier.
+
+**Decisions:**
+- [[DECISIONS#plugin-first-pivot]] — plugin-first, two-tier architecture. Host plugins export beauty/ID-mask/depth/objects.json; tag+segment stages deleted on the plugin tier.
+- User-confirmed: Rhino plugin first (MCP bridge available), hosted material path first (MatSwap on Modal only as contingency), public-launch ambition, ~$50 experiment budget for this phase.
+
+**Tried:**
+- Research agent 1 (host extraction): Rhino has true depth (ZBufferCapture) + ID masks (DisplayConduit workaround) + material R/W, ~2wk plugin. Revit has best semantics (native `OST_CurtainWallMullions`) + clean ID masks, no depth API. SketchUp: ID masks via material-swap only, no depth buffer. Forma: nothing — screenshot tier only.
+- Research agent 2 (competition): the click-region + swatch-library + non-destructive-layers loop is unshipped anywhere as of mid-2026. Veras (Chaos-owned since Feb 2025) is closest, est. 6–12 months out; their v4.5 Smart Selection is selection-only, still prompt-driven after the click.
+- Research agent 3 (generative SOTA): BFL deprecated Canny/Depth Pro endpoints (Oct 2025) — validates the Replicate consolidation; fal.ai flux-general is the canonical multi-ControlNet host. FLUX.2 [pro] Edit multi-ref is the best hosted swatch conditioner; MatSwap (self-hosted, takes true normals) is the fidelity ceiling. Florence-2→SAM 3 decisively beats Gemini→SAM 2 for the fallback tier.
+- Research agent 4 (Vision Banana): verified real (DeepMind, arXiv 2604.20329) — Nano Banana Pro instruction-tuned into one-call open-vocab segmentation; beats SAM 3 on semantic/referring seg, loses on instance seg. NOT publicly available; Veras's use confirmed via EvolveLAB forum = partner access. Base model is public → cheap prompting probe possible.
+
+**Outcome:**
+- Plan approved: Phase 0 housekeeping → Phase 1 doc suite (docs/plans/research/*, master-plan v2) → Phase 2 experiment ladder E1–E6 (Rhino MCP extraction probe is the $0 keystone) → Phase 3 build.
+- Committed the pending B3 renderer consolidation (`9fe1b40`).
+- Plan of record: `~/.claude/plans/okay-now-i-want-floating-feigenbaum.md` (to be folded into docs/plans/ in Phase 1).
+
+**Follow-ups:** Execute Phase 1 docs; run E1 via Rhino MCP; user to provide FAL_KEY for E2/E3; watch Gemini API changelog for a public Vision Banana endpoint.
+
+---
+
+## 2026-06-11 — Side-project cleanup (masterplan/siteplan renders deleted)
+
+**Scope:** Deleted all studio-side-project rendering work (masterplan perspective/elevation renders via Nano Banana/GPT-image/agy/codex, siteplan colorizer + PSD) at user request; preserved all Spike 2.5/3/4 work.
+
+**Decisions:** none (cleanup only; user classified the work as disposable studio output, not product signal).
+
+**Tried:**
+- Audited git status before deleting: confirmed the uncommitted *tracked* changes (flux_bfl/magnific deletions, replicate_models consolidation, --skip-existing) were legitimate B3 spike work, NOT side-project — left untouched.
+- Deleted untracked/ignored side-project files only: `render_masterplan.py`, `render_openai.py`, `colorize_siteplan.py`, `siteplan_regions.json`, `outputs/masterplan_renders/` (~100+ renders), `outputs/siteplan_*`, `build_siteplan.jsx`, `README_photoshop.md`. Verified zero leftovers via `git status --ignored` grep.
+
+**Outcome:** Working tree reduced to pure spike work. 52/52 tests green. Note: one technique from the deleted work is worth remembering — the anchor-reference material-consistency trick (render aerial first, feed as reference to other views) is now cited in the roadmap as the multi-view material lock approach.
+
+**Follow-ups:** none.
+
+---
+
 ## 2026-05-22 — T25 FLUX Fill (Replicate) as a second apply_material backend
 
 **Scope:** Add `--inpainter {sd_inpaint, flux_fill_replicate}` to `spike/end_to_end_edit.py`. Wire a direct call to `black-forest-labs/flux-fill-pro` via Replicate for the FLUX path. Live test on the spike2 photoreal pair (reusing T24's cache) and compare to T24's SD output. No IP-Adapter yet — text-only conditioning, same as SD path.
