@@ -28,7 +28,7 @@ The "does travertine read as travertine" experiment: (a) FLUX.2 Edit multi-ref (
 - **Gate:** a blind viewer names the material from the result.
 - **On failure:** stand up **MatSwap** on Modal (pre-authorized contingency; takes true normals from the plugin path).
 
-### [ ] E4 — Vision-Banana-style probe (~$1)
+### [x] E4 — Vision-Banana-style probe ($0.13) — decisive negative → [report](../../spike/REPORTS/E4.md)
 Prompt public `gemini-3-pro-image-preview` with color-coded segmentation instructions ("walls pure blue [0,0,255], windows pure yellow [255,255,0], mullions pure red [255,0,0]…") on the T21 renders; decode colors → masks (`spike/probe_vision_banana.py`).
 
 - **Score:** mask IoU vs E1 ground truth; side-by-side vs T21 Gemini-bbox results.
@@ -54,5 +54,6 @@ Feed an E1 ground-truth mask directly into the existing `spike/composite.py` + a
 
 *(append one line per executed experiment: date, spend, gate result, link to artifacts)*
 
+- **2026-06-12 — E4 — $0.13 — DECISIVE NEGATIVE.** Prompted Nano Banana Pro produces a semantically coherent but geometrically redrawn segmentation (buildings shifted/rescaled; mullion IoU 0.003 vs E1 ground truth). Vision Banana's value is the instruction tuning, which is non-public — tier 2 must be discriminative (E5). [REPORTS/E4.md](../../spike/REPORTS/E4.md).
 - **2026-06-12 — E6 — $0 — GATE PASSED.** Largest wall instance from E1's `instance_ids.png` (`mask_for(semantic=='wall')`, 2,162px, single GUID on `ENSCAPE::EXTERIOR WALL::CONCRETE PANELS`) fed directly into `composite.paste_tile` with a travertine tile — exact-instance edit, zero leakage onto mullions/neighbors, tag+segment stages bypassed entirely. Evidence: `spike/outputs/e1_rhino_probe/e6_sidebyside.png`.
 - **2026-06-12 — E1 — $0 — GATE PASSED.** 93.1% of object pixels decode exactly; 257 mullion instances with pixel-accurate masks at 2–4px; true z-buffer captured. Required a white-reference second pass (Rhino's "unlit" mode still applies a 0.7-slope headlight) and atomic capture. Real model: SFUrban. Artifacts: `spike/outputs/e1_rhino_probe/`, decoder `spike/host_probe_rhino.py`, [REPORTS/E1.md](../../spike/REPORTS/E1.md).
