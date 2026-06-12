@@ -16,7 +16,14 @@ export `beauty.png`, `depth.png` (ZBufferCapture → GrayscaleDib, then lineariz
 - **Risks:** Rhino 8 `DrawMeshShaded` conduit regressions; viewport-res cap on depth.
 - **Artifacts:** `spike/outputs/e1_rhino_probe/` + `spike/host_probe_rhino.py`.
 
-### [ ] E2 — Render conditioning shootout (~$3) — needs `FAL_KEY`
+### [ ] E2 — Render conditioning shootout (~$3) — needs `FAL_KEY` + **input model (user sourcing a better one, 2026-06-12)**
+
+> Staging learnings from the SFUrban dry-run (apply to the new model): hide 2D footprint
+> linework (renderers hallucinate buildings from it — proven in E4), hide stray curves
+> per-object, add a ground plane (fills the depth-pass hole), frame a low-aerial 3/4 view
+> where the mullion facade is large in frame. Candidate framings saved under
+> `spike/outputs/e2_staging/`. Model wishlist: real 3D walls/glass/mullions as objects,
+> element-typed layers, 3D context (not linework), single building or small cluster.
 Same scene through: (a) true-depth+Canny via fal `flux-general`; (b) FLUX.2 [pro] Edit i2i; (c) Nano Banana Pro i2i (control). Score with the B1 rubric / `spike/scoring.py` — critical-failure count first.
 
 - **Gate:** ≥1 candidate with zero critical failures (invented windows, transformed corners, mass changes).
