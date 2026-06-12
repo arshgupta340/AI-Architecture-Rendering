@@ -16,7 +16,7 @@ export `beauty.png`, `depth.png` (ZBufferCapture → GrayscaleDib, then lineariz
 - **Risks:** Rhino 8 `DrawMeshShaded` conduit regressions; viewport-res cap on depth.
 - **Artifacts:** `spike/outputs/e1_rhino_probe/` + `spike/host_probe_rhino.py`.
 
-### [ ] E2 — Render conditioning shootout (~$3) — needs `FAL_KEY` + **input model (user sourcing a better one, 2026-06-12)**
+### [x] E2 — Render conditioning shootout (~$0.40) — GATE PASSED, flux_depth wins → [report](../../spike/REPORTS/E2.md)
 
 > Staging learnings from the SFUrban dry-run (apply to the new model): hide 2D footprint
 > linework (renderers hallucinate buildings from it — proven in E4), hide stray curves
@@ -61,6 +61,7 @@ Feed an E1 ground-truth mask directly into the existing `spike/composite.py` + a
 
 *(append one line per executed experiment: date, spend, gate result, link to artifacts)*
 
+- **2026-06-12 — E2 — ~$0.40 — GATE PASSED.** New input model (kCs_SampleHouseProject, CSI layers) + fresh ground-truth capture. True-z-buffer FLUX depth ControlNet is the only candidate that registers pixel-for-pixel with the input (edge-overlay evidence); FLUX.2 Edit and Nano Banana reframe 20-40px+. New criterion locked: geometry preservation = mask registration, and only the plugin tier can supply the z-buffer. [REPORTS/E2.md](../../spike/REPORTS/E2.md).
 - **2026-06-12 — E5 — ~$0.50 — ran (raw-screenshot case).** Grounded-SAM on Replicate: mullion IoU 0.02 / recall 0.47 (coarse blobs), wall/glass missed, door query crashes. Better than E4 on mullions, far from edit-grade. Domain mismatch (photo-trained detector, CAD-shaded input) dominates — re-run on E2's photoreal render before tier-2 verdict. [REPORTS/E5.md](../../spike/REPORTS/E5.md).
 - **2026-06-12 — E4 — $0.13 — DECISIVE NEGATIVE.** Prompted Nano Banana Pro produces a semantically coherent but geometrically redrawn segmentation (buildings shifted/rescaled; mullion IoU 0.003 vs E1 ground truth). Vision Banana's value is the instruction tuning, which is non-public — tier 2 must be discriminative (E5). [REPORTS/E4.md](../../spike/REPORTS/E4.md).
 - **2026-06-12 — E6 — $0 — GATE PASSED.** Largest wall instance from E1's `instance_ids.png` (`mask_for(semantic=='wall')`, 2,162px, single GUID on `ENSCAPE::EXTERIOR WALL::CONCRETE PANELS`) fed directly into `composite.paste_tile` with a travertine tile — exact-instance edit, zero leakage onto mullions/neighbors, tag+segment stages bypassed entirely. Evidence: `spike/outputs/e1_rhino_probe/e6_sidebyside.png`.
