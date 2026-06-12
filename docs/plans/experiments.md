@@ -29,11 +29,8 @@ Same scene through: (a) true-depth+Canny via fal `flux-general`; (b) FLUX.2 [pro
 - **Gate:** ≥1 candidate with zero critical failures (invented windows, transformed corners, mass changes).
 - **Prereq:** E1 depth map; `FAL_KEY` added to `spike/.env` (placeholder in `.env.example`, paragraph in `PROVIDERS.md`); fal renderer clients in `spike/renderers/` with respx-mocked tests.
 
-### [ ] E3 — Swatch-conditioning shootout (~$3) — warm T24 cache
-The "does travertine read as travertine" experiment: (a) FLUX.2 Edit multi-ref (render + region + swatch); (b) FLUX Kontext + swatch; (c) fal `flux-general` inpaint + IP-Adapter; (d) FLUX Fill text-only (control, exists from T25).
-
-- **Gate:** a blind viewer names the material from the result.
-- **On failure:** stand up **MatSwap** on Modal (pre-authorized contingency; takes true normals from the plugin path).
+### [x] E3 — Swatch-conditioning shootout (~$0.30) — GATE PASSED → [report](../../spike/REPORTS/E3.md)
+Ran on the E2 flux_depth render + host ground-truth wall mask (better than the originally planned T24 warm cache). Winner: **FLUX.2 [pro] Edit multi-ref + mask composite** — travertine reads as travertine, $0.06/swap. Kontext reframes; IP-Adapter gives style-mush; Fill text-only barely acts. MatSwap contingency not needed for v1.
 
 ### [x] E4 — Vision-Banana-style probe ($0.13) — decisive negative → [report](../../spike/REPORTS/E4.md)
 Prompt public `gemini-3-pro-image-preview` with color-coded segmentation instructions ("walls pure blue [0,0,255], windows pure yellow [255,255,0], mullions pure red [255,0,0]…") on the T21 renders; decode colors → masks (`spike/probe_vision_banana.py`).
@@ -61,6 +58,7 @@ Feed an E1 ground-truth mask directly into the existing `spike/composite.py` + a
 
 *(append one line per executed experiment: date, spend, gate result, link to artifacts)*
 
+- **2026-06-12 — E3 — ~$0.30 — GATE PASSED.** FLUX.2 Edit multi-ref ([render, swatch]) held the camera and produced coursed-stone travertine on the walls; composite through the host mask makes outside-mask residue irrelevant. Production recipe locked: `paste_tile(base, host_mask, flux2_edit(base, swatch))` at $0.06/swap. IP-Adapter and Kontext both failed as predicted. [REPORTS/E3.md](../../spike/REPORTS/E3.md).
 - **2026-06-12 — E2 — ~$0.40 — GATE PASSED.** New input model (kCs_SampleHouseProject, CSI layers) + fresh ground-truth capture. True-z-buffer FLUX depth ControlNet is the only candidate that registers pixel-for-pixel with the input (edge-overlay evidence); FLUX.2 Edit and Nano Banana reframe 20-40px+. New criterion locked: geometry preservation = mask registration, and only the plugin tier can supply the z-buffer. [REPORTS/E2.md](../../spike/REPORTS/E2.md).
 - **2026-06-12 — E5 — ~$0.50 — ran (raw-screenshot case).** Grounded-SAM on Replicate: mullion IoU 0.02 / recall 0.47 (coarse blobs), wall/glass missed, door query crashes. Better than E4 on mullions, far from edit-grade. Domain mismatch (photo-trained detector, CAD-shaded input) dominates — re-run on E2's photoreal render before tier-2 verdict. [REPORTS/E5.md](../../spike/REPORTS/E5.md).
 - **2026-06-12 — E4 — $0.13 — DECISIVE NEGATIVE.** Prompted Nano Banana Pro produces a semantically coherent but geometrically redrawn segmentation (buildings shifted/rescaled; mullion IoU 0.003 vs E1 ground truth). Vision Banana's value is the instruction tuning, which is non-public — tier 2 must be discriminative (E5). [REPORTS/E4.md](../../spike/REPORTS/E4.md).

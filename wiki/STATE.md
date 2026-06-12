@@ -36,17 +36,20 @@ updated: 2026-06-12
 
 - **E1 — PASSED ($0, 2026-06-12).** Rhino MCP probe on the real SFUrban model: 93.1% of object pixels decode exactly; 257 mullion instances with pixel-accurate masks at 2–4px (the class Gemini scored zero on in T21); true z-buffer captured. Required white-reference second pass + atomic capture. [REPORTS/E1.md](../spike/REPORTS/E1.md), decoder `spike/host_probe_rhino.py`.
 - **E6 — PASSED ($0, 2026-06-12).** Single ground-truth wall instance → `composite.paste_tile` → exact-instance edit, zero leakage; tag+segment deleted. Evidence `spike/outputs/e1_rhino_probe/e6_sidebyside.png`.
-- E2 (render shootout, ~$3, **needs FAL_KEY from user**) → E3 (swatch shootout, ~$3) pending.
-- E4 (Vision-Banana-style probe, ~$1, GOOGLE_API_KEY available) and E5 (Florence-2→SAM 3, ~$1) runnable next.
+- **E2 — PASSED (~$0.40).** New house model (kCs_SampleHouseProject, CSI layers). True-z-buffer FLUX depth ControlNet is the only candidate that registers pixel-for-pixel; criterion locked: geometry preservation = mask registration. [REPORTS/E2.md](../spike/REPORTS/E2.md).
+- **E3 — PASSED (~$0.30).** Production recipe locked: FLUX.2 Edit multi-ref(render, swatch) + composite through host mask = travertine that reads as travertine at $0.06/swap. MatSwap contingency not needed for v1. [REPORTS/E3.md](../spike/REPORTS/E3.md).
+- **E4 — decisive negative ($0.13):** prompted Nano Banana segmentation drifts geometrically (mullion IoU 0.003); Veras's edge is the non-public tuning. [REPORTS/E4.md](../spike/REPORTS/E4.md).
+- **E5 — ran (~$0.50):** hosted Grounded-SAM not edit-grade on raw screenshots (mullion IoU 0.02); re-test on photoreal render pending. [REPORTS/E5.md](../spike/REPORTS/E5.md).
+- **LADDER COMPLETE.** Total phase spend ≈ $2.22 of $50. Next: Phase 3 — Grasshopper capture component + layer-model canvas prototype.
 
 ## Cost ledger
 
-**Running total: $0.89** (unchanged this session — research + docs only). New phase budget: $50 authorized 2026-06-11. See [cost_ledger.md](../spike/REPORTS/cost_ledger.md).
+**Running total: ≈ $2.22** ($0.89 pre-pivot + E2 $0.40 + E3 $0.30 + E4 $0.13 + E5 ~$0.50). Phase budget $50, authorized 2026-06-11. See [cost_ledger.md](../spike/REPORTS/cost_ledger.md).
 
 ## Blocked / awaiting
 
-- **E2/E3** — need `FAL_KEY` from user (fal.ai account; PROVIDERS.md to gain a fal paragraph during E2 setup).
-- **E1** — needs Rhino running with the MCP bridge + a real model open.
+- Nothing blocked. `FAL_KEY` in place; Rhino MCP works; ladder complete.
+- Deferred: E5 re-score on photoreal render; fal canny endpoint dead (multi-ControlNet via `flux-general` if needed); `FAL_KEY` placeholder + fal paragraph still to add to `.env.example`/`PROVIDERS.md`.
 
 ## Known issues (carried forward, tier-2 relevant)
 
@@ -59,6 +62,6 @@ updated: 2026-06-12
 
 ## What to do next
 
-1. Run **E1** (Rhino MCP extraction probe) — $0, proves the keystone.
-2. User: create fal.ai account, put `FAL_KEY` in `spike/.env` → unblocks E2/E3.
-3. E4/E5 afterward; E6 once E1 masks exist.
+1. **Phase 3.1 — Rhino capture path**: Grasshopper component (3–5 days) or thin .rhp wrapping the proven atomic-capture script (`spike/host_probe_rhino.py` docstring + `spike/outputs/e2_house/` flow).
+2. **Phase 3.2 — Layer-model + canvas prototype** on the e2_house ground-truth data: region hover/click → swatch → `flux2_edit + paste_tile` → layer toggle. The make-or-break scene-graph design.
+3. Tile-scale control for materials; 2px mask feather; multi-view material lock test (M4).

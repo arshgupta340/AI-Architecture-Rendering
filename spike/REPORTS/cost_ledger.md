@@ -41,6 +41,7 @@ Append-only log of every paid API call the overnight agent makes.
 2026-06-12 E4 | E4 | Google | nano-banana-pro-preview | 0.13 | Vision-Banana-style color-coded segmentation probe on E1 beauty.png; semantically coherent, geometrically drifted (mullion IoU 0.003) — see REPORTS/E4.md
 2026-06-12 E5 | E5 | Replicate | grounding-dino + sam-2 + grounded_sam | 0.50 | est. ~35 small predictions incl. detours/retries; discriminative tier-2 probe vs E1 ground truth — see REPORTS/E5.md
 2026-06-12 E2 | E2 | fal.ai + Google | flux-pro/v1/depth x2, flux-2-pro/edit, nano-banana-pro | 0.40 | render conditioning shootout on house frame; flux_depth wins on mask registration — see REPORTS/E2.md
+2026-06-12 E3 | E3 | fal.ai | flux-pro/v1/fill, flux-general/inpainting+ip-adapter, flux-2-pro/edit, kontext/max/multi | 0.30 | swatch-conditioning shootout; flux2_multiref + mask composite passes the travertine gate — see REPORTS/E3.md
 ```
 
 **Running total: $1.25**
