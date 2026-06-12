@@ -39,7 +39,7 @@ Florence-2 → SAM 3 on the same renders. Acid test: the `complex windows` mulli
 
 - **Decision output:** pick the tier-2 stack from E4 vs E5 results.
 
-### [ ] E6 — ID-mask end-to-end ($0)
+### [x] E6 — ID-mask end-to-end ($0) — PASSED (see result log)
 Feed an E1 ground-truth mask directly into the existing `spike/composite.py` + apply-material path, bypassing tag+segment.
 
 - **Gate:** edit quality ≥ the T24/T25 SAM2-mask runs → proves stage deletion on the plugin tier.
@@ -54,4 +54,5 @@ Feed an E1 ground-truth mask directly into the existing `spike/composite.py` + a
 
 *(append one line per executed experiment: date, spend, gate result, link to artifacts)*
 
+- **2026-06-12 — E6 — $0 — GATE PASSED.** Largest wall instance from E1's `instance_ids.png` (`mask_for(semantic=='wall')`, 2,162px, single GUID on `ENSCAPE::EXTERIOR WALL::CONCRETE PANELS`) fed directly into `composite.paste_tile` with a travertine tile — exact-instance edit, zero leakage onto mullions/neighbors, tag+segment stages bypassed entirely. Evidence: `spike/outputs/e1_rhino_probe/e6_sidebyside.png`.
 - **2026-06-12 — E1 — $0 — GATE PASSED.** 93.1% of object pixels decode exactly; 257 mullion instances with pixel-accurate masks at 2–4px; true z-buffer captured. Required a white-reference second pass (Rhino's "unlit" mode still applies a 0.7-slope headlight) and atomic capture. Real model: SFUrban. Artifacts: `spike/outputs/e1_rhino_probe/`, decoder `spike/host_probe_rhino.py`, [REPORTS/E1.md](../../spike/REPORTS/E1.md).
