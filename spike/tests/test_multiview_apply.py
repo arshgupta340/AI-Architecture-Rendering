@@ -193,3 +193,82 @@ def test_neutralize_wall_changes_pixels_and_keeps_size(anchor_view):
     assert out != edit
     img = Image.open(io.BytesIO(out))
     assert img.mode == "RGB" and img.size[0] > 0
+
+
+# --------------------------------------------------------------------------- #
+# materialize_view — the single-view stage shared by both server paths
+# --------------------------------------------------------------------------- #
+def test_materialize_view_live_bills_once_and_composites(anchor_view, swatch_path):
+    """Live materialize: one flux2_edit ([base, swatch] = 2 refs), one on_cost at
+    COST_EDIT, a composited frame at base size, and the mask is returned for reuse."""
+    calls = []
+    costs = []
+
+    def fake_edit(uris, prompt, timeout_s=420):
+        calls.append(len(uris))
+        return _png((10, 20, 30))
+
+    with patch.object(multiview_apply, "flux2_edit", side_effect=fake_edit):
+        mat = multiview_apply.materialize_view(
+            anchor_view, swatch_name="red_brick", swatch_path=swatch_path,
+            material_desc="red clay brick", region_ids=[1],
+            on_cost=lambda c, l: costs.append((c, l)))
+
+    assert calls == [2]                                   # base + swatch, no lock ref
+    assert costs and costs[0][0] == multiview_apply.COST_EDIT
+    assert mat["cost"] == multiview_apply.COST_EDIT
+    assert mat["region_ids"] == [1]
+    assert Image.open(io.BytesIO(mat["final_png"])).size == (16, 16)
+    # mask_png is the SAME bytes mask_png_from_ids would build for these ids
+    assert mat["mask_png"] == multiview_apply.mask_png_from_ids(anchor_view.ids, [1])
+
+
+def test_materialize_view_precomputed_is_free_and_makes_no_call(anchor_view, swatch_path):
+    """Precomputed (no-spend) materialize: zero flux2_edit calls, zero cost, no
+    on_cost firing, and the precomputed bytes are what get composited."""
+    n_calls = 0
+
+    def fake_edit(uris, prompt, timeout_s=420):
+        nonlocal n_calls
+        n_calls += 1
+        return _png((0, 0, 0))
+
+    costs = []
+    precomp = _png((222, 200, 170))
+    with patch.object(multiview_apply, "flux2_edit", side_effect=fake_edit):
+        mat = multiview_apply.materialize_view(
+            anchor_view, swatch_name="travertine", swatch_path=swatch_path,
+            material_desc="honed travertine", region_ids=[1], precomputed=precomp,
+            on_cost=lambda c, l: costs.append((c, l)))
+
+    assert n_calls == 0
+    assert costs == []
+    assert mat["cost"] == 0.0
+    assert mat["edit_png"] == precomp
+
+
+def test_apply_to_views_anchor_uses_materialize_view(anchor_view, front_view, swatch_path):
+    """The multi-view anchor stage is materialize_view: patching materialize_view to a
+    sentinel proves apply_to_views routes its anchor through that one shared function."""
+    sentinel_final = _png((7, 7, 7))
+    seen = {}
+
+    def fake_materialize(view, **kw):
+        seen.update(view_id=view.id, region_ids=kw["region_ids"],
+                    precomputed=kw.get("precomputed"))
+        return {"final_png": sentinel_final, "edit_png": sentinel_final,
+                "mask_png": multiview_apply.mask_png_from_ids(view.ids, kw["region_ids"]),
+                "region_ids": kw["region_ids"], "cost": 0.0}
+
+    # lock calls (the OTHER views) still go through flux2_edit; only the anchor is
+    # materialize_view, so stub flux2_edit too to stay offline.
+    with patch.object(multiview_apply, "materialize_view", side_effect=fake_materialize), \
+         patch.object(multiview_apply, "flux2_edit", side_effect=lambda *a, **k: _png((1, 1, 1))):
+        res = multiview_apply.apply_to_views(
+            anchor=anchor_view, others=[front_view], swatch_name="travertine",
+            swatch_path=swatch_path, material_desc="honed travertine",
+            region_semantic="wall")
+
+    assert seen["view_id"] == "hero"          # the anchor view was materialized
+    assert seen["region_ids"] == [1]          # the wall ids
+    assert res["anchor"]["final_png"] == sentinel_final

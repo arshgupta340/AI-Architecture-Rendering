@@ -45,6 +45,24 @@ TEXTURED_MATERIALS = {"red_brick", "charcoal_seam", "weathered_cedar"}  # A2 neu
 
 COST_EDIT = 0.06   # FLUX.2 [pro] Edit, measured in E3
 
+# Swatch name -> material description woven into the edit prompts. The engine owns
+# this text so the single-view (apps/canvas-prototype/server.py:apply_material) and
+# multi-view (apply_to_views) paths cannot drift apart. There is exactly ONE
+# definition of SWATCH_PROMPTS in the repo; the server imports it from here.
+SWATCH_PROMPTS = {
+    "travertine": "honed travertine stone cladding",
+    "red_brick": "red clay brick in running bond courses with mortar joints",
+    "charcoal_seam": "charcoal standing-seam metal cladding with vertical seams",
+    "white_stucco": "smooth white stucco render",
+    "weathered_cedar": "weathered cedar board siding",
+}
+
+
+def material_desc_for(swatch: str) -> str:
+    """Material description for a swatch (falls back to the de-underscored name).
+    The single canonical resolver both server paths use."""
+    return SWATCH_PROMPTS.get(swatch, swatch.replace("_", " "))
+
 
 def lock_strategy(swatch: str) -> str:
     """'raw' (v1 raw-anchor lock) or 'neutral' (A2). Defaults to neutral (safer:
@@ -55,15 +73,19 @@ def lock_strategy(swatch: str) -> str:
 
 
 # --------------------------------------------------------------------------- #
-# masks + payload helpers (mirror server.py / v2 exactly)
+# masks + payload helpers — the canonical mask treatment for the whole product
+# (apps/canvas-prototype/server.py delegates here; v2 uses the same values).
+# Registration is tight post-E2b (98% of edges within 2px), so dilate only +1px
+# to cover the anti-aliased ring, then feather ~1px so paste_tile's linear blend
+# hides hairline seams at trim boundaries.
 # --------------------------------------------------------------------------- #
-DILATE = 3
-FEATHER = 1.1
+DILATE = 3      # MaxFilter window: +1px each side
+FEATHER = 1.1   # Gaussian blur radius on the mask edge
 
 
 def mask_png_from_ids(ids: np.ndarray, region_ids: Iterable[int]) -> bytes:
-    """Soft union mask for instance ids (+1px dilate, ~1px feather) — same as
-    apps/canvas-prototype/server.py:_mask_png so composites match the product."""
+    """Soft union mask for instance ids (+1px dilate, ~1px feather). The single
+    mask builder shared by the single-view and multi-view server paths."""
     m = np.isin(ids, list(region_ids))
     img = Image.fromarray((m * 255).astype(np.uint8))
     img = img.filter(ImageFilter.MaxFilter(DILATE)).filter(ImageFilter.GaussianBlur(FEATHER))
@@ -193,6 +215,53 @@ class View:
         return self.ids_for_semantic("trim")
 
 
+def materialize_view(
+    view: View, *, swatch_name: str, swatch_path: Path, material_desc: str,
+    region_ids: list[int], target: str | None = None,
+    precomputed: bytes | None = None,
+    on_cost: Callable[[float, str], None] | None = None,
+) -> dict:
+    """Materialize ONE view: clad its `region_ids` in a swatch and composite the
+    result back through the view's instance mask.
+
+    This is the single-view materialization shared by both server endpoints — it is
+    `apply_to_views`'s anchor stage extracted verbatim, so the single-view
+    /api/apply_material path and the multi-view anchor cannot diverge.
+
+      * builds the union mask via `mask_png_from_ids`,
+      * uses `precomputed` bytes as the edit when given (the no-spend travertine
+        path) and bills nothing; otherwise runs `flux2_edit([base, swatch], anchor_prompt)`
+        and fires `on_cost(COST_EDIT, label)` for the one billable call,
+      * composites with `composite.paste_tile`.
+
+    `target` is the surface phrase woven into `anchor_prompt`; when omitted it is
+    derived from the selected ids' semantics (the single-view behaviour). Callers
+    that select by semantic pass it explicitly to keep their wording exact.
+
+    Returns {"final_png": composited RGB frame, "edit_png": the raw edit used as a
+    lock reference, "mask_png": the soft union mask (so callers reuse the SAME bytes
+    for a layer alpha), "region_ids": region_ids, "cost": 0.0 | COST_EDIT}.
+    """
+    if not region_ids:
+        raise ValueError(f"view '{view.id}' has no regions to materialize")
+    mask = mask_png_from_ids(view.ids, region_ids)
+    if target is None:
+        target = " and ".join(sorted({view.regions[str(i)].get("semantic", "?")
+                                      for i in region_ids if str(i) in view.regions})) or "wall"
+    if precomputed is not None:
+        edit = precomputed
+        spent = 0.0
+    else:
+        if on_cost:
+            on_cost(COST_EDIT, f"{swatch_name}->{target} ({view.id})")
+        edit = flux2_edit([_uri(view.base_png), _swatch_uri(swatch_path)],
+                          anchor_prompt(material_desc, target))
+        spent = COST_EDIT
+    final = composite.paste_tile(view.base_png, mask, edit)
+    return {"final_png": final, "edit_png": edit, "mask_png": mask,
+            "region_ids": region_ids, "cost": spent}
+
+
 def apply_to_views(
     *, anchor: View, others: list[View], swatch_name: str, swatch_path: Path,
     material_desc: str, region_semantic: str | None = None,
@@ -227,20 +296,19 @@ def apply_to_views(
         present = set(int(k) for k in view.regions)
         return sorted(i for i in (anchor_region_ids or []) if i in present)
 
-    # ---- 1. anchor ----
+    # ---- 1. anchor — the single-view materialization (shared with the canvas
+    # server's /api/apply_material). Goes through materialize_view so there is ONE
+    # mask+edit+composite path; the "anchor " log prefix is preserved via the
+    # on_cost adapter below.
     a_ids = ids_for(anchor)
     if not a_ids:
         raise ValueError(f"anchor view '{anchor.id}' has no regions for {target}")
-    a_mask = mask_png_from_ids(anchor.ids, a_ids)
-    if anchor_precomputed is not None:
-        anchor_final = composite.paste_tile(anchor.base_png, a_mask, anchor_precomputed)
-        anchor_edit_full = anchor_precomputed
-    else:
-        cost(COST_EDIT, f"anchor {swatch_name}->{target} ({anchor.id})")
-        edit = flux2_edit([_uri(anchor.base_png), _swatch_uri(swatch_path)],
-                          anchor_prompt(material_desc, target))
-        anchor_final = composite.paste_tile(anchor.base_png, a_mask, edit)
-        anchor_edit_full = edit
+    anchor_mat = materialize_view(
+        anchor, swatch_name=swatch_name, swatch_path=swatch_path,
+        material_desc=material_desc, region_ids=a_ids, target=target,
+        precomputed=anchor_precomputed,
+        on_cost=(lambda c, _l: cost(c, f"anchor {swatch_name}->{target} ({anchor.id})")))
+    anchor_final = anchor_mat["final_png"]
 
     # ---- 2. build the lock reference from the anchor ----
     if strategy == "neutral":

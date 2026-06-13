@@ -33,7 +33,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import numpy as np
-from PIL import Image, ImageFilter
+from PIL import Image
 
 HERE = Path(__file__).parent
 REPO = HERE.parent.parent
@@ -44,9 +44,8 @@ LAYERS = PROJECT / "layers"
 
 sys.path.insert(0, str(SPIKE))
 import composite  # noqa: E402  (spike/composite.py — paste_tile)
-from run_e3_swatch import _data_uri, _fal_call  # noqa: E402  (proven fal idioms)
 from ingest import build_project  # noqa: E402  (capture -> canvas pipeline)
-import multiview_apply  # noqa: E402  (spike/multiview_apply.py — the v2 lock engine)
+import multiview_apply  # noqa: E402  (the shared FLUX edit + mask + composite path)
 
 PORT = int(os.environ.get("PORT", 8765))
 COST_PER_CALL = 0.06          # FLUX.2 [pro] Edit, measured in E3
@@ -104,24 +103,6 @@ def ingest(body: dict) -> dict:
     return info
 
 
-# Mask edge treatment. Registration is tight post-E2b (98% of edges within
-# 2px), so we dilate only +1px to cover the anti-aliased ring, then feather
-# ~1px so paste_tile's linear blend hides hairline seams at trim boundaries.
-DILATE = 3      # MaxFilter window: +1px each side
-FEATHER = 1.1   # Gaussian blur radius on the mask edge
-
-
-def _mask_png(region_ids: list[int]) -> bytes:
-    """Soft union mask for the given instance ids (+1px dilate, ~1px feather)."""
-    m = np.isin(_ids, region_ids)
-    img = Image.fromarray((m * 255).astype(np.uint8))
-    img = img.filter(ImageFilter.MaxFilter(DILATE))
-    img = img.filter(ImageFilter.GaussianBlur(FEATHER))
-    buf = io.BytesIO()
-    img.save(buf, "PNG")
-    return buf.getvalue()
-
-
 def _layer_rgba(final_png: bytes, mask_png: bytes) -> bytes:
     """Edit pixels inside mask, transparent outside → a stackable layer."""
     img = Image.open(io.BytesIO(final_png)).convert("RGBA")
@@ -132,13 +113,10 @@ def _layer_rgba(final_png: bytes, mask_png: bytes) -> bytes:
     return buf.getvalue()
 
 
-SWATCH_PROMPTS = {
-    "travertine": "honed travertine stone cladding",
-    "red_brick": "red clay brick in running bond courses with mortar joints",
-    "charcoal_seam": "charcoal standing-seam metal cladding with vertical seams",
-    "white_stucco": "smooth white stucco render",
-    "weathered_cedar": "weathered cedar board siding",
-}
+# Material prompt text lives in the engine (multiview_apply.SWATCH_PROMPTS) so the
+# single-view and multi-view paths share one source of truth — re-exported here for
+# any caller that imports it from the server.
+SWATCH_PROMPTS = multiview_apply.SWATCH_PROMPTS
 
 
 def _swatch_path(name: str) -> Path:
@@ -182,21 +160,31 @@ def apply_material(body: dict) -> dict:
         return {"layer_id": key, "image_url": url, "cost_est": 0.0,
                 "live": False, "cached": True}
 
-    mask_png = _mask_png(region_ids)
     semantics = _semantic_of(region_ids)
+    target = " and ".join(sorted(semantics))
+    material = multiview_apply.material_desc_for(swatch)
+    # One View DTO over the loaded single-view project; the same materialize_view the
+    # multi-view anchor stage uses builds the mask, runs the edit (or uses precomputed
+    # bytes), and composites — so the two paths cannot drift.
+    view = multiview_apply.View("canvas", _base_png, _ids, _regions["regions"])
 
     # ---- NO-SPEND demo path: precomputed travertine walls on the ALIGNED base
     if swatch == "travertine" and semantics == {"wall"}:
         # travertine_walls_v2.png has travertine across the whole wall semantic
         # on the same depth+canny base the canvas shows; masking by the
         # *requested* instance mask yields a correct per-selection layer.
-        final = (SPIKE / "outputs" / "e2_house_v2" / "travertine_walls_v2.png").read_bytes()
-        out_path.write_bytes(_layer_rgba(final, mask_png))
+        precomp = (SPIKE / "outputs" / "e2_house_v2" / "travertine_walls_v2.png").read_bytes()
+        mat = multiview_apply.materialize_view(
+            view, swatch_name=swatch, swatch_path=swatch_file, material_desc=material,
+            region_ids=region_ids, target=target, precomputed=precomp)
+        out_path.write_bytes(_layer_rgba(mat["final_png"], mat["mask_png"]))
         print(f"[apply] NO-SPEND path: precomputed E3 travertine walls -> {key}")
         return {"layer_id": key, "image_url": url, "cost_est": 0.0,
                 "live": False, "cached": False}
 
-    # ---- live path: FLUX.2 [pro] Edit (E3 winner) + mask composite
+    # ---- live path: FLUX.2 [pro] Edit (E3 winner) + mask composite, via the shared
+    # materialize_view engine. The budget guard runs first; on_cost increments
+    # _live_calls for the one billable call, mirroring apply_material_all.
     if not os.environ.get("FAL_KEY"):
         raise RuntimeError("FAL_KEY not set (spike/.env) — live path unavailable")
     if _live_calls >= MAX_LIVE_CALLS:
@@ -204,26 +192,18 @@ def apply_material(body: dict) -> dict:
             f"budget guard: {MAX_LIVE_CALLS} live calls "
             f"(~${MAX_LIVE_CALLS * COST_PER_CALL:.2f}) already spent this session")
 
-    material = SWATCH_PROMPTS.get(swatch, swatch.replace("_", " "))
-    target = " and ".join(sorted(semantics))
-    prompt = (f"Apply the {material} material shown in the second image to the "
-              f"{target} surfaces of the building in the first image. Only those "
-              f"surfaces change; windows, trim, roof, ground, lighting, and "
-              f"camera stay exactly identical.")
-    _live_calls += 1
-    print(f"[apply] LIVE fal call {_live_calls}/{MAX_LIVE_CALLS} "
-          f"(~${COST_PER_CALL:.2f}): {swatch} -> {target} ({len(region_ids)} regions)")
+    def on_cost(c: float, label: str):
+        global _live_calls
+        _live_calls += 1
+        print(f"[apply] LIVE fal call {_live_calls}/{MAX_LIVE_CALLS} "
+              f"(~${c:.2f}): {swatch} -> {target} ({len(region_ids)} regions)")
+
     t0 = time.monotonic()
-    edit = _fal_call("fal-ai/flux-2-pro/edit", {
-        "prompt": prompt,
-        "image_urls": [_data_uri(PROJECT / "base.png", fmt="JPEG"),
-                       _data_uri(swatch_file, fmt="JPEG")],
-        "output_format": "png",
-        "safety_tolerance": "5",
-    })
+    mat = multiview_apply.materialize_view(
+        view, swatch_name=swatch, swatch_path=swatch_file, material_desc=material,
+        region_ids=region_ids, target=target, on_cost=on_cost)
     print(f"[apply] fal returned in {time.monotonic() - t0:.1f}s")
-    final = composite.paste_tile(_base_png, mask_png, edit)
-    out_path.write_bytes(_layer_rgba(final, mask_png))
+    out_path.write_bytes(_layer_rgba(mat["final_png"], mat["mask_png"]))
     return {"layer_id": key, "image_url": url, "cost_est": COST_PER_CALL,
             "live": True, "cached": False}
 
@@ -282,7 +262,7 @@ def apply_material_all(body: dict) -> dict:
     anchor_id = meta["anchor"]
     anchor = _load_view(anchor_id)
     others = [_load_view(v["id"]) for v in meta["views"] if v["id"] != anchor_id]
-    material_desc = SWATCH_PROMPTS.get(swatch, swatch.replace("_", " "))
+    material_desc = multiview_apply.material_desc_for(swatch)
     strategy = multiview_apply.lock_strategy(swatch)
 
     def _mv_key(vid: str, ids: list[int]) -> str:
