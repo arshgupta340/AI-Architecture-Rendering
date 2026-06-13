@@ -89,13 +89,16 @@ Real Rhino 8 GhPython component wrapping `capture_and_send`: press a Toggle → 
 
 Textured-material lock fixed by branching on material class: smooth/colour-dominated (travertine) → raw-anchor 3-ref (chroma dE_ab 7.10→1.80); textured (brick) → **A2 neutral-reference lock** (trim white-balance + luminance-flatten the anchor wall, feed THAT as the 3rd ref) — fixes v1's blotchy wash (texture-energy 25.9→9.5, chroma 20.7→9.6). Honest metric is chroma-only dE_ab (L* legitimately differs across golden-hour vs brighter views). Canvas shipped end-to-end: `prepare_data_multiview.py` (N view-projects + `views.json`, single-view flow untouched), `server.py` `POST /api/apply_material_all` + `GET /api/views` backed by reusable `spike/multiview_apply.py`, UI view-tabs + "Apply to all views" + view-aware layers. 21/21 multiview + 22/22 single-view back-compat; 75 tests. Report: [multiview_v2.md](../spike/REPORTS/multiview_v2.md). Total fal spend ≈ $1.99 of $50.
 
+## 2026-06-13 — Brick lock honest metric (v3) + apply-engine unify (round 3)
+
+- **Multi-view brick refinement (`483cfe8`, $0).** The v2 "A2 doesn't beat naive" was a **metric artifact**. A new honest, illuminant-invariant metric ([spike/run_multiview_lock_v3.py](../spike/run_multiview_lock_v3.py): de-light each view by its own white-trim illuminant, compare a\*/b\*) shows **red_brick A2 BEATS naive — honest dE_ab 1.59 vs 4.41 (−64%)**: A2's intrinsic chroma (12.4, 21.5) matches the anchor's realised brick (13.9, 20.9); naive drifts redder (a\*=18.2). Candidate A4 (chroma-preserving ref) built and **rejected offline** (would regress toward naive). No new technique needed; keep A2 for textured. [[DECISIONS#multiview-honest-metric]], [REPORTS/multiview_v3.md](../spike/REPORTS/multiview_v3.md). **Open product question surfaced:** under the honest metric the smooth-material raw-anchor lock is *lit*-best but *honest*-worst (injects the anchor's light); route smooth→A2 or keep raw-anchor for perceptual sameness? (Not yet changed in code.)
+- **Tech-debt unify (`bca016b`).** Single-view `server.apply_material` now delegates to a new shared `multiview_apply.materialize_view()` (the extracted anchor stage); `SWATCH_PROMPTS` lives once in the engine. API shapes / no-spend path / budget guard preserved. **75 → 82 tests green.**
+
 ## What to do next
 
-The full plugin-first product loop now holds end-to-end: Grasshopper button → capture → locked render → ground-truth masks → swatch edit → non-destructive layers → multi-view consistency. Candidate next moves (no clear forcing function — user picks):
-1. Material library: curated PBR swatches (ambientCG ingest) + tile-scale/orientation prompt hints; replace the 4 procedural placeholders.
-2. Multi-view lock refinement: A2 stops brick *hurting* but doesn't beat swatch-only naive (residual is correct re-lighting) — push neutral-ref further, or add per-view sun-direction awareness.
-3. Tech-debt (flagged by the v2 agent): consolidate the single-view `apply_material` onto the shared `spike/multiview_apply.py` engine.
-4. Second host: Revit add-in scoping (native BIM categories — no layer-discipline needed); SketchUp after.
-5. Tier-2 fallback (lower priority): E5 re-score on a photoreal render; Florence-2→SAM 3 vs the Vision-Banana-style probe.
-3. Material library: tile-scale prompt hints; more real swatches (ambientCG ingest).
-4. Tier-2 follow-ups (lower priority): E5 re-score on the photoreal render; Revit add-in scoping.
+The full plugin-first product loop holds end-to-end: Grasshopper button → capture → locked render → ground-truth masks → swatch edit → non-destructive layers → multi-view consistency (the textured lock is now validated to beat naive under the honest metric). Candidate next moves (user picks):
+1. **Product call (small, user-decided):** smooth-material lock strategy — route smooth materials → A2 neutral (one strategy, never injects light) vs keep the committed raw-anchor (best perceptual lit-sameness). See [[DECISIONS#multiview-honest-metric]].
+2. **Material library:** curated PBR swatches (ambientCG ingest) + tile-scale/orientation prompt hints; replace the 4 procedural placeholders.
+3. **Second host:** Revit add-in scoping (native BIM categories — no layer-discipline needed); SketchUp after.
+4. **Tier-2 fallback (lower priority):** E5 re-score on a photoreal render; Florence-2→SAM 3 vs the Vision-Banana-style probe.
+5. **Optional:** ~$0.12 stochastic-robustness re-run of brick naive/A2 (prove the honest win is seed-stable); wire the honest metric into the canvas if it ever surfaces a consistency number to users.

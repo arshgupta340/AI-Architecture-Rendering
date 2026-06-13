@@ -7,6 +7,20 @@ updated: 2026-05-19
 
 Append-only conversation log. **Newest at top.** One entry per chat session.
 
+## 2026-06-13 — Brick lock honest metric (v3) + apply-engine unify (1 bg agent + foreground)
+
+**Scope:** Two parallel candidate-next-steps the user picked: (A, foreground, paid-call-controlled) push the textured-material lock to actually beat naive; (B, background `general-purpose` agent) consolidate the single-view apply path onto the shared `multiview_apply` engine. Partitioned by disjoint file sets so they couldn't collide (A owns `run_multiview_lock_v3.py`+report+outputs and treats `multiview_apply.py` read-only; B owns `multiview_apply.py`+`server.py`+tests).
+
+**Decisions:** [[DECISIONS#multiview-honest-metric]] — illuminant-invariant chroma is the cross-view consistency bar; A2 already beats naive for brick; A4 rejected; the smooth-material strategy ([[DECISIONS#multiview-material-class]]) is **reopened** as an open product question.
+
+**Tried:**
+- **A (`483cfe8`):** built `run_multiview_lock_v3.py` with an honest metric — de-light each view by its own trim illuminant, compare (a*,b*). FREE re-score of cached v1/v2 composites: **red_brick A2 honest dE_ab 1.59 vs naive 4.41 (−64%, BEATS naive)**; A1 2.92. Verified the metric (illuminants sane: ANCHOR warm RGB(1.10,1.00,0.90), FRONT cool (0.99,0.99,1.02); ~49k trim px in both views → no grey-world fallback; intrinsic-chroma mechanism — A2 (12.4,21.5) matches anchor (13.9,20.9), naive drifts red a*=18.2). Hypothesised A4 (chroma-preserving neutral ref); built it, **refuted offline** (A4-ref a*=23.2 redder than anchor 13.9 → would regress). **$0 spent.** Surfaced the travertine lit/honest tension (v1-raw is lit-best but honest-worst, 12.86).
+- **B (`bca016b`):** extracted `materialize_view()` in `multiview_apply` (the anchor stage), moved `SWATCH_PROMPTS` there as the sole def + `material_desc_for()`; `server.apply_material` now delegates. API shapes, no-spend travertine path, and `MAX_LIVE_CALLS` guard all preserved. **75 → 82 tests.** Reviewed the diff myself; the one real change is the single-view live prompt now using the engine's `anchor_prompt` (one-comma difference, semantically identical).
+
+**Outcome:** 2 commits on `overnight/spike-builder-2026-05-17`. 82 tests green. `REPORTS/multiview_v3.md` + sidebyside evidence + `metrics_v3.json`. Total fal spend unchanged at **≈ $1.99** (this session $0).
+
+**Follow-ups:** **user product call** on the smooth-material lock strategy (route smooth → A2, or keep raw-anchor for perceptual sameness); optional ~$0.12 stochastic-robustness re-run of brick naive/A2 (prove the win is seed-stable); wire the honest metric into the canvas if it ever surfaces a consistency number; material library; Revit add-in.
+
 ## 2026-06-13 — Grasshopper "Send to Canvas" + multi-view lock v2 (2 parallel Opus agents, round 2)
 
 **Scope:** Second parallel round — Grasshopper button (agent owned Rhino) + multi-view lock v2 & canvas wiring (Rhino-free agent).

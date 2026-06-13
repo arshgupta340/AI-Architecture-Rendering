@@ -20,6 +20,22 @@ Each entry follows the same shape so it can be scanned in 15 seconds:
 
 ---
 
+## 2026-06-13 — Cross-view consistency is measured illuminant-invariantly; the textured lock (A2) already beats naive {#multiview-honest-metric}
+
+**Decision:** The honest measure of "same material across views" is **illumination-invariant chroma**: de-light each view's wall by its own white-trim illuminant (a von-Kries divide — the trim is painted white, so its rendered colour *is* that view's sun), then compare `(a*, b*)`. This — not v2's lit-chroma `dE_ab` — is the bar for the multi-view lock. Under it the **A2 neutral-reference lock BEATS swatch-only naive for textured red_brick (honest dE_ab 1.59 vs 4.41, −64%)**, so no new technique is adopted (the candidate A4 was built and rejected). `spike/run_multiview_lock_v3.py:_delit_wall_lab/honest_de_ab` is the reference implementation.
+
+**Context:** v2 ([[#multiview-material-class]]) concluded A2 "stops brick hurting but doesn't beat naive" (lit dE_ab 9.55 vs 8.09) and flagged the residual as "correct re-lighting." v3 confirmed that literally: v2's metric compares each view's *lit* wall to the golden-hour anchor's *lit* wall, so it penalises a view for being correctly cooler. De-lighting both views first shows A2's intrinsic brick chroma (12.4, 21.5) sits on the anchor's realised brick (13.9, 20.9), while naive drifts redder (a*=18.2) by re-interpreting the raw swatch per view. $0 — the win came from re-scoring cached composites, not new renders.
+
+**Alternatives considered:** A4 (flatten the directional shadow + recolour the reference's mean to the swatch) — rejected on offline evidence: the A4 reference is redder (a*=23.2) than the anchor's realised brick, so it would pull view-2 toward naive's error. Per-view sun-direction prompt — unnecessary once the metric factors lighting out. Keep v2's lit metric — rejected; it rewards copying the anchor's light, the exact v1 failure mode.
+
+**Reasoning:** The product claim is "change a material once, it stays consistent across views" — that is material *identity*, i.e. chroma after the per-view sun is removed, not lit appearance. The missing piece was the metric, not the technique; A2 was already correct.
+
+**Revisit if:** a relight-aware material model makes lit-appearance matching safe; or the canvas needs to *display* a consistency number to users (then this metric is what it should report).
+
+**Reopens [[#multiview-material-class]] for SMOOTH materials.** Under the honest metric, the raw-anchor (v1) lock that decision routes travertine/stucco through is the *lit* winner but the honest *worst* (travertine v1 honest dE_ab 12.86 — it injects the anchor's light), while naive ≈ A2 at honest parity. Smooth materials show no directional-shadow artifact, so this was invisible to the lit metric. **Open product call:** route smooth → A2 neutral too (one strategy, never injects light) vs keep raw-anchor for maximal perceptual lit-sameness in the demo. Recommend the former; not yet changed in code.
+
+---
+
 ## 2026-06-13 — Multi-view material lock: branch the strategy by material class {#multiview-material-class}
 
 **Decision:** "One swatch → all views" uses an anchor-reference lock (edit the anchor view, feed its edited result as a 3rd FLUX.2 Edit reference for the other views), but the reference differs by material class: **smooth/colour-dominated materials (e.g. travertine) → raw anchor edit** as reference; **textured/shadow-interacting materials (e.g. brick) → a lighting-neutralized anchor crop** ("A2": divide out the golden-hour illuminant estimated from white trim, then luminance-flatten the wall region). Cross-view consistency is measured by **chroma-only ΔE (dE_ab)**, not full-Lab ΔE.

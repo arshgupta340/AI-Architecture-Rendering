@@ -63,3 +63,4 @@ Notes:
 - B3-RUN-1 user-authorized: ~$0.43 marginal budget; actual marginal spend was $0.08 (2 of 9 renderers succeeded, 7 failed with 4xx errors that don't bill). See `spike/outputs/spike2_5/b3/scores.csv` for per-renderer status.
 - T25 user-authorized $0.30–0.50 for FLUX-vs-SD comparison budget; actual marginal spend was $0.05 for one comparison run. 4–9 more runs in budget if we want to map further (region, material) combos via FLUX.
 - 2026-06-03 user-authorized ~$1.20 for an 8-view masterplan render (separate from the spike bake-off); actual spend ~$0.36 across 9 NB Pro calls. Outputs in `spike/outputs/masterplan_renders/`.
+- 2026-06-13 multiview-v3 + tech-debt-unify session: **$0**. The brick-lock "beats naive" result came from re-scoring cached v1/v2 composites under a new illuminant-invariant metric (`run_multiview_lock_v3.py`) plus an offline-rejected A4 reference — no fal calls. Tech-debt was a pure refactor (tests only). Running total unchanged at $1.99.
