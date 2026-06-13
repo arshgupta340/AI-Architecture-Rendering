@@ -30,8 +30,12 @@ Live brick-on-walls on the new base (`val_brick_window_check.png`, `val_facade_z
 - `prepare_data.py` → sources `e2_house_v2`, base = the depth+canny `base_render.png`; also clears the layer cache on refresh (cache key is content-independent — stale-layer trap).
 - `server.py` no-spend travertine path → `e2_house_v2/travertine_walls_v2.png` (aligned). Live path unchanged (FLUX.2 Edit on aligned base + paste_tile). 62 tests green; API smoke + regeneration confirmed.
 
-## Trade-offs & follow-ups
+## Polish + feather (resolved, same session)
 
-- `flux-general` is the FLUX-dev model — the locked render is a touch more desaturated/gray than the flux-pro `flux_depth` beauty shot. Registration >> a little polish for a masking product, but a future option: lock structure with depth+canny, then a *low-denoise* flux-pro img2img polish (risk: re-drift — measure before adopting).
-- Remaining ~1.5% edge slack is anti-aliasing at boundaries; a 1–2px composite feather would hide hairline seams.
-- The capture should always run at the render's native size; consider baking `out_size` into `rhino_capture.capture()` so the viewport-resize step is explicit rather than a manual `vp.Size` set.
+- **Warmth recovered for free, no re-drift.** The gray look was the *prompt*, not the model — I'd never specified siding colour, so flux-dev defaulted to gray. A warm, specific prompt (terracotta lap siding, golden-hour light, saturated) on the *same* canny@0.8+depth@0.5 lock → `renders/warm_w1.png`, now the canonical `base_render.png`. Edge alignment held: **98.2% within 2px** (vs 98.5% gray — statistically identical). No second-stage img2img needed, so zero re-drift risk. The two-stage low-denoise polish idea is therefore dropped as unnecessary.
+- **Edge feather added.** `server._mask_png` now dilates only +1px (was +2px — registration is tight enough) then Gaussian-feathers ~1.1px; `paste_tile`'s `Image.composite` blends the soft alpha, hiding hairline seams at trim boundaries (`feather_compare.png`). Feather is now polish, not a crutch.
+
+## Remaining follow-ups
+
+- Bake `out_size` into `rhino_capture.capture()` so the native-size capture is explicit, not a manual `vp.Size` set before the call.
+- flux-dev union photorealism has a ceiling; if a warmer/sharper base is wanted later, re-evaluate a flux-pro multi-ControlNet path if/when fal exposes one (their `flux-pro/v1/canny` queue was dead in E2).

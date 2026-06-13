@@ -65,11 +65,19 @@ def _load_project():
     _base_png = (PROJECT / "base.png").read_bytes()
 
 
+# Mask edge treatment. Registration is tight post-E2b (98% of edges within
+# 2px), so we dilate only +1px to cover the anti-aliased ring, then feather
+# ~1px so paste_tile's linear blend hides hairline seams at trim boundaries.
+DILATE = 3      # MaxFilter window: +1px each side
+FEATHER = 1.1   # Gaussian blur radius on the mask edge
+
+
 def _mask_png(region_ids: list[int]) -> bytes:
-    """Union mask for the given instance ids, dilated ~2px (E3 recipe)."""
+    """Soft union mask for the given instance ids (+1px dilate, ~1px feather)."""
     m = np.isin(_ids, region_ids)
     img = Image.fromarray((m * 255).astype(np.uint8))
-    img = img.filter(ImageFilter.MaxFilter(5))
+    img = img.filter(ImageFilter.MaxFilter(DILATE))
+    img = img.filter(ImageFilter.GaussianBlur(FEATHER))
     buf = io.BytesIO()
     img.save(buf, "PNG")
     return buf.getvalue()
