@@ -25,8 +25,12 @@ LightingScheme=None, edges/curves/shadows off, DisableTransparency=True):
 3. All passes must be captured ATOMICALLY (one script, no camera/viewport
    changes in between) — the viewport can resize between MCP calls.
 4. Disable grid/axes (vp.ConstructionGridVisible etc.) or they pollute pixels.
-5. CaptureToBitmap(size, displayMode) does not reliably honor updated display
-   mode attributes; set vp.DisplayMode = mode and capture without the arg.
+5. White/ID passes MUST use the CaptureToBitmap(size, displayModeDescription)
+   overload. The bare CaptureToBitmap(size) returns a STALE default-lit frame
+   in a headless/MCP viewport (foreground median ~157 == background -> 0%
+   decode); the mode-arg overload forces a real render of E1_IDMask
+   (median ~191 -> ~97%). [Corrects an earlier note that claimed the opposite;
+   root-caused 2026-06-12, see spike/rhino_capture.py.]
 6. Anti-aliased edge pixels (~7% of object pixels at 1515px width) fail the
    residual check and stay unassigned — correct behavior; they are boundary
    pixels, not misassignments.

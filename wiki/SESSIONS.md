@@ -7,6 +7,18 @@ updated: 2026-05-19
 
 Append-only conversation log. **Newest at top.** One entry per chat session.
 
+## 2026-06-13 — Capture repeatability root-fix + multi-view material lock (2 parallel Opus agents)
+
+**Scope:** Two parallel agents — fix capture in-session repeatability (A, owned Rhino) and build the multi-view material lock (B, no Rhino, on pre-captured views).
+
+**Outcome:**
+- **A (`0f49c7a`):** root-caused the "only first capture decodes, rest → 0.3%" bug — it was the bare `CaptureToBitmap(size)` overload returning a stale default-lit frame in headless Rhino (byte-identical across modes, fg median 157). Fix = `CaptureToBitmap(size, displayMode)` overload → median 191, ~97%. `capture()` now idempotent in-session (no reopen). Added white-pass health gate + `doc_path` retry; 69 tests. **Reverses the old E1 finding** (corrected `host_probe_rhino.py` #5). Main session independently re-validated: 2 captures/1 session → 90.5% & 92.9%.
+- **B (`2cfbc55`):** multi-view material lock via anchor-reference (3rd FLUX.2 Edit ref = anchor's edited result). Travertine ΔE 7.43→4.14 (−44%, win); red brick backfired (baked-shadow/sun-direction mismatch) — finding: color-dominated materials lock, textured ones need lighting normalized first. $0.38.
+
+**Decisions:** capture's reliable path is the mode-arg overload (not bare); multi-view lock works material-class-dependently (lighting normalization is the v2 unlock for textured materials).
+
+**Follow-ups:** Grasshopper "Send to Canvas" component (capture is reliable now); multi-view lock v2 (lighting normalize) + canvas wiring; material library.
+
 ## 2026-06-12 — Capture→canvas wiring (P3.3) + warm polish + edge feather
 
 **Scope:** Make "capture in Rhino → canvas updates" one motion; recover warm render look; feather composite seams.

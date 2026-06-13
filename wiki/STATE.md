@@ -73,9 +73,17 @@ User found the canvas masks didn't land on the rendered elements (brick over win
 
 "Click Capture in Rhino → canvas updates" is wired end to end, validated live on a *fresh camera view* (decode 92.9%, 98.5% edge align). Rhino-side `rhino_capture.capture_and_send()` POSTs the bundle to the server's `POST /api/ingest`, which runs `ingest.build_project` (decode → `render_locked` warm depth+canny render → `write_web_project`); the canvas polls `GET /api/version` (base.png mtime) every 3s and auto-reloads, clearing the now-stale layer stack ("● synced" in the header). Reusable `render_locked()` now carries the warm prompt (was inline). Robustness from the live run: (a) `rhino_capture` forces flat-unlit white-reference shading; (b) **a long-idle/heavily-churned Rhino session can return a dim white-reference pass → garbage masks; the pipeline now rejects any capture decoding <50% before spending on the render**, and a fresh model reopen restores 90%+. Canvas currently restored to the known-good e2_house_v2 hero project.
 
+## Capture repeatability ROOT-CAUSED + fixed (2026-06-13, P3.3-fix `0f49c7a`)
+
+The "only the first capture per doc-open decodes; the rest → 0.3%" bug was **not** session/GL degradation — it was the bare `view.CaptureToBitmap(size)` overload returning a **stale default-lit frame** in a headless/MCP viewport (proved: byte-identical across display modes, fg median 157==background). Fix: white/ID passes now use `CaptureToBitmap(size, displayModeDescription)` (`_capture_idmode`) → fg median 191, ~97% decode. **`capture()` is now idempotent in-session — no reopen needed.** Added a white-pass brightness health gate (`MIN_LIGHT_PASS_MEDIAN=180`, raises instead of returning garbage) + optional `doc_path` retry. 69 tests. **Reverses the old E1 note** (corrected in `host_probe_rhino.py` finding #5). Independently re-validated: 2 captures, one session, different cameras → 90.5% & 92.9%.
+
+## Multi-view material lock validated (2026-06-13, M4 `2cfbc55`)
+
+Anchor-reference technique (`spike/run_multiview_lock.py`): edit the anchor view, then feed its edited result as a 3rd FLUX.2 Edit reference when editing other views. **Travertine: wall ΔE-to-anchor 7.43 (naive) → 4.14 (locked), −44% — clean win.** Red brick **backfired** (21.62 vs 8.25): the anchor's baked golden-hour shadows + differing camera-relative sun direction inject wrong lighting. **Finding: color-dominated materials lock cleanly; texture/shadow-heavy materials need lighting normalized first.** $0.38. Report: [multiview.md](../spike/REPORTS/multiview.md).
+
 ## What to do next
 
-1. **(done)** capture→canvas wiring. Next: harden capture stability — auto-detect a dim white pass and retry in-Rhino (re-init the view) so users never have to reopen; then build the real Grasshopper "Send to Canvas" component around `capture_and_send`.
-2. Material library: tile-scale prompt hints; more real swatches (ambientCG ingest). (Edge feather + warm base done in E2b.)
-3. Multi-view material lock (M4): capture 2–3 views, same swatch + per-view masks, check consistency (anchor-reference technique). The wiring now makes multi-view capture cheap.
+1. Build the real Grasshopper "Send to Canvas" component around `capture_and_send` (in-session capture is now reliable — multi-view capture from one Rhino session works). The `<50%` ingest guard + in-Rhino health gate are belt-and-suspenders.
+2. Multi-view lock v2: normalize lighting before the anchor-lock (neutral relight, or soften the prompt to "same material *type/tone*") so textured materials (brick) lock too. Then wire multi-view into the canvas (one swatch → all views).
+3. Material library: tile-scale prompt hints; more real swatches (ambientCG ingest).
 4. Tier-2 follow-ups (lower priority): E5 re-score on the photoreal render; Revit add-in scoping.
