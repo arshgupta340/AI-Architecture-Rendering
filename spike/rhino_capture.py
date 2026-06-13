@@ -25,9 +25,16 @@ THE PROVEN FLOW (do not reorder — every step is load-bearing, see E1 report):
 2. ALL passes captured ATOMICALLY in one script run — the hidden viewport can
    resize between separate MCP calls, silently misaligning the passes.
 3. Grid/axes (vp.ConstructionGridVisible etc.) disabled or they pollute pixels.
-4. Beauty: view.CaptureToBitmap(size, shadedMode). White/ID passes: set
-   vp.DisplayMode = idmode and capture WITHOUT the mode argument —
-   CaptureToBitmap(size, mode) does NOT honor updated display-mode attributes.
+4. ALL passes captured via view.CaptureToBitmap(size, mode) — beauty with the
+   Shaded mode, white/ID with the E1_IDMask mode. The bare CaptureToBitmap(size)
+   (no mode arg) does NOT re-render the viewport's current DisplayMode in a
+   headless / Rhino-MCP session: it returns a stale default-lit frame, so the
+   white pass comes back dim and decode collapses to ~0% on every capture after
+   the first. The (size, mode) overload forces a real render and makes capture()
+   idempotent across repeated calls in one session (no doc reopen). A foreground
+   brightness gate on the white pass raises rather than ship a dim, undecodable
+   capture. (Earlier E1 notes claimed the overload ignored mode attributes; that
+   was not reproducible here — the overload is the reliable path. See REPORTS.)
 5. Rendering transform (empirical): out_ch = 0.7*in_ch + base_ch(pixel), where
    base varies per pixel/channel with surface orientation. The white pass gives
    base_ch = white_ch - 178.5, making the ID decode exact and self-calibrating.
@@ -86,6 +93,49 @@ ENCODING_DOC = {
               "key='g,b' when r==0 else 'r,g,b'",
     "render_transform": "out=0.7*in+base(px,ch); base=white_pass-178.5",
 }
+
+# --------------------------------------------------------------------------
+# White-reference-pass health check (must agree with host_probe_rhino.decode)
+# --------------------------------------------------------------------------
+# The decode recovers per-pixel base = light_pass - 0.7*255 (=178.5) and then
+# in = (id - base) / 0.7. For that to work, foreground (object) pixels in the
+# white pass MUST render brighter than ~178.5; if they collapse toward the
+# viewport background gray (~157-170) the base goes negative and NOTHING
+# decodes. A healthy white pass has a foreground median ~190 (objects ~191,
+# anti-aliased edges pull it down a little); a dim/stale pass sits at ~157.
+# We gate on the foreground MEDIAN with a generous margin between the two.
+BG_GRAY = (157.0, 163.0, 170.0)   # default Rhino viewport gray (== decoder BG)
+BG_FG_TOL = 6                     # |px-BG| > this on max channel => foreground
+WHITE_LEVEL = 0.7 * 255           # 178.5 — the decode's base offset
+# A pass whose foreground median is below this can't be decoded. Good passes
+# sit ~190, broken ones ~157, so 180 is a wide, unambiguous separator.
+MIN_LIGHT_PASS_MEDIAN = 180.0
+
+
+def light_pass_median_brightness(pixels, bg=BG_GRAY, bg_tol=BG_FG_TOL):
+    """Median brightness (max channel) of FOREGROUND pixels.
+
+    Pure python — no numpy/PIL/Rhino — so it is unit-testable with synthetic
+    pixel lists and also callable inside Rhino on sampled bitmap pixels.
+
+    pixels   iterable of (r, g, b) — a (sub)sample of the light_pass image.
+    bg       viewport background color; a pixel is foreground when it differs
+             from bg by more than bg_tol on its most-different channel.
+    Returns the foreground median, or 0.0 when no foreground pixels are seen
+    (an all-background frame is, for our purposes, a failed pass).
+    """
+    br, bgc, bb = bg
+    fg = []
+    for r, g, b in pixels:
+        if max(abs(r - br), abs(g - bgc), abs(b - bb)) > bg_tol:
+            fg.append(max(r, g, b))
+    if not fg:
+        return 0.0
+    fg.sort()
+    n = len(fg)
+    if n % 2:
+        return float(fg[n // 2])
+    return (fg[n // 2 - 1] + fg[n // 2]) / 2.0
 
 
 def id_color(i: int) -> tuple:
@@ -294,8 +344,45 @@ def _save_bitmap(bmp, path):
     bmp.Save(str(path), System.Drawing.Imaging.ImageFormat.Png)
 
 
+def _bitmap_median_fg_brightness(bmp, step=3):
+    """Foreground median brightness of a System.Drawing.Bitmap (Rhino-side).
+
+    Subsamples on a `step` grid (full-res is needless and slow — at 813x386,
+    step=3 reads ~8k pixels in ~0.2s and matches the host-side number) and
+    delegates the actual statistic to the pure light_pass_median_brightness so
+    the threshold logic is identical to what the unit tests exercise.
+    """
+    w, h = bmp.Width, bmp.Height
+
+    def _pixels():
+        for y in range(0, h, step):
+            for x in range(0, w, step):
+                c = bmp.GetPixel(x, y)
+                yield (c.R, c.G, c.B)
+
+    return light_pass_median_brightness(_pixels())
+
+
+def _capture_idmode(view, size, idmode):
+    """Capture the active view into a bitmap, FORCING render of `idmode`.
+
+    THE REPEATABILITY FIX. The bare `view.CaptureToBitmap(size)` does NOT
+    reliably re-render the viewport's *current* DisplayMode in a headless /
+    Rhino-MCP-driven session — it returns whatever cached pipeline frame Rhino
+    last produced (a default-lit, mid-gray frame), so the white-reference pass
+    comes back dim and decode collapses to ~0% on every capture after the
+    first. The `CaptureToBitmap(size, displayModeDescription)` overload forces
+    the pipeline to render that exact mode and is reliable on the 1st, 2nd, and
+    Nth call in one session — making capture() idempotent with no doc reopen.
+    Measured: bare -> foreground median 157 (dead); overload -> 191 (decodes
+    ~97%). See spike/REPORTS for the investigation.
+    """
+    view.Document.Views.Redraw()
+    return view.CaptureToBitmap(size, idmode)
+
+
 def capture(out_dir, semantic_rules=None, hide_layer_prefixes=None,
-            hide_2d_objects=True, camera=None):
+            hide_2d_objects=True, camera=None, doc_path=None):
     """Atomic ground-truth capture of the active viewport.
 
     Writes beauty.png, depth.png, light_pass.png, id_mask.png, objects.json,
@@ -309,6 +396,19 @@ def capture(out_dir, semantic_rules=None, hide_layer_prefixes=None,
     camera              optional {"location":[x,y,z], "target":[x,y,z],
                         "up":[x,y,z], "lens_35mm": f} applied before capture
                         so the whole run is self-contained
+    doc_path            optional absolute .3dm path. Recovery safety net: if the
+                        white-reference pass is still dim after the in-process
+                        Wireframe-bounce flush (should not happen with the
+                        CaptureToBitmap(size, mode) fix), attempt a reopen of
+                        this file and retry the whole capture ONCE — but only if
+                        the reopen actually RESETS the document (in a headless
+                        MCP doc, ReadFile can append instead of replace; that is
+                        detected and refused). Whether or not doc_path is given,
+                        a persistently dim pass raises RuntimeError rather than
+                        returning silent garbage; the authoritative reset is a
+                        host-side open_doc(clearFirst=True).
+
+    Raises RuntimeError if it cannot produce a healthy (decodable) white pass.
     """
     if not HAVE_RHINO:
         raise RuntimeError(
@@ -355,6 +455,7 @@ def capture(out_dir, semantic_rules=None, hide_layer_prefixes=None,
     saved_world = vp.WorldAxesVisible
 
     summary = {}
+    white_pass_median = 0.0  # set when the white pass is captured (health gate)
     try:
         # layer prefix hiding
         if hide_layer_prefixes:
@@ -420,8 +521,12 @@ def capture(out_dir, semantic_rules=None, hide_layer_prefixes=None,
         _save_bitmap(zb.GrayscaleDib(), j("depth.png"))
 
         # ---- ID display mode for white + ID passes ----
-        # CRITICAL: CaptureToBitmap(size, mode) does NOT honor updated
-        # display-mode attributes; set the viewport's mode and capture bare.
+        # REPEATABILITY FIX: render via the CaptureToBitmap(size, idmode)
+        # overload (see _capture_idmode). The bare CaptureToBitmap(size)
+        # returns a stale, default-lit frame in headless/MCP sessions, so the
+        # white pass came back dim and decode collapsed to ~0% on every capture
+        # after the first. The overload forces a real render of idmode and is
+        # idempotent across captures in one session — no doc reopen needed.
         vp.DisplayMode = idmode
 
         # save original colors, then white reference pass
@@ -434,8 +539,29 @@ def capture(out_dir, semantic_rules=None, hide_layer_prefixes=None,
             obj.Attributes.ObjectColor = white
             obj.Attributes.ColorSource = from_obj
             obj.CommitChanges()
-        doc.Views.Redraw()
-        bmp = view.CaptureToBitmap(size)
+        bmp = _capture_idmode(view, size, idmode)
+
+        # ---- white-pass health gate (catch a dim pass IN-RHINO) ----
+        # A dim pass means every downstream mask is garbage; reject it here,
+        # before returning, rather than letting the host decode silently to 0%.
+        median = _bitmap_median_fg_brightness(bmp)
+        if median < MIN_LIGHT_PASS_MEDIAN:
+            # Try a harder in-process pipeline flush (no reopen): bounce the
+            # display mode through Wireframe to drop any cached shaded frame,
+            # let Rhino process the redraw, then re-capture via the overload.
+            try:
+                wf = next(m for m in modes if m.EnglishName == "Wireframe")
+                vp.DisplayMode = wf
+                doc.Views.Redraw()
+                Rhino.RhinoApp.Wait()
+                vp.DisplayMode = idmode
+                doc.Views.Redraw()
+                Rhino.RhinoApp.Wait()
+            except Exception:
+                pass
+            bmp = _capture_idmode(view, size, idmode)
+            median = _bitmap_median_fg_brightness(bmp)
+        white_pass_median = median
         _save_bitmap(bmp, j("light_pass.png"))
 
         # ---- ID pass ----
@@ -454,8 +580,9 @@ def capture(out_dir, semantic_rules=None, hide_layer_prefixes=None,
                 "material": _material_name(doc, obj),
                 "name": obj.Attributes.Name or None,
             }
-        doc.Views.Redraw()
-        bmp = view.CaptureToBitmap(size)
+        # Same overload — the ID pass must render with the identical pipeline as
+        # the white pass or the per-pixel base calibration won't line up.
+        bmp = _capture_idmode(view, size, idmode)
         _save_bitmap(bmp, j("id_mask.png"))
 
         # ---- metadata ----
@@ -489,6 +616,7 @@ def capture(out_dir, semantic_rules=None, hide_layer_prefixes=None,
             "size_px": [size.Width, size.Height],
             "ruleset": rule_name,
             "depth_meta": depth_meta,
+            "white_pass_median": round(white_pass_median, 1),
             "files": ["beauty.png", "depth.png", "light_pass.png",
                       "id_mask.png", "objects.json", "camera.json"],
         }
@@ -520,6 +648,57 @@ def capture(out_dir, semantic_rules=None, hide_layer_prefixes=None,
         except Exception:
             pass
 
+    # ---- white-pass health enforcement (after state is restored) ----
+    # With the CaptureToBitmap(size, idmode) overload this should always pass
+    # (it has across 1st/2nd/Nth captures in a session); the in-pass Wireframe
+    # bounce above is the cheap in-process recovery. This block is the final
+    # safety net so a regression can never silently ship an undecodable capture.
+    if white_pass_median < MIN_LIGHT_PASS_MEDIAN:
+        # Optional reopen-and-retry. NOTE: RhinoDoc.ReadFile APPENDS rather than
+        # replaces in a headless/MCP-driven doc (verified: 7762 -> 15956), so we
+        # only proceed if the reopen genuinely RESET the document (object count
+        # did not balloon). If it appended instead, we abort rather than render a
+        # doubled scene — the authoritative reset is a router-level
+        # open_doc(clearFirst=True) / close_slot+spawn_slot, which the caller
+        # drives, not this in-script path.
+        if doc_path:
+            before = doc.Objects.Count
+            Rhino.RhinoApp.Wait()
+            opts = Rhino.FileIO.FileReadOptions()
+            opts.OpenMode = True   # File>Open semantics (resets when honored)
+            opened = Rhino.RhinoDoc.ReadFile(str(doc_path), opts)
+            doc_now = Rhino.RhinoDoc.ActiveDoc or doc
+            after = doc_now.Objects.Count
+            # A clean reset keeps the count at (roughly) the file's own object
+            # count; an append leaves it >= before + something. Require it to be
+            # no larger than the pre-reopen count to call it a real reset.
+            if opened and after <= before:
+                retry = capture(
+                    out_dir, semantic_rules=semantic_rules,
+                    hide_layer_prefixes=hide_layer_prefixes,
+                    hide_2d_objects=hide_2d_objects, camera=camera,
+                    doc_path=None,  # recurse once only — cannot loop
+                )
+                retry["recovered_by_reopen"] = True
+                return retry
+            raise RuntimeError(
+                "white-reference pass was dim (foreground median %.1f < %.1f) "
+                "and the in-script reopen of %r did not reset the document "
+                "(objects %d -> %d). Reset the slot from the host "
+                "(open_doc(clearFirst=True) or close_slot + spawn_slot + "
+                "open_doc) and capture again." % (
+                    white_pass_median, MIN_LIGHT_PASS_MEDIAN, str(doc_path),
+                    before, after)
+            )
+        raise RuntimeError(
+            "white-reference pass was dim (foreground median %.1f < %.1f): "
+            "objects rendered near background gray, so every decoded mask would "
+            "be garbage. The viewport pipeline did not render the ID display "
+            "mode. Reopen the model in Rhino (host-side open_doc(clearFirst=True)"
+            " or close_slot + spawn_slot + open_doc) and capture again."
+            % (white_pass_median, MIN_LIGHT_PASS_MEDIAN)
+        )
+
     return summary
 
 
@@ -533,6 +712,9 @@ def capture_and_send(out_dir, server_url="http://127.0.0.1:8765",
     Runs inside Rhino's Python (urllib is available there). The server and
     Rhino are co-located in dev, so a path hand-off is enough; a networked
     plugin would instead upload the six files.
+
+    Accepts the same kwargs as capture() — notably doc_path=<the .3dm> to enable
+    the dim-white-pass reopen-and-retry recovery.
     """
     summary = capture(out_dir, **capture_kwargs)
     import json as _json

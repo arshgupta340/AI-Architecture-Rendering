@@ -19,6 +19,73 @@ def test_imports_without_rhino():
         rc.capture("anywhere")
 
 
+def test_capture_accepts_doc_path_recovery_param():
+    # The reopen-and-retry safety net is opt-in via doc_path; the signature
+    # must keep working with the param present (default None).
+    assert "doc_path" in rc.capture.__code__.co_varnames
+    # still raises the "inside Rhino" guard, not a TypeError, when passed
+    with pytest.raises(RuntimeError, match="inside Rhino"):
+        rc.capture("anywhere", doc_path=r"C:\some\model.3dm")
+
+
+# ---- white-reference-pass health (dim-pass detection) ---------------------
+# Regression guard for the capture-repeatability bug: the bare
+# CaptureToBitmap(size) returned a stale, default-lit frame so the white pass
+# came back DIM (foreground median ~157, == background) and decode collapsed to
+# ~0%. A healthy pass (CaptureToBitmap(size, mode)) has foreground median ~191.
+# light_pass_median_brightness is the pure-python core of the in-Rhino gate.
+
+def test_light_pass_health_bright_pass_passes_gate():
+    # All-white foreground over a background field — a healthy white pass.
+    bg = rc.BG_GRAY
+    pixels = [(255, 255, 255)] * 300 + [tuple(int(c) for c in bg)] * 200
+    median = rc.light_pass_median_brightness(pixels)
+    assert median == 255.0
+    assert median >= rc.MIN_LIGHT_PASS_MEDIAN
+
+
+def test_light_pass_health_dim_pass_fails_gate():
+    # Foreground objects render near background gray (~157-170): the broken
+    # state. Median must land below the gate so capture() rejects/recovers.
+    bg = rc.BG_GRAY
+    dim_fg = (168, 169, 170)  # what the stale bare capture produced live
+    pixels = [dim_fg] * 300 + [tuple(int(c) for c in bg)] * 200
+    median = rc.light_pass_median_brightness(pixels)
+    assert median == 170.0
+    assert median < rc.MIN_LIGHT_PASS_MEDIAN
+
+
+def test_light_pass_health_dead_pass_at_background_fails_gate():
+    # The worst case observed live: foreground sits AT background, median 157.
+    pixels = [(157, 163, 170)] * 100 + [(160, 165, 172)] * 50  # barely-fg
+    median = rc.light_pass_median_brightness(pixels)
+    assert median < rc.MIN_LIGHT_PASS_MEDIAN
+
+
+def test_light_pass_health_all_background_is_zero():
+    # No foreground pixels at all => failed pass (returns 0.0, below the gate).
+    bg = tuple(int(c) for c in rc.BG_GRAY)
+    assert rc.light_pass_median_brightness([bg] * 50) == 0.0
+    assert rc.light_pass_median_brightness([]) == 0.0
+
+
+def test_light_pass_health_median_even_and_odd_counts():
+    # Even foreground count averages the two middle values; odd takes the middle.
+    bg = (157, 163, 170)
+    # odd: foreground brightnesses {200, 220, 240} -> median 220
+    odd = [(200, 0, 0), (220, 0, 0), (240, 0, 0), bg]
+    assert rc.light_pass_median_brightness(odd) == 220.0
+    # even: {200, 240} -> (200+240)/2 = 220
+    even = [(200, 0, 0), (240, 0, 0), bg]
+    assert rc.light_pass_median_brightness(even) == 220.0
+
+
+def test_light_pass_health_foreground_threshold_separates_clearly():
+    # The live separation is wide (broken 157 vs good 191) — assert the gate
+    # sits unambiguously between the two observed regimes.
+    assert 157.0 < rc.MIN_LIGHT_PASS_MEDIAN < 191.0
+
+
 # ---- ID encoding ----------------------------------------------------------
 
 def test_id_color_plane_zero_matches_e1_scheme():
