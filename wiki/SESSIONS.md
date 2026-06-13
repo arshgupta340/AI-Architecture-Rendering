@@ -7,6 +7,18 @@ updated: 2026-05-19
 
 Append-only conversation log. **Newest at top.** One entry per chat session.
 
+## 2026-06-13 — Grasshopper "Send to Canvas" + multi-view lock v2 (2 parallel Opus agents, round 2)
+
+**Scope:** Second parallel round — Grasshopper button (agent owned Rhino) + multi-view lock v2 & canvas wiring (Rhino-free agent).
+
+**Outcome:**
+- **P3.4 Grasshopper component (`22caf8d`):** real Rhino 8 GhPython "Send to Canvas" wrapping `capture_and_send`; authored live on the GH canvas via `g1_` MCP + GH SDK; validated against a mock receiver (render=False, $0): 92.9% decode, rising-edge + error paths. Files in `spike/grasshopper/` (incl. prebuilt `send_to_canvas.gh`).
+- **P3.5 multi-view v2 + canvas (`92659ea`):** textured-material lock fixed by branching on material class (travertine raw-anchor; brick A2 neutral-reference = trim white-balance + luminance-flatten). v1 brick backfire resolved (texture-energy 25.9→9.5). Canvas shipped "one swatch → all views": view tabs, `/api/apply_material_all`, `/api/views`, reusable `spike/multiview_apply.py`. 75 tests; 21/21 + 22/22 back-compat. $0.30.
+
+**Decisions:** material-class branching for the lock (smooth=raw-anchor, textured=neutral-reference); chroma-only dE_ab is the honest cross-view consistency metric.
+
+**Follow-ups:** material library; consolidate single-view apply onto `multiview_apply` engine; Revit add-in; push neutral-ref further for brick.
+
 ## 2026-06-13 — Capture repeatability root-fix + multi-view material lock (2 parallel Opus agents)
 
 **Scope:** Two parallel agents — fix capture in-session repeatability (A, owned Rhino) and build the multi-view material lock (B, no Rhino, on pre-captured views).

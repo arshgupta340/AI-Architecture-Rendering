@@ -85,8 +85,17 @@ Anchor-reference technique (`spike/run_multiview_lock.py`): edit the anchor view
 
 Real Rhino 8 GhPython component wrapping `capture_and_send`: press a Toggle → captures the active viewport → POSTs `/api/ingest` → canvas updates. Files in `spike/grasshopper/` (`send_to_canvas_ghpython.py`, `send_to_canvas.gh` prebuilt definition, `README.md`, `mock_ingest_server.py`). Authored live on the Grasshopper canvas via the `g1_` MCP + GH SDK; validated end-to-end against a mock receiver (render=False, $0): bundle written, POST well-formed, capture decodes 92.9%, rising-edge + error paths verified. 69 tests green.
 
+## P3.5 — Multi-view lock v2 + "one swatch → all views" canvas DONE (2026-06-13, `92659ea`)
+
+Textured-material lock fixed by branching on material class: smooth/colour-dominated (travertine) → raw-anchor 3-ref (chroma dE_ab 7.10→1.80); textured (brick) → **A2 neutral-reference lock** (trim white-balance + luminance-flatten the anchor wall, feed THAT as the 3rd ref) — fixes v1's blotchy wash (texture-energy 25.9→9.5, chroma 20.7→9.6). Honest metric is chroma-only dE_ab (L* legitimately differs across golden-hour vs brighter views). Canvas shipped end-to-end: `prepare_data_multiview.py` (N view-projects + `views.json`, single-view flow untouched), `server.py` `POST /api/apply_material_all` + `GET /api/views` backed by reusable `spike/multiview_apply.py`, UI view-tabs + "Apply to all views" + view-aware layers. 21/21 multiview + 22/22 single-view back-compat; 75 tests. Report: [multiview_v2.md](../spike/REPORTS/multiview_v2.md). Total fal spend ≈ $1.99 of $50.
+
 ## What to do next
 
-1. **(in flight as of handoff)** Multi-view lock v2 — agent `acaf471eabb8cf371`: normalize lighting before the anchor-lock (neutral relight / "same material *type/tone*" prompt) so textured materials (brick) lock too, then wire "one swatch → all views" into the canvas. Review + commit its output when done.
+The full plugin-first product loop now holds end-to-end: Grasshopper button → capture → locked render → ground-truth masks → swatch edit → non-destructive layers → multi-view consistency. Candidate next moves (no clear forcing function — user picks):
+1. Material library: curated PBR swatches (ambientCG ingest) + tile-scale/orientation prompt hints; replace the 4 procedural placeholders.
+2. Multi-view lock refinement: A2 stops brick *hurting* but doesn't beat swatch-only naive (residual is correct re-lighting) — push neutral-ref further, or add per-view sun-direction awareness.
+3. Tech-debt (flagged by the v2 agent): consolidate the single-view `apply_material` onto the shared `spike/multiview_apply.py` engine.
+4. Second host: Revit add-in scoping (native BIM categories — no layer-discipline needed); SketchUp after.
+5. Tier-2 fallback (lower priority): E5 re-score on a photoreal render; Florence-2→SAM 3 vs the Vision-Banana-style probe.
 3. Material library: tile-scale prompt hints; more real swatches (ambientCG ingest).
 4. Tier-2 follow-ups (lower priority): E5 re-score on the photoreal render; Revit add-in scoping.
