@@ -22,12 +22,15 @@
   </aside>
 
   <section id="stage">
-    <div id="canvas-wrap">
-      <canvas id="view"></canvas>
-      <canvas id="overlay"></canvas>
-      <div id="tooltip"></div>
-      <div id="spinner" class="hidden"><div class="ring"></div>
-        <div id="spinner-text">applying material…</div></div>
+    <div id="stage-inner">
+      <div id="view-tabs" style="display:none"></div>
+      <div id="canvas-wrap">
+        <canvas id="view"></canvas>
+        <canvas id="overlay"></canvas>
+        <div id="tooltip"></div>
+        <div id="spinner" class="hidden"><div class="ring"></div>
+          <div id="spinner-text">applying material…</div></div>
+      </div>
     </div>
   </section>
 
@@ -38,6 +41,7 @@
     <h2>Materials</h2>
     <div id="swatch-grid"></div>
     <button id="apply-btn" disabled>Apply material</button>
+    <button id="apply-all-btn" disabled style="display:none">Apply to all views</button>
     <div id="apply-note" class="panel-foot"></div>
   </aside>
 </main>

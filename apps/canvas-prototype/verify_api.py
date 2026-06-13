@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import sys
 import urllib.error
 import urllib.request
@@ -14,7 +15,7 @@ import urllib.request
 import numpy as np
 from PIL import Image
 
-BASE = "http://localhost:8765"
+BASE = f"http://localhost:{os.environ.get('PORT', '8765')}"
 ok_count = 0
 
 

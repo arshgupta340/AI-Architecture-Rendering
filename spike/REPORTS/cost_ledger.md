@@ -47,9 +47,11 @@ Append-only log of every paid API call the overnight agent makes.
 2026-06-12 E2b-polish | E2b | fal.ai | flux-general union (warm) x1, flux-2-pro/edit x1 | 0.14 | warm-prompt base render (holds 98.2% edge align) + regen travertine demo on warm base; edge feather added � see REPORTS/E2b.md
 2026-06-12 P3.3 | wiring | fal.ai | flux-general union (locked render) x1 | 0.08 | capture->canvas /api/ingest live test on a NEW camera view (decode 92.9%, 98.5% edge align); proves the one-motion pipeline
 2026-06-13 MULTIVIEW | multiview-lock | fal.ai | flux-general union (render mv_front) x1, flux-2-pro/edit x6 | 0.38 | multi-view material lock: render front view + travertine{naive,locked} + red_brick{anchor,naive,locked}. Travertine LOCKED dE 4.14 vs NAIVE 7.43 (consistency win); red_brick LOCKED backfired (anchor's golden-hour lighting injected). FLUX.2 Edit verified to accept 3 image_urls. User-authorized ~$0.60 fal budget for this task. See REPORTS/multiview.md
+2026-06-13 MULTIVIEW-V2 | multiview-lock-v2 | fal.ai | flux-2-pro/edit x4 | 0.24 | textured-material lock fix (Part A): A1 prompt-soft + A2 neutral-ref, both materials. Reused v1's cache (anchor/naive/v1-locked) for $0; only 4 new edits. red_brick v1-backfire FIXED: A2 dE 21.62->13.75 (Lab), 20.65->9.55 (chroma), texture-energy 25.9->9.5. travertine v1-locked stays best (chroma dE_ab 1.80). User-authorized ~$1.50 fal budget for this task. See REPORTS/multiview_v2.md
+2026-06-13 MULTIVIEW-V2-CANVAS | canvas Part B | fal.ai | flux-2-pro/edit x1 | 0.06 | live verify of POST /api/apply_material_all (travertine/wall across hero+front): anchor served from precompute ($0) + 1 FLUX.2 Edit lock for front view. Both views got an RGBA wall layer (hero 130,737px, front 108,466px opaque). Proves "one swatch -> all views" through the real HTTP endpoint. See apps/canvas-prototype/verify_multiview_api.py
 ```
 
-**Running total: $1.69**
+**Running total: $1.99**
 
 Notes:
 - T21 user-authorized overage: $0.05 → $0.06.

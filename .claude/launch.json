@@ -6,6 +6,13 @@
       "runtimeExecutable": "spike\\.venv\\Scripts\\python.exe",
       "runtimeArgs": ["apps/canvas-prototype/server.py"],
       "port": 8765
+    },
+    {
+      "name": "canvas-prototype-mv",
+      "runtimeExecutable": "spike\\.venv\\Scripts\\python.exe",
+      "runtimeArgs": ["apps/canvas-prototype/server.py"],
+      "env": { "PORT": "8766" },
+      "port": 8766
     }
   ]
 }
