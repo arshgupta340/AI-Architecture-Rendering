@@ -1,0 +1,62 @@
+[
+  {
+    "material": "travertine",
+    "anchor": {
+      "L": 73.28141467289663,
+      "a": 2.384295110585256,
+      "b": 18.68442653918956,
+      "texture": 41.72455366519639
+    },
+    "naive": {
+      "L": 75.45111156661216,
+      "a": 2.877532515433463,
+      "b": 11.597673676400769,
+      "texture": 44.24575143710621
+    },
+    "locked": {
+      "L": 77.00955216797914,
+      "a": 2.3434173884501135,
+      "b": 16.882494454253028,
+      "texture": 46.076411376358664
+    },
+    "naive_de": 7.427848536850042,
+    "locked_de": 4.140970829302079,
+    "naive_dtex": 2.5211977719098186,
+    "locked_dtex": 4.351857711162275,
+    "delta_e_improvement": 3.286877707547963,
+    "win": true,
+    "verdict": "LOCKED is closer to anchor (consistency win)",
+    "cost": 0.12,
+    "sidebyside": "C:\\Users\\arshg\\AI Architecture Rendering\\spike\\outputs\\multiview\\sidebyside_travertine.png"
+  },
+  {
+    "material": "red_brick",
+    "anchor": {
+      "L": 44.291589423106,
+      "a": 19.455708237887027,
+      "b": 27.774703586381374,
+      "texture": 43.754547363999166
+    },
+    "naive": {
+      "L": 42.63338688395592,
+      "a": 19.40635693262631,
+      "b": 19.689226670189306,
+      "texture": 37.26121444887918
+    },
+    "locked": {
+      "L": 50.70472390667382,
+      "a": 7.043478593835365,
+      "b": 11.276057105042584,
+      "texture": 69.64811607299747
+    },
+    "naive_de": 8.253908660413531,
+    "locked_de": 21.619368037877386,
+    "naive_dtex": 6.493332915119986,
+    "locked_dtex": 25.893568708998302,
+    "delta_e_improvement": -13.365459377463855,
+    "win": false,
+    "verdict": "naive closer \u2014 inconclusive on colour",
+    "cost": 0.18,
+    "sidebyside": "C:\\Users\\arshg\\AI Architecture Rendering\\spike\\outputs\\multiview\\sidebyside_red_brick.png"
+  }
+]

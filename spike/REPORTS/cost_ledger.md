@@ -43,12 +43,13 @@ Append-only log of every paid API call the overnight agent makes.
 2026-06-12 E2 | E2 | fal.ai + Google | flux-pro/v1/depth x2, flux-2-pro/edit, nano-banana-pro | 0.40 | render conditioning shootout on house frame; flux_depth wins on mask registration ï¿½ see REPORTS/E2.md
 2026-06-12 E3 | E3 | fal.ai | flux-pro/v1/fill, flux-general/inpainting+ip-adapter, flux-2-pro/edit, kontext/max/multi | 0.30 | swatch-conditioning shootout; flux2_multiref + mask composite passes the travertine gate ï¿½ see REPORTS/E3.md
 2026-06-12 CANVAS | canvas-prototype | fal.ai | flux-2-pro/edit | 0.06 | live-path proof through apps/canvas-prototype server: red_brick swatch on all 10 wall instances, layer 7b61fe91bded9f89.png; travertine path served no-spend from E3 precompute
-2026-06-12 E2b | E2b | fal.ai | flux-general union (canny+depth) x1, flux-2-pro/edit x2 | 0.20 | render-mask registration fix: depth+canny lock, 51.7%->98.5% edge align <=2px; brick+travertine demo on aligned base — see REPORTS/E2b.md
-2026-06-12 E2b-polish | E2b | fal.ai | flux-general union (warm) x1, flux-2-pro/edit x1 | 0.14 | warm-prompt base render (holds 98.2% edge align) + regen travertine demo on warm base; edge feather added — see REPORTS/E2b.md
+2026-06-12 E2b | E2b | fal.ai | flux-general union (canny+depth) x1, flux-2-pro/edit x2 | 0.20 | render-mask registration fix: depth+canny lock, 51.7%->98.5% edge align <=2px; brick+travertine demo on aligned base ï¿½ see REPORTS/E2b.md
+2026-06-12 E2b-polish | E2b | fal.ai | flux-general union (warm) x1, flux-2-pro/edit x1 | 0.14 | warm-prompt base render (holds 98.2% edge align) + regen travertine demo on warm base; edge feather added ï¿½ see REPORTS/E2b.md
 2026-06-12 P3.3 | wiring | fal.ai | flux-general union (locked render) x1 | 0.08 | capture->canvas /api/ingest live test on a NEW camera view (decode 92.9%, 98.5% edge align); proves the one-motion pipeline
+2026-06-13 MULTIVIEW | multiview-lock | fal.ai | flux-general union (render mv_front) x1, flux-2-pro/edit x6 | 0.38 | multi-view material lock: render front view + travertine{naive,locked} + red_brick{anchor,naive,locked}. Travertine LOCKED dE 4.14 vs NAIVE 7.43 (consistency win); red_brick LOCKED backfired (anchor's golden-hour lighting injected). FLUX.2 Edit verified to accept 3 image_urls. User-authorized ~$0.60 fal budget for this task. See REPORTS/multiview.md
 ```
 
-**Running total: $1.31**
+**Running total: $1.69**
 
 Notes:
 - T21 user-authorized overage: $0.05 â†’ $0.06.
