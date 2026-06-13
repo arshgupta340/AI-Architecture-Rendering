@@ -35,16 +35,20 @@ function loadImage(src) {
   });
 }
 
-async function init() {
-  const meta = await (await fetch("/project/regions.json")).json();
+let projectVersion = 0;
+
+// (Re)load the project files. cache-busted by `v` so a new capture's
+// base/ids/regions are actually re-fetched, not served from browser cache.
+async function loadProject(v) {
+  const meta = await (await fetch(`/project/regions.json?v=${v}`)).json();
   regions = meta.regions; semantics = meta.semantics;
   [W, H] = meta.size;
 
-  baseImg = await loadImage("/project/base.png");
+  baseImg = await loadImage(`/project/base.png?v=${v}`);
   view.width = overlay.width = W;
   view.height = overlay.height = H;
 
-  const idsImg = await loadImage("/project/ids_rgb.png");
+  const idsImg = await loadImage(`/project/ids_rgb.png?v=${v}`);
   const c = document.createElement("canvas");
   c.width = W; c.height = H;
   const cx = c.getContext("2d", { willReadFrequently: true });
@@ -54,18 +58,44 @@ async function init() {
   for (let i = 0, p = 0; i < ids.length; i++, p += 4)
     ids[i] = d[p] | (d[p + 1] << 8);
 
+  hoverId = 0; selection.clear();
+  redraw(); renderInspector();
+  $("status").textContent = `${Object.keys(regions).length} regions · base ${W}×${H}`;
+}
+
+async function init() {
+  projectVersion = (await (await fetch("/api/version")).json()).version || 0;
+  await loadProject(projectVersion);
   buildSwatchGrid();
   await restoreLayers();
   redraw();
   renderLayerPanel();
-  renderInspector();
-  $("status").textContent =
-    `${Object.keys(regions).length} regions · base ${W}×${H}`;
 
   view.style.pointerEvents = "auto";
   view.addEventListener("pointermove", onMove);
   view.addEventListener("pointerleave", () => { hoverId = 0; drawOverlay(); tooltip(null); });
   view.addEventListener("click", onClick);
+  startSyncPoll();
+}
+
+// Poll the server's project version; when it changes (a new capture was
+// ingested from Rhino), reload the project. The geometry changed, so the
+// existing material layers no longer map to it — clear them.
+function startSyncPoll() {
+  const sync = $("sync");
+  setInterval(async () => {
+    let v;
+    try { v = (await (await fetch("/api/version", { cache: "no-store" })).json()).version; }
+    catch { return; }
+    if (!v || v === projectVersion) return;
+    projectVersion = v;
+    sync.textContent = "⟳ syncing from Rhino…";
+    layers = []; persistLayers();
+    await loadProject(v);
+    renderLayerPanel();
+    const t = new Date().toLocaleTimeString();
+    sync.textContent = `● synced ${t}`;
+  }, 3000);
 }
 
 // ---------------------------------------------------------------- canvas

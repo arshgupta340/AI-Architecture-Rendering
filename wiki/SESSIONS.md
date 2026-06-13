@@ -7,6 +7,19 @@ updated: 2026-05-19
 
 Append-only conversation log. **Newest at top.** One entry per chat session.
 
+## 2026-06-12 — Capture→canvas wiring (P3.3) + warm polish + edge feather
+
+**Scope:** Make "capture in Rhino → canvas updates" one motion; recover warm render look; feather composite seams.
+
+**Tried/Outcome:**
+- **Polish (no re-drift):** warmth was a prompt issue — a warm/specific prompt on the same canny+depth lock recovers terracotta/golden-hour while edge align holds 98.2%. `server._mask_png` now +1px dilate + ~1.1px feather. `warm_w1.png` promoted to base.
+- **Wiring:** refactored the locked render into reusable `run_e2b_registration.render_locked()` (warm prompt baked in, reads native size from camera.json); `prepare_data.write_web_project()` extracted; new `apps/canvas-prototype/ingest.py:build_project` chains decode→render→prep; server gains `POST /api/ingest` + `GET /api/version`; `rhino_capture.capture_and_send()` is the Rhino-push button body; app.js polls version and auto-reloads. Validated live on a NEW camera view through `/api/ingest`: decode 92.9%, 98.5% edge align, version bumped, round trip via `capture_and_send` confirmed.
+- **Two bugs surfaced + fixed:** (1) over-unhiding all layers blew out the camera frustum (fixed by fresh reopen + keeping the model's saved layer state); (2) **a long-idle/churned Rhino session returns a dim white-reference pass → 0.3% decode**; fresh reopen restores 90.5%. Added a guard: `build_project` rejects captures decoding <50% *before* the paid render. Also forced flat-unlit shading in `_ensure_id_display_mode`.
+
+**Spend:** ~$0.22 (warm render + travertine regen + new-view ingest render). 62 tests green. Canvas restored to known-good e2_house_v2.
+
+**Follow-ups:** in-Rhino auto-retry on dim white pass; real Grasshopper component; multi-view material lock (now cheap via the wiring).
+
 ## 2026-06-12 — Masking registration fix (E2b)
 
 **Scope:** User reported the canvas prototype's region masking was inaccurate (brick over windows, smudged pillars). Diagnosed and fixed.

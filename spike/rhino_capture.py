@@ -232,7 +232,19 @@ def _ensure_id_display_mode():
         attrs.LightingScheme = System.Enum.Parse(ls_type, "None")
     except Exception:
         pass
-    for name in ("ShadowsOn", "CastShadows"):
+    # CRITICAL for the white-reference decode: force flat, unlit shading so a
+    # pure-white object renders ~pure white everywhere (out = 0.7*in + base with
+    # base ~constant), not shaded to mid-gray on angled faces. Without these the
+    # white pass collapses toward background gray and decode drops to ~0%.
+    # (LightingScheme="None" alone is NOT enough — the camera headlight remains.)
+    _try_set(attrs, "FrontFlatShaded", True)
+    try:
+        white = System.Drawing.Color.FromArgb(255, 255, 255, 255)
+        attrs.AmbientLightingColor = white
+    except Exception:
+        pass
+    _try_set(attrs, "FrontDiffuse", System.Drawing.Color.FromArgb(255, 255, 255, 255))
+    for name in ("ShadowsOn", "CastShadows", "UseDocumentAmbientLight"):
         _try_set(attrs, name, False)
     for name in (
         "ShowCurves", "ShowAnnotations", "ShowText", "ShowPoints",
@@ -508,6 +520,36 @@ def capture(out_dir, semantic_rules=None, hide_layer_prefixes=None,
         except Exception:
             pass
 
+    return summary
+
+
+def capture_and_send(out_dir, server_url="http://127.0.0.1:8765",
+                     render=True, timeout_s=420, **capture_kwargs):
+    """Capture the active viewport, then POST it to the canvas server's
+    /api/ingest so the browser updates. This is the body of the eventual
+    Rhino "Send to Canvas" plugin/Grasshopper button — capture lives in
+    Rhino; the server does decode -> locked render -> web prep.
+
+    Runs inside Rhino's Python (urllib is available there). The server and
+    Rhino are co-located in dev, so a path hand-off is enough; a networked
+    plugin would instead upload the six files.
+    """
+    summary = capture(out_dir, **capture_kwargs)
+    import json as _json
+    import urllib.request
+
+    body = _json.dumps({"capture_dir": str(out_dir), "render": render}).encode()
+    req = urllib.request.Request(
+        server_url.rstrip("/") + "/api/ingest", data=body,
+        headers={"Content-Type": "application/json"}, method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout_s) as resp:
+            summary["ingest"] = _json.loads(resp.read())
+            print("sent to canvas:", summary["ingest"])
+    except Exception as e:  # noqa: BLE001 — surface but don't lose the capture
+        summary["ingest_error"] = str(e)
+        print("capture saved but ingest POST failed:", e)
     return summary
 
 

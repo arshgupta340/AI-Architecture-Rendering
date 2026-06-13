@@ -69,9 +69,13 @@ updated: 2026-06-12
 
 User found the canvas masks didn't land on the rendered elements (brick over windows, smudged pillars). Root cause: depth-only ControlNet can't pin coplanar openings, so the `flux_depth` base drifted 5–25px from the GT masks (which are registered to the beauty geometry). Fix: re-capture at native **1504×656** (`spike/outputs/e2_house_v2/`, no resize drift) + render with **depth+canny ControlNetUnion** where canny = a ground-truth line drawing (`Canny(beauty) ∪ instance-boundaries`). GT-edge alignment **51.7% → 98.5% within 2px**. Brick lands on walls only; windows/posts sharp. Prototype repointed to v2; layer cache auto-clears on `prepare_data`. [REPORTS/E2b.md](../spike/REPORTS/E2b.md). **Production render recipe updated: depth+canny union, not depth alone.** Polish (same session): warm-prompt base (`warm_w1.png`) recovers the terracotta/golden-hour look while holding **98.2%** edge align (warmth was a prompt fix, no second-stage, no re-drift); `server._mask_png` now +1px dilate + ~1.1px Gaussian feather for soft composite seams.
 
+## P3.3 — capture→canvas wiring DONE (2026-06-12)
+
+"Click Capture in Rhino → canvas updates" is wired end to end, validated live on a *fresh camera view* (decode 92.9%, 98.5% edge align). Rhino-side `rhino_capture.capture_and_send()` POSTs the bundle to the server's `POST /api/ingest`, which runs `ingest.build_project` (decode → `render_locked` warm depth+canny render → `write_web_project`); the canvas polls `GET /api/version` (base.png mtime) every 3s and auto-reloads, clearing the now-stale layer stack ("● synced" in the header). Reusable `render_locked()` now carries the warm prompt (was inline). Robustness from the live run: (a) `rhino_capture` forces flat-unlit white-reference shading; (b) **a long-idle/heavily-churned Rhino session can return a dim white-reference pass → garbage masks; the pipeline now rejects any capture decoding <50% before spending on the render**, and a fresh model reopen restores 90%+. Canvas currently restored to the known-good e2_house_v2 hero project.
+
 ## What to do next
 
-1. Wire P3.1 → P3.2 directly: capture POSTs straight into the canvas server (`/api/capture`), making "click Capture in Rhino → canvas opens" one motion. The capture must render via the E2b depth+canny recipe (not depth-only) and at the mask's native size.
-2. Material library: tile-scale prompt hints; 2px mask feather on composite seams; more real swatches (ambientCG ingest).
-3. Multi-view material lock (M4): capture 2–3 views of the house, same swatch + per-view masks, check consistency (anchor-reference technique).
+1. **(done)** capture→canvas wiring. Next: harden capture stability — auto-detect a dim white pass and retry in-Rhino (re-init the view) so users never have to reopen; then build the real Grasshopper "Send to Canvas" component around `capture_and_send`.
+2. Material library: tile-scale prompt hints; more real swatches (ambientCG ingest). (Edge feather + warm base done in E2b.)
+3. Multi-view material lock (M4): capture 2–3 views, same swatch + per-view masks, check consistency (anchor-reference technique). The wiring now makes multi-view capture cheap.
 4. Tier-2 follow-ups (lower priority): E5 re-score on the photoreal render; Revit add-in scoping.

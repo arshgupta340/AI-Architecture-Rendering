@@ -45,6 +45,7 @@ LAYERS = PROJECT / "layers"
 sys.path.insert(0, str(SPIKE))
 import composite  # noqa: E402  (spike/composite.py — paste_tile)
 from run_e3_swatch import _data_uri, _fal_call  # noqa: E402  (proven fal idioms)
+from ingest import build_project  # noqa: E402  (capture -> canvas pipeline)
 
 PORT = int(os.environ.get("PORT", 8765))
 COST_PER_CALL = 0.06          # FLUX.2 [pro] Edit, measured in E3
@@ -63,6 +64,43 @@ def _load_project():
     _ids = rgb[:, :, 0].astype(np.uint16) | (rgb[:, :, 1].astype(np.uint16) << 8)
     _regions = json.loads((PROJECT / "regions.json").read_text())
     _base_png = (PROJECT / "base.png").read_bytes()
+
+
+def _project_version() -> float:
+    """Monotonic-ish version = base.png mtime. The canvas polls this and
+    reloads when it changes (i.e. after a new capture is ingested)."""
+    b = PROJECT / "base.png"
+    return b.stat().st_mtime if b.exists() else 0.0
+
+
+def ingest(body: dict) -> dict:
+    """Run the capture->canvas pipeline on a Rhino capture bundle, then reload.
+
+    body: {"capture_dir": "<path with beauty/depth/id_mask/objects/camera>",
+           "render": true}   # render=false reuses an existing base_render.png
+    The locked render (when render=true) counts against the live-call budget.
+    """
+    global _live_calls
+    capture_dir = body.get("capture_dir")
+    if not capture_dir:
+        raise ValueError("missing 'capture_dir'")
+    render = bool(body.get("render", True))
+    if render:
+        if not os.environ.get("FAL_KEY"):
+            raise RuntimeError("FAL_KEY not set (spike/.env) — cannot render")
+        if _live_calls >= MAX_LIVE_CALLS:
+            raise RuntimeError(f"budget guard: {MAX_LIVE_CALLS} live calls already spent")
+        _live_calls += 1
+    print(f"[ingest] capture_dir={capture_dir} render={render} "
+          f"(live {_live_calls}/{MAX_LIVE_CALLS})")
+    t0 = time.monotonic()
+    info = build_project(capture_dir, render=render, out_dir=PROJECT)
+    _load_project()
+    info["version"] = _project_version()
+    info["elapsed_s"] = round(time.monotonic() - t0, 1)
+    print(f"[ingest] done in {info['elapsed_s']}s: {info['n_regions']} regions, "
+          f"{info['size']}, decode {info['decode_pct']}%")
+    return info
 
 
 # Mask edge treatment. Registration is tight post-E2b (98% of edges within
@@ -213,6 +251,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = self.path.split("?")[0]
+        if path == "/api/version":
+            return self._json(200, {"version": _project_version()})
         if path == "/":
             path = "/index.html"
         f = (PUBLIC / path.lstrip("/")).resolve()
@@ -223,16 +263,17 @@ class Handler(BaseHTTPRequestHandler):
         self._send(200, f.read_bytes(), MIME.get(f.suffix, "application/octet-stream"))
 
     def do_POST(self):
-        if self.path != "/api/apply_material":
+        handler = {"/api/apply_material": apply_material, "/api/ingest": ingest}.get(self.path)
+        if handler is None:
             return self._json(404, {"error": "unknown endpoint"})
         try:
             n = int(self.headers.get("Content-Length", 0))
             body = json.loads(self.rfile.read(n) or b"{}")
-            self._json(200, apply_material(body))
+            self._json(200, handler(body))
         except (ValueError, FileNotFoundError) as e:
             self._json(400, {"error": str(e)})
         except Exception as e:
-            print(f"[apply] ERROR: {e}")
+            print(f"[{handler.__name__}] ERROR: {e}")
             self._json(500, {"error": str(e)})
 
 

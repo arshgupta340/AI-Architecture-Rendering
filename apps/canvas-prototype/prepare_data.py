@@ -99,54 +99,64 @@ def make_swatches(dst: Path) -> None:
     Image.fromarray(arr).save(dst / "weathered_cedar.png")
 
 
-def main() -> None:
-    OUT.mkdir(parents=True, exist_ok=True)
+def write_web_project(src_dir: Path, base_render: Path, out_dir: Path = OUT) -> dict:
+    """Convert a decoded capture dir + its locked render into the web project.
+
+    src_dir       a capture dir holding instance_ids.png + objects.json
+                  (run host_probe_rhino.decode on it first)
+    base_render   the geometry-locked render to show as the canvas base
+    Reusable by both the CLI (main) and the capture→canvas pipeline (ingest.py).
+    """
+    src_dir, base_render, out_dir = Path(src_dir), Path(base_render), Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     # Clear cached layers — their hash key is content-independent, so a data
     # refresh must invalidate them or the server serves layers from the old base.
-    layers = OUT / "layers"
+    layers = out_dir / "layers"
     if layers.exists():
         for p in layers.glob("*.png"):
             p.unlink()
 
     # 1) base.png — the depth+canny render (aligned to the masks)
-    base = Image.open(BASE_RENDER).convert("RGB")
-    base.save(OUT / "base.png")
+    base = Image.open(base_render).convert("RGB")
+    base.save(out_dir / "base.png")
     W, H = base.size
 
-    # 2) ids_rgb.png — pack uint16 ids into RGB. Source is captured at the SAME
-    # 1504x656 grid as the render, so this resize is a no-op (kept defensively).
-    inst = np.array(Image.open(SRC / "instance_ids.png"))  # uint16, 1504x656
+    # 2) ids_rgb.png — pack uint16 ids into RGB. Capture grid == render grid,
+    # so the resize is a no-op (kept defensively for mismatched inputs).
+    inst = np.array(Image.open(src_dir / "instance_ids.png"))
     inst_img = Image.fromarray(inst).resize((W, H), Image.NEAREST)
     inst_r = np.array(inst_img, dtype=np.uint16)
     rgb = np.zeros((H, W, 3), np.uint8)
     rgb[:, :, 0] = inst_r & 255
     rgb[:, :, 1] = (inst_r >> 8) & 255
-    Image.fromarray(rgb).save(OUT / "ids_rgb.png")
+    Image.fromarray(rgb).save(out_dir / "ids_rgb.png")
 
     # 3) regions.json — instance id i ↔ (i-1)-th key of objects dict
-    table = json.loads((SRC / "objects.json").read_text())["objects"]
+    table = json.loads((src_dir / "objects.json").read_text())["objects"]
     keys = list(table)
     present = set(int(v) for v in np.unique(inst_r) if v != 0)
     regions = {}
     for i in sorted(present):
         rec = table[keys[i - 1]]
         regions[str(i)] = {
-            "semantic": rec["semantic"],
-            "layer": rec["layer"],
-            "name": rec["name"],
-            "guid": rec["guid"],
+            "semantic": rec["semantic"], "layer": rec["layer"],
+            "name": rec["name"], "guid": rec["guid"],
         }
     semantics = {s: SEMANTIC_META.get(s, {"label": s.title(), "color": "#c8c8c8"})
                  for s in sorted({r["semantic"] for r in regions.values()})}
-    (OUT / "regions.json").write_text(json.dumps(
+    (out_dir / "regions.json").write_text(json.dumps(
         {"size": [W, H], "regions": regions, "semantics": semantics}, indent=1))
 
     # 4) swatches
-    make_swatches(OUT / "swatches")
+    make_swatches(out_dir / "swatches")
+    return {"size": [W, H], "n_regions": len(regions), "semantics": list(semantics)}
 
-    print(f"base.png {W}x{H}; {len(regions)} regions in frame; "
-          f"semantics: {', '.join(semantics)}")
+
+def main() -> None:
+    info = write_web_project(SRC, BASE_RENDER, OUT)
+    print(f"base.png {info['size'][0]}x{info['size'][1]}; {info['n_regions']} regions; "
+          f"semantics: {', '.join(info['semantics'])}")
     print(f"wrote {OUT}")
 
 
