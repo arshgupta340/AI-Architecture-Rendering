@@ -81,9 +81,12 @@ The "only the first capture per doc-open decodes; the rest → 0.3%" bug was **n
 
 Anchor-reference technique (`spike/run_multiview_lock.py`): edit the anchor view, then feed its edited result as a 3rd FLUX.2 Edit reference when editing other views. **Travertine: wall ΔE-to-anchor 7.43 (naive) → 4.14 (locked), −44% — clean win.** Red brick **backfired** (21.62 vs 8.25): the anchor's baked golden-hour shadows + differing camera-relative sun direction inject wrong lighting. **Finding: color-dominated materials lock cleanly; texture/shadow-heavy materials need lighting normalized first.** $0.38. Report: [multiview.md](../spike/REPORTS/multiview.md).
 
+## P3.4 — Grasshopper "Send to Canvas" component DONE (2026-06-13, `22caf8d`)
+
+Real Rhino 8 GhPython component wrapping `capture_and_send`: press a Toggle → captures the active viewport → POSTs `/api/ingest` → canvas updates. Files in `spike/grasshopper/` (`send_to_canvas_ghpython.py`, `send_to_canvas.gh` prebuilt definition, `README.md`, `mock_ingest_server.py`). Authored live on the Grasshopper canvas via the `g1_` MCP + GH SDK; validated end-to-end against a mock receiver (render=False, $0): bundle written, POST well-formed, capture decodes 92.9%, rising-edge + error paths verified. 69 tests green.
+
 ## What to do next
 
-1. Build the real Grasshopper "Send to Canvas" component around `capture_and_send` (in-session capture is now reliable — multi-view capture from one Rhino session works). The `<50%` ingest guard + in-Rhino health gate are belt-and-suspenders.
-2. Multi-view lock v2: normalize lighting before the anchor-lock (neutral relight, or soften the prompt to "same material *type/tone*") so textured materials (brick) lock too. Then wire multi-view into the canvas (one swatch → all views).
+1. **(in flight as of handoff)** Multi-view lock v2 — agent `acaf471eabb8cf371`: normalize lighting before the anchor-lock (neutral relight / "same material *type/tone*" prompt) so textured materials (brick) lock too, then wire "one swatch → all views" into the canvas. Review + commit its output when done.
 3. Material library: tile-scale prompt hints; more real swatches (ambientCG ingest).
 4. Tier-2 follow-ups (lower priority): E5 re-score on the photoreal render; Revit add-in scoping.
