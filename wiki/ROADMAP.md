@@ -1,14 +1,21 @@
 ---
 type: roadmap
-updated: 2026-06-12
+updated: 2026-06-13
 ---
 
 # Roadmap
 
-Strategic milestones under the plugin-first pivot ([[DECISIONS#plugin-first-pivot]], [master plan v2](../docs/plans/master-plan.md)). The live experiment board is [docs/plans/experiments.md](../docs/plans/experiments.md). The pre-pivot M1–M3 (Spike 3 gate / B3 bake-off / Spike 4 live run) are retired — their goals were absorbed or superseded; see git history of this file.
+Strategic milestones under the plugin-first pivot ([[DECISIONS#plugin-first-pivot]], [master plan v2](../docs/plans/master-plan.md)). The live experiment board is [docs/plans/experiments.md](../docs/plans/experiments.md).
+
+**Status (2026-06-13): M1 ✓, M2 ✓, M3 ✓, M4 partial** — the full plugin-first loop works end to end (Grasshopper capture → locked render → ground-truth masks → swatch edit → non-destructive layers → multi-view consistency). Only M4's **Revit add-in** remains. Next focus is the material library + Revit; see [[STATE]] "what to do next".
 
 ---
 
+## M1 — Prove the keystone: host ground-truth extraction (E1 + E6) — ✓ DONE
+
+E1 PASSED (93.1% decode, mullions per-instance), E6 PASSED (GT mask → composite, zero leakage). Reports `spike/REPORTS/E1.md`, ladder result log in `docs/plans/experiments.md`.
+
+### (original M1 spec below)
 ## M1 — Prove the keystone: host ground-truth extraction (E1 + E6)
 
 **Goal:** Demonstrate that Rhino can export pixel-accurate per-object ID masks + usable true depth + an object/material table, and that those masks drive the existing edit pipeline with tag+segment deleted.
@@ -21,6 +28,11 @@ Strategic milestones under the plugin-first pivot ([[DECISIONS#plugin-first-pivo
 
 ---
 
+## M2 — Pick the generative stack (E2 + E3 + E4 + E5) — ✓ DONE
+
+Locked: render = depth+canny union ([[DECISIONS#render-mask-registration]]); material = hosted FLUX.2 Edit + mask composite ([[DECISIONS#material-apply-hosted]]); tier-2 tagging deferred (plugin tier wins decisively; Vision Banana non-public). E4/E5 reports filed.
+
+### (original M2 spec below)
 ## M2 — Pick the generative stack (E2 + E3 + E4 + E5)
 
 **Goal:** Lock the render conditioning (true-depth+canny vs FLUX.2 Edit vs Nano Banana) and the swatch-conditioning method (hosted multi-ref vs MatSwap contingency); pick the tier-2 tagging stack.
@@ -33,6 +45,11 @@ Strategic milestones under the plugin-first pivot ([[DECISIONS#plugin-first-pivo
 
 ---
 
+## M3 — Rhino capture plugin + layer-model canvas prototype — ✓ DONE
+
+`spike/rhino_capture.py` (idempotent in-session, [[DECISIONS#capture-overload]]) + the Grasshopper "Send to Canvas" component (`spike/grasshopper/`) + the canvas (`apps/canvas-prototype/`): capture → render → click region → swatch → non-destructive layer, eye-toggle, replace-not-stack, localStorage, capture→canvas auto-reload. The make-or-break layer model holds.
+
+### (original M3 spec below)
 ## M3 — Rhino capture plugin + layer-model canvas prototype
 
 **Goal:** Replace the MCP probe with a real capture path (Grasshopper component fast path 3–5 days; full .rhp ~2 weeks) and prototype the scene-graph layer model + canvas on E1's real exports — the make-or-break design decision.
@@ -43,11 +60,12 @@ Strategic milestones under the plugin-first pivot ([[DECISIONS#plugin-first-pivo
 
 ---
 
-## M4 — Multi-view material lock + second host (Revit)
+## M4 — Multi-view material lock + second host (Revit) — ◑ PARTIAL
 
-**Goal:** Materials lock across N saved views (anchor-reference technique); Revit add-in brings native BIM semantics (zero layer-discipline needed).
+**Multi-view lock: ✓ DONE** — "one swatch → all views" in the canvas, material-class-branched lock ([[DECISIONS#multiview-material-class]]); `spike/multiview_apply.py`, `/api/apply_material_all`, view tabs.
+**Revit add-in: ☐ PENDING** — native BIM semantics (incl. `OST_CurtainWallMullions`), clean ID masks via SetElementOverrides+ExportImage, no depth API (estimate depth or third-party pass). The host-integration research has the per-host plan: [docs/plans/research/host-integration.md](../docs/plans/research/host-integration.md).
 
-**Exit gate:** change one material → propagates coherently to all views; Revit capture produces category-labeled masks out of the box.
+**Exit gate (Revit):** Revit capture produces category-labeled masks out of the box and drives the same canvas loop.
 
 ---
 

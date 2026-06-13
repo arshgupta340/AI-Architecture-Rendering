@@ -20,6 +20,62 @@ Each entry follows the same shape so it can be scanned in 15 seconds:
 
 ---
 
+## 2026-06-13 — Multi-view material lock: branch the strategy by material class {#multiview-material-class}
+
+**Decision:** "One swatch → all views" uses an anchor-reference lock (edit the anchor view, feed its edited result as a 3rd FLUX.2 Edit reference for the other views), but the reference differs by material class: **smooth/colour-dominated materials (e.g. travertine) → raw anchor edit** as reference; **textured/shadow-interacting materials (e.g. brick) → a lighting-neutralized anchor crop** ("A2": divide out the golden-hour illuminant estimated from white trim, then luminance-flatten the wall region). Cross-view consistency is measured by **chroma-only ΔE (dE_ab)**, not full-Lab ΔE.
+
+**Context:** v1 anchor-reference won on travertine (ΔE 7.43→4.14) but **backfired on brick** (8.25→21.62, blotchy wash, texture-energy error 25.9). Root cause: the anchor render is golden-hour with strong directional shadows and the camera-relative sun direction differs between views, so "match this exact appearance" injects the anchor's baked lighting into a differently-lit view. L* legitimately differs across views (different sun), so full-Lab ΔE penalizes correct re-lighting — chroma is the honest identity measure.
+
+**Alternatives considered:** prompt-softened lock ("same material type/tone, this view's lighting") — helped but weaker than A2 on brick; one global strategy for all materials — fails one class or the other.
+
+**Reasoning:** A2 fixes the brick failure (texture-energy 25.9→9.5, chroma 20.7→9.6) so the lock at least stops hurting; smooth materials are lighting-insensitive so the raw anchor is the better, simpler reference for them. Engine: `spike/multiview_apply.py`. (A2 doesn't yet *beat* swatch-only naive on a hue the swatch already nails; residual is correct re-lighting.)
+
+**Revisit if:** a lighting-aware material model (per-view sun direction, or a relight pass) lets one strategy serve all classes; or a future model transfers material identity without baked light.
+
+---
+
+## 2026-06-13 — Rhino capture is the (size, displayMode) overload — reverses an E1 note {#capture-overload}
+
+**Decision:** The white/ID reference passes in `rhino_capture.py` MUST use `view.CaptureToBitmap(size, displayModeDescription)`. The bare `CaptureToBitmap(size)` is forbidden for these passes. A white-pass brightness health gate (`MIN_LIGHT_PASS_MEDIAN=180`) raises rather than returning silently-undecodable masks.
+
+**Context:** Capture was reliable only on the *first* call per doc-open; the 2nd+ collapsed to ~0.3% decode. Root-caused (not guessed): the bare overload returns a **stale, default-lit frame** in a headless/MCP-driven viewport (proved: byte-identical output across Wireframe/Shaded/Rendered; foreground median 157 == background). The mode-arg overload forces a real render of E1_IDMask → median 191, ~97% decode. This **reverses** the E1-era note (now corrected in `host_probe_rhino.py` finding #5) that claimed the mode-arg overload "ignores attributes."
+
+**Alternatives considered:** doc reopen between captures (works but heavy, breaks multi-view-from-one-session); forcing flat-unlit shading / deleting+recreating the display mode (no effect — not the cause).
+
+**Reasoning:** `capture()` is now idempotent in-session — independently re-validated 90.5% & 92.9% on two captures, one session, no reopen — which unblocks reliable multi-view capture and the Grasshopper button.
+
+**Revisit if:** a future Rhino/RhinoCommon version changes CaptureToBitmap semantics, or a true off-screen GL path becomes available.
+
+---
+
+## 2026-06-12 — Material application: hosted FLUX.2 Edit + mask composite; MatSwap deferred {#material-apply-hosted}
+
+**Decision:** The production apply-material step is `composite.paste_tile(base, host_mask, FLUX.2-Edit(base, swatch))` — FLUX.2 [pro] Edit (fal `flux-2-pro/edit`) with the render + swatch as references, then composite ONLY masked pixels back over the base. ~$0.06/swap. The self-hosted MatSwap-on-Modal contingency from the master plan is **not built for v1**.
+
+**Context:** E3 shootout: text-only FLUX Fill barely acts on the surface; XLabs IP-Adapter gives muddy style-mush; FLUX Kontext reframes the camera (breaks mask registration); FLUX.2 Edit produced travertine that reads as travertine and held the camera. The mask composite makes the whole-image editor's out-of-region drift irrelevant.
+
+**Alternatives considered:** MatSwap / Refaçade self-hosted (best measured fidelity, takes true normals — but GPU setup + Modal spend, and FLUX.2 cleared the "reads as the material" gate); IP-Adapter; Kontext.
+
+**Reasoning:** Hosted single-call path clears the v1 quality bar at trivial cost and no GPU ops; reserve MatSwap for if/when swatch-exact fidelity (tile scale, veining) becomes the bottleneck.
+
+**Revisit if:** users need exact-swatch tile scale/pattern fidelity that FLUX.2's cross-attention can't deliver; or a FLUX-backbone material-transfer model (HiFi-Inpaint-class) ships hosted.
+
+---
+
+## 2026-06-12 — Render = depth+canny multi-ControlNet; "geometry preservation = mask registration" {#render-mask-registration}
+
+**Decision:** The production renderer is fal `flux-general` with a **ControlNetUnion of canny + depth** (FLUX.1-dev-ControlNet-Union-Pro-2.0), rendered at the capture's native pixel size. The canny control is a **ground-truth line drawing** = `Canny(beauty) ∪ instance-boundaries`. The success criterion for "geometry preservation" is reframed as **mask registration**: the host's ground-truth masks must land on the rendered pixels.
+
+**Context:** E2 picked depth-only as the best of the bake-off, but the canvas masking was visibly wrong (brick over windows, smudged pillars). Diagnosed: depth ControlNet pins massing but **cannot pin coplanar features** (a window flush in a wall ≈ same depth), so FLUX re-placed openings 5–25px off the ground-truth masks. Edge alignment: depth-only 51.7% of GT edges within 2px → depth+canny **98.5%**. Also: BFL deprecated its standalone Canny/Depth Pro endpoints (Oct 2025) and fal's `flux-pro/v1/canny` queue is dead, so the union lives on `flux-general` (the FLUX-dev model). Warmth is a prompt matter, not a model limit (recovered with no re-drift).
+
+**Alternatives considered:** depth-only (drifts coplanar features); screenshot i2i / Nano Banana / FLUX.2 Edit i2i (reframe 20–40px+, break mask registration); FLUX-pro depth (no multi-control on fal).
+
+**Reasoning:** Only the plugin tier can supply a true z-buffer AND exact GT edges; the union locks both massing and openings so masks register — the third stage where host data beats inference.
+
+**Revisit if:** a hosted seg-map→photoreal model (e.g. Seg2Any) or a FLUX.2-grade multi-ControlNet appears that registers as tightly with better photorealism.
+
+---
+
 ## 2026-06-12 — Plugin-first pivot: extract ground truth from the host, delete the tag+segment AI stages {#plugin-first-pivot}
 
 **Decision:** The primary input path is a host plugin (Rhino → Revit → SketchUp) exporting `{beauty.png, id_mask.png (per-object flat color), depth.png (true z-buffer where available), objects.json (id → category/layer/material)}`. On this tier the VLM-tagging and SAM2-segmentation stages are **deleted** — host data is ground truth. The screenshot pipeline is retained as a fallback tier (web demo, Forma, no-plugin users) with its tagging stack upgraded (Florence-2 → SAM 3). AI is reserved for the two things only it can do: photoreal synthesis and material application.
