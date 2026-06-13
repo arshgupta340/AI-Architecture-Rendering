@@ -65,9 +65,13 @@ updated: 2026-06-12
 - **P3.1 — `spike/rhino_capture.py`** (+ README + tests): the proven atomic capture as a production module; CSI/keyword semantic rules auto-sniffed; r-plane ID extension to 140k objects; live-verified 90.5% decode; doc state fully restored. Suite: 62 tests green.
 - **P3.2 — `apps/canvas-prototype/`**: the product loop in a browser on real data — hover/click regions, swatch library, apply → RGBA layer (FLUX.2 Edit + paste_tile; travertine no-spend demo path), layer stack with eye-toggle (≈14ms redraw), replace-not-stack, localStorage persistence. 22/22 API checks; live brick call proved the paid path ($0.06). Run: `spike\.venv\Scripts\python.exe apps/canvas-prototype/server.py` → http://localhost:8765 (first run: `prepare_data.py`).
 
+## Registration fix (2026-06-12, E2b) — masking now accurate
+
+User found the canvas masks didn't land on the rendered elements (brick over windows, smudged pillars). Root cause: depth-only ControlNet can't pin coplanar openings, so the `flux_depth` base drifted 5–25px from the GT masks (which are registered to the beauty geometry). Fix: re-capture at native **1504×656** (`spike/outputs/e2_house_v2/`, no resize drift) + render with **depth+canny ControlNetUnion** where canny = a ground-truth line drawing (`Canny(beauty) ∪ instance-boundaries`). GT-edge alignment **51.7% → 98.5% within 2px**. Brick lands on walls only; windows/posts sharp. Prototype repointed to v2; layer cache auto-clears on `prepare_data`. [REPORTS/E2b.md](../spike/REPORTS/E2b.md). **Production render recipe updated: depth+canny union, not depth alone.**
+
 ## What to do next
 
-1. Wire P3.1 → P3.2 directly: capture POSTs straight into the canvas server (`/api/capture`), making "click Capture in Rhino → canvas opens" one motion.
+1. Wire P3.1 → P3.2 directly: capture POSTs straight into the canvas server (`/api/capture`), making "click Capture in Rhino → canvas opens" one motion. The capture must render via the E2b depth+canny recipe (not depth-only) and at the mask's native size.
 2. Material library: tile-scale prompt hints; 2px mask feather on composite seams; more real swatches (ambientCG ingest).
 3. Multi-view material lock (M4): capture 2–3 views of the house, same swatch + per-view masks, check consistency (anchor-reference technique).
 4. Tier-2 follow-ups (lower priority): E5 re-score on the photoreal render; Revit add-in scoping.

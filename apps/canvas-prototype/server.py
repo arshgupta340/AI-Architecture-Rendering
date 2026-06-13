@@ -138,12 +138,12 @@ def apply_material(body: dict) -> dict:
     mask_png = _mask_png(region_ids)
     semantics = _semantic_of(region_ids)
 
-    # ---- NO-SPEND demo path: precomputed travertine walls from E3
+    # ---- NO-SPEND demo path: precomputed travertine walls on the ALIGNED base
     if swatch == "travertine" and semantics == {"wall"}:
-        # final_composite.png has travertine across the whole wall semantic;
-        # masking by the *requested* instance mask yields a correct per-
-        # selection layer even for a subset of walls.
-        final = (SPIKE / "outputs" / "e3_swatch" / "final_composite.png").read_bytes()
+        # travertine_walls_v2.png has travertine across the whole wall semantic
+        # on the same depth+canny base the canvas shows; masking by the
+        # *requested* instance mask yields a correct per-selection layer.
+        final = (SPIKE / "outputs" / "e2_house_v2" / "travertine_walls_v2.png").read_bytes()
         out_path.write_bytes(_layer_rgba(final, mask_png))
         print(f"[apply] NO-SPEND path: precomputed E3 travertine walls -> {key}")
         return {"layer_id": key, "image_url": url, "cost_est": 0.0,

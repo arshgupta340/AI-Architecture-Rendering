@@ -22,7 +22,10 @@ from PIL import Image, ImageDraw
 
 HERE = Path(__file__).parent
 REPO = HERE.parent.parent
-SRC = REPO / "spike" / "outputs" / "e2_house"
+# e2_house_v2: re-captured at native 1504x656 + depth+canny render (E2b) so the
+# ground-truth masks register pixel-for-pixel with the displayed base image.
+SRC = REPO / "spike" / "outputs" / "e2_house_v2"
+BASE_RENDER = SRC / "renders" / "base_render.png"   # depth+canny union, aligned
 OUT = HERE / "public" / "project"
 
 SEMANTIC_META = {
@@ -99,13 +102,21 @@ def make_swatches(dst: Path) -> None:
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
 
-    # 1) base.png
-    base = Image.open(SRC / "renders" / "flux_depth.png").convert("RGB")
+    # Clear cached layers — their hash key is content-independent, so a data
+    # refresh must invalidate them or the server serves layers from the old base.
+    layers = OUT / "layers"
+    if layers.exists():
+        for p in layers.glob("*.png"):
+            p.unlink()
+
+    # 1) base.png — the depth+canny render (aligned to the masks)
+    base = Image.open(BASE_RENDER).convert("RGB")
     base.save(OUT / "base.png")
     W, H = base.size
 
-    # 2) ids_rgb.png — pack uint16 ids into RGB, NEAREST-resize to base size
-    inst = np.array(Image.open(SRC / "instance_ids.png"))  # uint16, 1514x659
+    # 2) ids_rgb.png — pack uint16 ids into RGB. Source is captured at the SAME
+    # 1504x656 grid as the render, so this resize is a no-op (kept defensively).
+    inst = np.array(Image.open(SRC / "instance_ids.png"))  # uint16, 1504x656
     inst_img = Image.fromarray(inst).resize((W, H), Image.NEAREST)
     inst_r = np.array(inst_img, dtype=np.uint16)
     rgb = np.zeros((H, W, 3), np.uint8)

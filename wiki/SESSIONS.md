@@ -7,6 +7,20 @@ updated: 2026-05-19
 
 Append-only conversation log. **Newest at top.** One entry per chat session.
 
+## 2026-06-12 — Masking registration fix (E2b)
+
+**Scope:** User reported the canvas prototype's region masking was inaccurate (brick over windows, smudged pillars). Diagnosed and fixed.
+
+**Decisions:** Production render recipe changed from depth-only to **depth+canny ControlNetUnion** with a ground-truth-derived line drawing as the canny control; captures must be at the render's native (mult-of-16) size. See [[DECISIONS]] if promoted.
+
+**Tried:** Overlaid GT boundaries on beauty (perfect — control) vs flux_depth render (5–25px drift) → root cause = depth can't pin coplanar openings + a 1514×659 vs 1504×656 resize mismatch. Re-captured e2_house at native 1504×656 (`e2_house_v2`, 90.5% decode); built canny = `Canny(beauty) ∪ instance-boundaries`; rendered via fal `flux-general` union (canny@0.8 + depth@0.5). Edge alignment 51.7% → 98.5% ≤2px. Validated brick-on-walls (clean windows/posts) and the app-path wall highlight.
+
+**Outcome:** `spike/run_e2b_registration.py`, `spike/outputs/e2_house_v2/`, prototype repointed (prepare_data + server), layer-cache auto-clear added. ~$0.20 spend (ledger ≈ $2.54). 62 tests green; API smoke + regeneration confirmed. [REPORTS/E2b.md].
+
+**Follow-ups:** bake `out_size` into `rhino_capture.capture()`; optional low-denoise flux-pro polish over the locked structure (measure for re-drift); 1–2px composite feather; flux-general (dev) render is slightly desaturated vs flux-pro.
+
+---
+
 ## 2026-06-12 — Experiment ladder executed end-to-end + Phase 3 first builds
 
 **Scope:** Ran the full E1–E6 ladder in one day, then built the Rhino capture module and the canvas layer-model prototype via two parallel agents.
