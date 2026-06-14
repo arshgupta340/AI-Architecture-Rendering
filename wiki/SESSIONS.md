@@ -24,9 +24,15 @@ Append-only conversation log. **Newest at top.** One entry per chat session.
 - **Capture trap:** Claude-in-Chrome screenshots can't grab the GPU canvas (shows black) and `canvas.toDataURL` is black without `preserveDrawingBuffer` — but the **headless preview has an AMD WebGPU adapter**, so it can screenshot WebGPU. Also lost time because the headless preview had drifted onto a **stale agent-worktree dev server (`:5196`)**; the integrated build is **`:5181`**.
 - Path-tracer crash: `MaterialsTexture.updateFrom` reads `.r` of an undefined material color (glass/material without a color) — deferred.
 
-**Outcome:** 3 working render modes behind one `renderMode` toggle on the live app, $0/client-side. 3 agent branches merged + integrated. Path-trace deferred; Twinmotion is the real Lumen reference.
+**Outcome:** 3 working render modes behind one `renderMode` toggle on the live app, $0/client-side. 3 agent branches merged + integrated (commits `d99d8ae`→`4a3cbc2`).
 
-**Follow-ups:** fix the path-tracer material crash (spawned task); WebGPU HDRI IBL (node-safe env) so its reflections match the WebGL2 modes; drive Twinmotion for the real Lumen render (runbook ready); kill the stale `:5196` server + prune leftover `.claude/worktrees/` dirs.
+**Post-build refinements (same session):**
+- **Bundle:** all 3 stages `React.lazy` + Suspense fallback (`App.tsx`) — `three/webgpu` (~900 kB) loads only in WebGPU mode; main chunk ~920 → **306 kB gzip**. (Tried eager `StageWebGL2` — it folds the shared `Scene`+three into main, 1.1→2.0 MB; reverted.)
+- **WebGPU IBL DONE:** node-safe equirect HDRI on `scene.environment` (`SolarSky.WebGPUEnv`), PMREM-filtered internally by the WebGPU renderer (no GLSL ShaderMaterial); fill lights dialed to 35% in WebGPU mode. Verified reflections on the AMD-adapter headless preview. [[research/web3d-webgpu]]
+- **WebGPU shadows VERIFIED real:** VSM cast shadows from the suncalc sun (NOT mimicked from WebGL2) — confirmed via three.js source (VSM landed r169 #29225, acne fixed r183 #32705) + cast shadows visibly shifting midday→golden-hour. WebGPU VSM = single shadow-casting light (our sun = fine).
+- New research doc [[research/web3d-webgpu]]; new `apps/web3d-prototype/README.md`; wiki index ([[README]]) repointed to the web3d direction.
+
+**Follow-ups (→ NEXT, for ultracode):** the **decked-out client-ready render** push — material library at scale + scale-aware input, real entourage (Twinmotion/low-poly quality, not gimmicky), **Gaussian-splat environment generation**, **consistency-locked diffusion hero** (depth+canny ControlNet, reusing [[DECISIONS#render-mask-registration]]), lighting/atmosphere polish. Full paste-in prompt in [[../docs/HANDOFF-web3d.md]] §NEXT-STEPS. Also: fix the deferred path-tracer material crash; kill the stale `:5196` dev server + prune leftover `.claude/worktrees/` dirs.
 
 ## 2026-06-13 — web3d realism pass (WebGL2 post stack + glass + soft shadows) + UE-in-browser research
 

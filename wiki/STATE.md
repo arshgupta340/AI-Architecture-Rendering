@@ -1,68 +1,68 @@
 ---
 type: state
-updated: 2026-06-13
+updated: 2026-06-14
 ---
 
 # Current State
 
 > Snapshot, not a log. Overwrite at session end. Log is [[SESSIONS]]; rationale is [[DECISIONS]].
 
-## Direction (NEW, 2026-06-13)
+## Direction
 
-**Web-native 3D-consistent rendering tool.** Pivoted from the 2D diffusion canvas to an **engine-first** approach: export real geometry + semantic IDs from Rhino → glTF, render it live in **three.js / React-Three-Fiber**, and configure materials / sun / entourage directly in 3D. Geometry fidelity and multi-view consistency are *exact and free* (it's real 3D), which is precisely what the diffusion path struggled with. Spark + rationale: [[research/arcway-teardown]] (Arcway = Unreal pixel-streamed; our edge is we already have Rhino geometry + semantics) and [[DECISIONS#web3d-pivot]].
+**Web-native 3D-consistent rendering tool** (engine-first). Export real geometry + semantic element IDs from Rhino → glTF, render live in **three.js / React-Three-Fiber**, configure materials / sun / entourage / render-quality directly in 3D. Geometry fidelity + multi-view consistency are *exact and free* (it's real 3D) — exactly what the old 2D diffusion path bled on. Spark: [[research/arcway-teardown]]; rationale: [[DECISIONS#web3d-pivot]]. The 2D FLUX.2 + semantic-masking pipeline (`apps/canvas-prototype/`) is demoted to a future **"diffusion hero"** add-in.
 
-**The 2D pipeline (FLUX.2 + semantic masking, `apps/canvas-prototype/`) is reframed as a future ADD-IN** — a "diffusion hero" pass on a 3D viewport grab (sky/entourage/mood/photoreal), not the core. Its reports/ladder (E1–E6, multiview) remain valid and are the basis for that add-in.
+## The web3d app — `apps/web3d-prototype/`  (Vite + React + R3F + three **r0.184**, $0 / client-side)
 
-## The web3d app — `apps/web3d-prototype/` (Vite + React + R3F, $0/client-side)
+Run: `npm install --prefix apps/web3d-prototype` then `npm --prefix apps/web3d-prototype run dev` → http://localhost:5181 (launch.json `web3d`, port 5181). App README: `apps/web3d-prototype/README.md`.
 
-Run: `npm install --prefix apps/web3d-prototype` then `npm --prefix apps/web3d-prototype run dev` → http://localhost:5181 (launch.json name `web3d`; port 5181).
+### Working & verified
+- **Model:** meshopt-compressed semantic `house.glb` (6.5 MB), 12 element classes, auto-framed.
+- **Material swap:** click element → swap CC0 PBR material (ambientCG); **box-projected world-space (feet) UVs** → metric texture scale + live per-material scale slider; non-destructive layer stack; localStorage-persisted.
+- **Real glass:** windows use ONE shared `MeshPhysicalMaterial` (transmission/ior 1.5).
+- **Sky & Sun:** real `suncalc` solar position (lat/long/date/time) + mood/time/date/intensity/cloud presets (`SolarSky`/`SkyPanel`).
+- **Entourage:** Tree/Bush/Person, click-to-place, InstancedMesh + billboard, real-ft height sliders. *(procedural placeholders — a NEXT-step track is real assets.)*
+- **Geo-context:** Google Photorealistic 3D Tiles via `3d-tiles-renderer` (`GeoTiles.tsx`), georeferenced (tiles→local feet). Needs the user's Google Maps key to validate live.
+- **Nav:** Orbit + Walk; saved views.
+- **THREE RENDER MODES** behind a `renderMode` toggle (NavBar) — each a self-contained Stage owning its own `<Canvas>` + renderer + post, all rendering the shared `<Scene>`:
+  - **WebGL2** (`stages/StageWebGL2`): baseline — N8AO + tamed Bloom + AgX + SMAA (`Effects.tsx`), VSM soft shadows, 256px sky-baked IBL.
+  - **WebGL2 + GI** (`stages/StageWebGL2GI`): RectAreaLight (LTC) sky-fill + per-window emitters (`AreaLights`), `MeshReflectorMaterial` reflective plaza (`ReflectiveGround`), stronger N8AO (`EffectsGI`).
+  - **WebGPU** (`stages/StageWebGPU` + `WebGPUPost` + `WebGPUAreaLights`): three.js `WebGPURenderer` + native TSL post graph (**SSGI** + GTAO + TRAA + Bloom) + LTC area lights + **node-safe HDRI IBL** (`SolarSky.WebGPUEnv` — equirect HDRI on `scene.environment`, PMREM-filtered internally) + **real VSM cast shadows** from the suncalc sun. The realism ceiling. `App` lazy-loads the stages so `three/webgpu` (~900 kB) only loads in WebGPU mode.
+- **Cinematic (UE5) toggle** (`Cinematic.tsx`): full-screen overlay that embeds a SimplyStream-hosted UE5 WebGPU build of the model (deep-linked materials+sun). Embedding verified; needs the user's own UE build.
+- **Lumen reference:** Twinmotion 2025.1 installed (RTX 4070) — `apps/web3d-prototype/UE_LUMEN_RUNBOOK.md` renders the house in real Lumen.
 
-**Working & verified (preview):**
-- Loads the meshopt-compressed semantic `house.glb` (6.5 MB), 12 element classes, auto-framed.
-- Click element → swap **real PBR material** (ambientCG CC0); brick lands on walls only.
-- **Box-projected world-space UVs (feet)** → metric-consistent texture scale + **live per-material "Texture scale" slider** (persisted).
-- Non-destructive **layer stack** (toggle / remove / replace-not-stack) + localStorage persistence.
-- **Walk + Orbit** modes; **saved views** (Overview, Rhino view, user "+ Save").
-- **Sky & Sun left panel** (`SkyPanel`/`SolarSky`): real solar position via `suncalc` from lat/long + date/time; mood presets (sunny/overcast/golden/dusk/night), time-of-day slider, equinox/solstice date presets, sun intensity, cloud cover.
-- **Entourage**: Tree/Bush/Person, click-to-place, `InstancedMesh` + billboard, **real-ft height sliders** (tree 3–30, bush 0.5–5, person 5–6), persisted.
-- **Geo-context (NEW, 2026-06-13)**: `SkyPanel` "Real-world context" → paste a Google Maps key (or `.env.local` `VITE_GOOGLE_MAPS_API_KEY`) → **Google Photorealistic 3D Tiles** load around the model (`src/GeoTiles.tsx`, `3d-tiles-renderer` + `ReorientationPlugin` + Draco). Tiles recenter to the site lat/lng (shared with the sun) at the local origin, scaled m→ft, seated under the building; **elevation / Seat / North-heading / hide-Rhino-site** controls. `$0` until a key is entered; `enabled` not persisted (won't auto-bill on reload). **UI + mount path verified in preview without a key (auth request fires, bad key degrades gracefully); actual tile imagery + georeference fidelity pending the user's valid key.** [[research/web3d-geo-context]] · [[DECISIONS#web3d-geo-context]]
+### Known-broken / deferred
+- **In-app path tracer crashes at runtime** (`three-gpu-pathtracer` `MaterialsTexture.updateFrom` reads `.r` of an undefined material color) — geometry fixed (dequantized `public/model/house_pt.glb`, BVH builds), but a material (likely the transmission glass) needs a path-trace-safe color. Task chip spawned.
+- **drei `<SoftShadows>` (PCSS) broke on three r184** (`unpackRGBAToDepth` removed → washout) → use VSM (`shadows="variance"`). Vet `<ContactShadows>`/`<AccumulativeShadows>` before adding.
+- **WebGPU gotchas** ([[research/web3d-webgpu]]): drei `<Sky>`/`<Environment>` GLSL ShaderMaterials don't compile on the WebGPU node renderer (→ node-safe HDRI env on `scene.environment` instead); VSM supports a single shadow-casting light (our sun = fine); the Claude-in-Chrome screenshot can't capture the GPU canvas (shows black) — use the **headless preview** (it has an AMD WebGPU adapter) to screenshot WebGPU.
 
-- **Realism pass (NEW, 2026-06-13)**: post-processing stack (`src/Effects.tsx` — **N8AO** ambient occlusion + tamed **Bloom** + **AgX ToneMapping** + grade/vignette/SMAA; renderer is `NoToneMapping`, the AgX *effect* owns tone mapping), **real transmission glass** on windows (one shared `MeshPhysicalMaterial`), **VSM soft shadows** (`shadows="variance"`), **256px IBL** that re-bakes with time-of-day, texture anisotropy 16. All verified in preview. This is the **tier-1 WebGL2** realism floor; the photoreal hero is the WebGPU / UE tiers. [[research/web3d-realism]] · [[DECISIONS#web3d-realism-tiers]]
-- **Cinematic (UE5) toggle (NEW, 2026-06-13)**: `src/Cinematic.tsx` + a NavBar button + store `cinematic`/`cinematicUrl`. Toggles a full-screen overlay that **embeds a SimplyStream-hosted UE5 WebGPU build** of the model in an `<iframe>`, deep-linked with the current materials + sun; setup card (with runbook) when no URL, + Open-in-tab / Change-build / Exit. **Verified embedding works** (SimplyStream allows framing; `garage.cjponyparts.com` streamed to 100% in-app). Needs the **user's own UE build** (Unreal + SimplyStream account) to show the house; UE render needs a real WebGPU GPU. [[research/web3d-ue-browser]] · [[DECISIONS#web3d-realism-tiers]]
+### The three realism tiers (all verified rendering)
+| Mode | Tech | Look |
+|---|---|---|
+| **WebGL2** | N8AO + AgX + glass + VSM shadows | the baseline |
+| **WebGL2 + GI** | + RectAreaLight area lights + reflective ground | richer; payoff strongest at ground level |
+| **WebGPU** | SSGI + GTAO + TRAA + HDRI IBL + VSM | softest/warmest GI — the in-browser ceiling |
+Lumen reference = **Twinmotion** (runbook, user-driven). Honest ceiling analysis: [[research/web3d-realism]] · [[research/web3d-ue-browser]].
 
-- **3-way render modes (NEW, 2026-06-14)**: a `renderMode` toggle (NavBar) switches three self-contained Stage components — **WebGL2** (baseline post/AO/glass), **WebGL2 + GI** (RectAreaLight LTC area lights + `MeshReflectorMaterial` reflective ground + stronger N8AO), and **WebGPU** (three.js `WebGPURenderer` + TSL **SSGI**/GTAO/TRAA/bloom — the realism ceiling). All three render (WebGPU verified on the integrated build with a real WebGPU context; SSGI reads softer/warmer than baseline). Built by 3 parallel Opus agents. `App` lazy-loads stages so `three/webgpu` only loads in WebGPU mode. [[research/web3d-realism]] · [[SESSIONS]]
-- **Lumen reference**: **Twinmotion 2025.1 installed** (+ Lumion 2024 Student; RTX 4070) — `apps/web3d-prototype/UE_LUMEN_RUNBOOK.md` is the runbook to render the house in real Lumen on the user's machine.
+## NEXT — the "decked-out, client-ready render" push (for ultracode multi-agent orchestration)
 
-**Known-broken / deferred:**
-- **In-app path tracer crashes at runtime** (`three-gpu-pathtracer` `MaterialsTexture.updateFrom` reads `.r` of an undefined material color) — geometry was fixed (dequantized `public/model/house_pt.glb`), but a material (likely the transmission glass) needs a path-trace-safe color. Task chip spawned. (**WebGPU IBL is now wired** — a node-safe equirect HDRI assigned straight to `scene.environment` is PMREM-filtered internally by the WebGPU renderer, no GLSL ShaderMaterial; glass/metal get real reflections, fill lights dialed back so the HDRI dominates. `SolarSky.WebGPUEnv`.)
-- **drei `<SoftShadows>` (PCSS) is incompatible with three r0.184** — it emits `unpackRGBAToDepth`, removed in r184 → shader won't compile → every MeshStandardMaterial fails → washout. Soft shadows now use **VSM** (`shadows="variance"`). Don't re-add `<SoftShadows>` (or untested `<ContactShadows>`/`<AccumulativeShadows>`) without checking r184 shader compat.
-- **Path-trace hero render** runs (builds building-only BVH ~1.2 s, accumulates) but shows only sky — `three-gpu-pathtracer` is incompatible with our **meshopt/KHR_mesh_quantization** geometry (BVH builds, ray intersection misses). Fix = path-trace an *uncompressed* model copy, OR switch the hero to the **diffusion** pass / UE-toggle. See [[research/web3d-realism]].
-- Harmless pre-existing console noise: 3d-tiles `'content'` + "Invalid hook call" (geo r3f), stale SoftShadows shader errors, PointerLock-in-iframe — non-fatal; the *render* is the reliable signal (the preview CDP buffer doesn't flush on `console.clear()`).
+The 3 modes are a strong base but **minimal**. Goal: a fully art-directed, high-res render an architect / construction builder can send to clients. The detailed plan + the paste-in continuation prompt are in [[../docs/HANDOFF-web3d.md]] §Next-steps. Tracks:
+1. **Material library at scale** — many CC0 PBR sets (ambientCG/PolyHaven), **KTX2-compressed**, **scale-aware tiling** (real-world tile-feet per material so input auto-scales), detail/triplanar anti-tiling on big surfaces, a searchable swatch UI. [[research/web3d-realism]]
+2. **Real entourage** — replace the procedural Tree/Bush/Person with **real-looking** CC0 trees/bushes/people (Quaternius/Kenney/KhronosGroup/Poly-Haven meshes, alpha-tested foliage, octahedral impostors for distance, MrCutout-style cutout people). Twinmotion/low-poly quality, **not** gimmicky. [[research/web3d-entourage]]
+3. **Gaussian splatting for environment** — explore generating photoreal splat *environments* around the (editable polygon) building; hybrid polygon-building + splat-context. *(Needs a fresh research pass — see prompt.)*
+4. **Diffusion hero (consistency-safe)** — FLUX.2 on a viewport grab for the last-10% photoreal/atmosphere, with the **hallucination/consistency fix = condition tightly on the render's depth + canny edges** (the project's depth+canny multi-ControlNet, [[DECISIONS#render-mask-registration]]) + single-still scope. [[research/web3d-realism]]
+5. **Lighting/atmosphere polish** — lightmap bake (needs a UV2 rebuild), volumetric clouds, ground/contact, aerial-perspective sky, sun-path arc.
 
 ## Pipeline (Rhino → web), all `$0`
-
 ```
-Rhino 8 (live MCP)
-  → spike/rhino_export_gltf.py     name objects {semantic}__i (non-destructive) → FileGltf.Write → house_raw.glb + semantics.json + camera.json
-  → spike/gltf_postprocess.py      pure-python GLB rewrite: node.extras semantics (581/581 tagged)
-  → gltf-transform meshopt          14.5 MB → 6.5 MB, semantics preserved
-  → apps/web3d-prototype/public/model/house.glb
-PBR swatches:  spike/ingest_pbr_swatches.py  (ambientCG CC0 → public/materials/)
-HDRI:          spike/ingest_hdri.py           (Poly Haven → public/hdri/, now superseded by procedural Sky)
+Rhino 8 (live MCP) → spike/rhino_export_gltf.py → spike/gltf_postprocess.py (node.extras semantics) → gltf-transform meshopt → public/model/house.glb
+PBR swatches: spike/ingest_pbr_swatches.py (ambientCG CC0) ;  HDRI: spike/ingest_hdri.py (Poly Haven → public/hdri/sky.hdr — now used for WebGPU IBL)
 ```
-
-## Roadmap (the "real arch-viz tool" pillars)
-1. **Entourage** ✅ built (procedural placeholders; real Quaternius/Kenney glTF + MrCutout people = drop-in). [[research/web3d-entourage]]
-2. **Sky/sun/time-of-day** ✅ built. Next: PMREM env-from-sky, sun-path arc, real volumetric clouds. [[research/web3d-sky-sun]]
-3. **Geo-context from coordinates** ✅ built (`src/GeoTiles.tsx`): Google Photorealistic 3D Tiles via `3d-tiles-renderer` + `ReorientationPlugin`, georeferenced (tiles→local feet) around the model. **Needs the user's Google Maps key to validate live**; then auto-snap to terrain + auto true-north are the polish. [[research/web3d-geo-context]] · [[DECISIONS#web3d-geo-context]]
-4. **Diffusion hero add-in** — wire FLUX.2 (from `apps/canvas-prototype`) onto a viewport grab. Not built; recommended over the path tracer.
-5. **Realism** — ✅ tier-1 WebGL2 pass done (post-processing AO/bloom/AgX, real glass, VSM soft shadows, 256 IBL, anisotropy). Next: ground/reflective-floor + detail-map anti-tiling + real PBR library; then the two ceilings — **(a)** WebGPU three.js staged spike (SSGI/GTAO/TRAA), **(b)** a "Cinematic (UE5)" toggle via SimplyStream (client-side UE5 — *evaluate*, not bet). [[research/web3d-realism]] · [[research/web3d-ue-browser]] · [[DECISIONS#web3d-realism-tiers]]
 
 ## Research (this arc)
-[[research/arcway-teardown]] · [[research/web3d-engine-choice]] · [[research/web3d-rhino-gltf]] · [[research/web3d-realism]] · [[research/web3d-entourage]] · [[research/web3d-sky-sun]] · [[research/web3d-geo-context]] · [[research/web3d-ue-browser]]
+[[research/arcway-teardown]] · [[research/web3d-engine-choice]] · [[research/web3d-rhino-gltf]] · [[research/web3d-realism]] · [[research/web3d-entourage]] · [[research/web3d-sky-sun]] · [[research/web3d-geo-context]] · [[research/web3d-ue-browser]] · [[research/web3d-webgpu]]
 
 ## Cost ledger
-web3d arc = **$0 API** (local geometry + client render). ambientCG/PolyHaven/Quaternius = CC0. Prior diffusion spend ≈ $2.22 of $50 (unchanged). pip unblocked (removed the `pip install` deny in `.claude/settings.local.json`). **Geo-context is $0 to build/run until a key is entered; once keyed, Google Photorealistic 3D Tiles bill on the *user's* Google PAYG (~$6/1k sessions + $0.20/1k tile requests), not the Anthropic budget.**
+web3d arc = **$0 API** (local geometry + client render; CC0 assets). Geo-context bills the user's own Google PAYG once keyed (~$6/1k sessions). Prior diffusion spend ≈ $2.22 / $50 (unchanged). This session: **$0** (research via EXA on the user's quota).
 
 ## Handoff
-A fresh-chat continuation prompt + detailed breakdown is in [[../docs/HANDOFF-web3d.md]].
+Fresh-chat continuation prompt + the next-step (ultracode) plan: [[../docs/HANDOFF-web3d.md]].

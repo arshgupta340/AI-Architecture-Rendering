@@ -20,6 +20,20 @@ Each entry follows the same shape so it can be scanned in 15 seconds:
 
 ---
 
+## 2026-06-14 — Path to a client-ready render: compose WebGPU-realtime + consistency-locked diffusion + splat context; WebGPU is the live quality tier {#client-ready-render}
+
+**Decision:** The route to an architect-sendable, "decked-out" render is a **composition**, not one technique: (1) push the **WebGPU real-time** tier (SSGI/GTAO/TRAA + HDRI IBL + VSM shadows — now built) with a much bigger material library, real entourage, lightmaps + atmosphere; (2) an optional **diffusion hero** still on top, with the **hallucination/consistency problem solved by conditioning on the render's own depth + canny edges** (the depth+canny multi-ControlNet we already proved, [[#render-mask-registration]]) and single-still scope; (3) a **Gaussian-splat environment** for photoreal surroundings around the editable polygon building; (4) **Twinmotion / UE Lumen** as the absolute ceiling (runbook ready). WebGPU is the live quality tier; splat-bake-of-the-whole-scene and pixel-streamed UE stay **terminal "publish" exports** (they bake away live editing).
+
+**Context:** The 3 render modes ([[#web3d-realism-tiers]]) are a strong base but minimal — sparse materials, placeholder entourage, bare environment. User wants a client-ready render and named the two hard problems himself: diffusion hallucination/inconsistency, and generating rich environments. Next chat is ultracode multi-agent ([[../docs/HANDOFF-web3d.md]] §NEXT-STEPS).
+
+**Alternatives considered:** (a) Diffusion-only hero as the *core* — rejected: naive diffusion hallucinates geometry + breaks cross-view consistency (the old 2D spike's whole pain); only safe when conditioned on the render's depth+edges and scoped to one still. (b) Splat-bake the whole scene (D5-Render approach) as the *editor* — rejected: it bakes materials, killing the live per-element-swap moat; keep it a publish export. (c) Pixel-streamed UE — the true Lumen look but per-viewer GPU cost + abandons $0/client-side; reserve for explicit client demand.
+
+**Reasoning:** Each route fixes a different gap (materials/entourage/atmosphere → WebGPU realtime; photoreal polish → diffusion-locked; surroundings → splat; ceiling → Lumen). Composing them — with diffusion constrained by our own ControlNet work so it can't drift — keeps geometry truth + live interactivity while reaching send-quality.
+
+**Revisit if:** depth+canny-locked diffusion still hallucinates unacceptably on real renders; or a text-to-3D-splat environment proves too low-fidelity / too heavy for the web; or the WebGPU-realtime tier alone (+ lightmaps + atmosphere) already clears the client bar.
+
+---
+
 ## 2026-06-13 — Realism path: bank WebGL2 wins now; client-side UE5 is a parallel spike, not a pivot {#web3d-realism-tiers}
 
 **Decision:** Pursue front-end photorealism in tiers. **Now:** upgrade the live WebGL2 R3F stack (post-processing AO/bloom/AgX, real transmission glass, VSM soft shadows, richer IBL) — $0, fully interactive, no dependency. **Parallel spike (low commitment):** a "Cinematic (UE5)" toggle via **Wonder Interactive / SimplyStream** (client-side UE5 over WebGPU+WASM) for a baked-archviz hero — to be *evaluated*, not bet on. **Later:** a staged **WebGPU three.js** migration (SSGI/GTAO/TRAA) for the ceiling. Do NOT adopt Unreal as the core.

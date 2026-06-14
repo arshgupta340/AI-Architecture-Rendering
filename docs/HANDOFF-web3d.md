@@ -1,10 +1,47 @@
-# Handoff — web3d 3D-consistent rendering tool (2026-06-13)
+# Handoff — web3d 3D-consistent rendering tool (updated 2026-06-14)
 
-This chat hit context limits mid-build. This doc lets a fresh session continue with zero re-derivation. **Read `wiki/STATE.md` first, then this.**
+This doc lets a fresh session continue with zero re-derivation. **Read `wiki/STATE.md` first, then this, then `apps/web3d-prototype/README.md`.**
 
 ---
 
-## 0. Latest update — 2026-06-13 (realism pass + UE-in-browser research)
+## ⭐ NEXT-STEPS — paste this prompt into the next chat (turn on **ultracode** for multi-agent orchestration)
+
+> Continue the **web3d engine-first architectural rendering tool** (`apps/web3d-prototype/`, Vite + React + R3F + three r0.184, $0/client-side, `npm --prefix apps/web3d-prototype run dev` → http://localhost:5181, launch.json `web3d`). **First read `wiki/STATE.md`, `apps/web3d-prototype/README.md`, `docs/HANDOFF-web3d.md`, and the research docs `wiki/research/web3d-realism.md`, `web3d-webgpu.md`, `web3d-entourage.md`, `web3d-ue-browser.md`.** Keep the wiki current per `CLAUDE.md` § Session-log protocol.
+>
+> **Where we are:** three working render modes behind a `renderMode` toggle — **WebGL2** (N8AO/AgX/glass/VSM), **WebGL2+GI** (RectAreaLight LTC area lights + `MeshReflectorMaterial` reflective ground + stronger N8AO), and **WebGPU** (three.js `WebGPURenderer` + TSL SSGI/GTAO/TRAA/Bloom + node-safe HDRI IBL + real VSM cast shadows). Plus a Cinematic (UE5/SimplyStream) embed toggle, a Twinmotion 2025.1 Lumen runbook (installed on the RTX 4070), suncalc sun, geo-context (Google 3D Tiles), and metric material swaps. It's a strong base but **minimal** — sparse material library, placeholder entourage, bare environment.
+>
+> **The goal:** go from this minimal base to a **fully art-directed, high-res, client-ready render** an architect / construction builder can send to clients — correct lighting, rich materials, real entourage, real environment/context, atmosphere. Use **ultracode multi-agent orchestration**: research first (prefer the **EXA** MCP tools — `mcp__exa__*` — per the standing preference; deep-researcher for the big open questions), then build in parallel. $0/client-side where possible; WebGPU is the quality tier.
+>
+> **Tracks (research, then build in parallel where independent):**
+>
+> 1. **Material library at scale, auto-scaled to input.** Expand far past the current 5 swatches: many CC0 PBR sets (ambientCG, PolyHaven). **KTX2/Basis-compress** them (`@gltf-transform` + `KTX2Loader`) for VRAM + grazing-angle sharpness. Make tiling **scale-aware** — each material carries a real-world tile size (feet) so it auto-scales on any surface (the app already box-projects world UVs in feet — extend `lib/swatches.ts` + a materials manifest). Add detail/triplanar mapping to kill tiling on big walls. A searchable swatch-library UI.
+>
+> 2. **Real entourage — trees, bushes, people that look REAL, not gimmicky.** Replace the procedural Tree/Bush/Person placeholders with real-looking CC0 assets at **Twinmotion / good-low-poly** quality. Sources: Quaternius/Kenney/KhronosGroup CC0 nature, Poly Haven 3D models, alpha-tested foliage cards, **octahedral impostors** for distant trees (perf), **MrCutout-style cutout people** (alpha billboards facing the camera). Drop them in behind the existing `Entourage` `InstancedMesh` placement so the scatter-paint UX is unchanged. Study how Twinmotion/Lumion entourage actually works (real meshes + impostors + cutouts). Meshes or impostors — whatever performs on the web.
+>
+> 3. **Gaussian splatting for environment generation (RESEARCH this — the big open question).** What we have is good but the *surroundings* are bare. Can we **generate a photoreal splat environment** around the (editable polygon) building and render it in-browser? Two angles: **(a) hybrid** — keep the building as editable polygon, surround it with a Gaussian-splat *context* (real-site photogrammetry splat, or an AI/text-to-3D-generated splat environment) composited in the same three.js scene (`@sparkjsdev/spark` / a gsplat loader); **(b) publish-export** — bake a high-quality offline render of the whole scene to a splat for a photoreal walkthrough (the D5-Render approach — but it BAKES materials, killing live editing, so keep it a terminal "publish" export only). Find the cleanest "minimal → decked-out environment" path.
+>
+> 4. **Diffusion hero (last-10% photoreal) WITHOUT the hallucination/inconsistency problem.** We can screenshot a render and run a diffusion model (FLUX.2, from `apps/canvas-prototype`) for photoreal/atmosphere — but naive diffusion hallucinates geometry and isn't consistent across views. **The fix is the project's own prior art:** condition the diffusion *tightly on the render's own depth + canny edges* (the **depth+canny multi-ControlNet** — `wiki/DECISIONS.md#render-mask-registration` proved "geometry preservation = mask registration", 98.5% edge alignment), so the output can't drift from the geometry; and scope it to a **single hero still** (cross-view consistency isn't needed for one frame). Also consider diffusion for *parts only* (sky, entourage, material detail) rather than the whole frame. The multiview-lock work (`#multiview-honest-metric`) is the basis if cross-view consistency is ever required.
+>
+> 5. **Lighting + atmosphere polish** — lightmap bake (needs a UV2 rebuild of the model; Blender Cycles → `lightMap` on uv1), volumetric clouds (`@takram/three-clouds`, hero-only), aerial-perspective sky (`@takram/three-atmosphere`), ground/contact shadows, sun-path arc; and **fix the deferred in-app path tracer** (crashes in `three-gpu-pathtracer` `MaterialsTexture.updateFrom` reading `.r` of a material with no color — geometry is already dequantized in `public/model/house_pt.glb`; give every traced mesh, esp. the glass, a path-trace-safe color).
+>
+> **How to think about "client-ready":** the routes compose — (a) push the **WebGPU real-time** path (more materials + real entourage + lightmaps + atmosphere + the built geo-context), (b) a **diffusion hero** still on top (consistency-locked via depth+canny), (c) a **Gaussian-splat environment** for photoreal surroundings, (d) the **Twinmotion/UE Lumen** path for the absolute ceiling. Figure out which combination produces a sendable image, and whether depth+canny conditioning actually solves the diffusion-hallucination problem for us.
+>
+> **Constraints / gotchas:** three r0.184 — drei `<SoftShadows>` and `<Sky>`/`<Environment>` break on WebGPU (use VSM + the node-safe HDRI env); WebGPU VSM = single shadow-casting light; **verify WebGPU via the headless preview's AMD adapter** (Claude-in-Chrome screenshots the GPU canvas black — confirm port `:5181` + `canvas.getContext('webgpu')`); keep the `renderMode` Stage architecture (each mode self-contained, lazy-loaded).
+
+---
+
+## 0. Latest update — 2026-06-14 (3-way render build + WebGPU IBL/shadows + bundle split)
+
+Built **three render modes** behind a `renderMode` toggle (NavBar), via **3 parallel Opus agents** in isolated git worktrees, then integrated + verified. Full detail: `wiki/SESSIONS.md` (2026-06-14) + `wiki/research/web3d-webgpu.md`.
+- **`StageWebGL2`** baseline (`Effects.tsx`) · **`StageWebGL2GI`** RectAreaLight LTC area lights + `MeshReflectorMaterial` reflective ground + stronger N8AO · **`StageWebGPU`** `WebGPURenderer` + TSL SSGI/GTAO/TRAA/Bloom + **node-safe HDRI IBL** (`SolarSky.WebGPUEnv` — equirect HDRI on `scene.environment`, PMREM'd internally) + **real VSM cast shadows** from the suncalc sun. All three verified rendering (WebGPU on the integrated build, real WebGPU context).
+- `App` **lazy-loads** the stages → `three/webgpu` (~900 kB) only loads in WebGPU mode (main chunk 306 kB gzip). Path-trace button guarded out of WebGPU mode.
+- **Machine scout:** Twinmotion 2025.1 + Lumion 2024 Student installed, RTX 4070 → `apps/web3d-prototype/UE_LUMEN_RUNBOOK.md` (the real Lumen reference, user-driven).
+- **Deferred:** in-app path tracer crashes on a material color (geometry dequantized = fixed; task chip spawned). WebGPU verified shadows are REAL VSM (not mimicked from WebGL2).
+- Commits `d99d8ae`→`4a3cbc2` on `overnight/spike-builder-2026-05-17`.
+
+---
+
+## 0-prev. Earlier update — 2026-06-13 (realism pass + UE-in-browser research)
 
 Full log: [[wiki/SESSIONS.md]]; rationale: [[wiki/DECISIONS.md#web3d-realism-tiers]]. Two things happened:
 
