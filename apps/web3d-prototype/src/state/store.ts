@@ -88,6 +88,80 @@ const DEFAULT_ENT_HEIGHT: Record<string, number> = { tree: 18, bush: 3, person: 
 export type ExportCfg = { aspect: "16:9" | "3:2" | "4:3" | "1:1" | "free"; scale: number; format: "jpg" | "png" };
 const DEFAULT_EXPORT: ExportCfg = { aspect: "16:9", scale: 2, format: "jpg" };
 
+// ---------------------------------------------------------------------------
+// Hero render — depth+canny-locked diffusion (FLUX on Modal). Contract types are
+// defined HERE so lib/heroCapture.ts (producer) + HeroRender.tsx (consumer) + the
+// Modal backend all agree. Images are BARE base64 PNG (strip any data: prefix).
+// ---------------------------------------------------------------------------
+
+/** The capture bundle lib/heroCapture.ts produces from the live WebGL2 scene and
+ *  the Modal `hero_render`/`region_edit` endpoints consume. */
+export type HeroCaptureData = {
+  width: number;
+  height: number;
+  beauty: string; // b64 png — post-processed beauty frame (the visual reference)
+  depth: string; // b64 png — linear depth (server percentile-normalizes)
+  idsRgb: string; // b64 png — semantic id packed per pixel as r | g<<8
+  regions: Record<string, { semantic: string }>; // id → element class
+  camera: { pos: [number, number, number]; target: [number, number, number]; fov: number };
+};
+
+export type HeroScales = { canny: number; cannyEnd: number; depth: number; depthEnd: number };
+/** The proven e2b recipe (98.5% edge alignment): canny-dominant lock. */
+export const DEFAULT_HERO_SCALES: HeroScales = { canny: 0.8, cannyEnd: 0.85, depth: 0.5, depthEnd: 0.7 };
+
+export type HeroLayer = {
+  id: string;
+  kind: "base" | "region"; // base = full-frame geometry lock; region = masked inpaint
+  label: string;
+  semantic?: string; // region layers: the element class edited
+  regionIds?: number[]; // region layers: the exact ids unioned into the mask
+  prompt: string;
+  seed: number;
+  scales: HeroScales;
+  steps: number;
+  guidance: number;
+  resultUrl: string | null; // object URL of the generated PNG
+  maskUrl?: string | null;
+  visible: boolean;
+  status: "idle" | "running" | "done" | "error";
+  error?: string;
+};
+
+export type HeroState = {
+  open: boolean;
+  capture: HeroCaptureData | null;
+  layers: HeroLayer[]; // [0] = base, then region layers in composite order
+  activeLayerId: string | null;
+  baseSeed: number;
+  prompt: string;
+  negativePrompt: string;
+  busy: boolean;
+};
+
+/** Modal HTTPS endpoints + shared secret for the self-hosted FLUX backend. */
+export type HeroEndpoint = { baseUrl: string; regionUrl: string; secret: string };
+
+const DEFAULT_HERO: HeroState = {
+  open: false,
+  capture: null,
+  layers: [],
+  activeLayerId: null,
+  baseSeed: 12345,
+  prompt: "",
+  negativePrompt: "blurry, low quality, distorted, warped geometry, extra windows",
+  busy: false,
+};
+const DEFAULT_HERO_ENDPOINT: HeroEndpoint = { baseUrl: "", regionUrl: "", secret: "" };
+
+/** Gaussian-splat environment: a Spark-rendered backdrop (WebGL2 stages only),
+ *  fed by a drop-in context splat (`source:"file"`) OR a Modal scene-bake
+ *  (`source:"bake"`). Transform seats it on the building (reuses the GeoTiles
+ *  siteAnchor strategy). */
+export type SplatSource = "file" | "bake";
+export type SplatTransform = { posY: number; scale: number; heading: number; yaw: number };
+const DEFAULT_SPLAT_TRANSFORM: SplatTransform = { posY: 0, scale: 1, heading: 0, yaw: 0 };
+
 type Store = {
   // ---- runtime ----
   meshesBySemantic: Map<string, THREE.Mesh[]>;
@@ -111,6 +185,12 @@ type Store = {
    *  scene + camera). NavBar's export button calls it; returns a Blob (or null on
    *  failure). Runtime-only (never persisted). */
   captureFn: ((cfg: ExportCfg) => Promise<Blob | null>) | null;
+  /** Hero-render modal state (open/capture/layers). Runtime-only — capture buffers
+   *  + object URLs are large/ephemeral, never persisted. */
+  hero: HeroState;
+  /** 4-pass hero capture fn registered by the ACTIVE WebGL2 Stage. Returns the
+   *  capture bundle or null (e.g. WebGPU mode). Runtime-only. */
+  heroCaptureFn: ((cfg: { maxEdge: number }) => Promise<HeroCaptureData | null>) | null;
 
   // ---- persisted ----
   layers: Layer[];
@@ -137,9 +217,16 @@ type Store = {
   /** Cinematic post grade (DoF/film-grain/vignette/LUT) on/off + strength 0–1. */
   grade: boolean;
   gradeStrength: number;
-  /** Gaussian-splat "context backdrop" scaffold (webgl2gi only) — enable + asset URL. */
+  /** Gaussian-splat "context backdrop" (webgl2gi only) — Spark-rendered. */
   splatEnabled: boolean;
   splatUrl: string;
+  splatSource: SplatSource; // "file" = drop-in Marble/CC0 .ply/.spz; "bake" = Modal scene-bake
+  splatTransform: SplatTransform; // seat the splat on the building
+  splatExposure: number; // tone match the splat to the building (multiplier)
+  /** Modal `splat_bake` endpoint URL (scene → 3DGS); reuses heroEndpoint.secret. */
+  splatBakeUrl: string;
+  /** Modal FLUX endpoints + secret for the hero render. */
+  heroEndpoint: HeroEndpoint;
 
   // ---- actions ----
   setModel: (bySem: Map<string, THREE.Mesh[]>) => void;
@@ -181,6 +268,20 @@ type Store = {
   setGradeStrength: (v: number) => void;
   setSplatEnabled: (on: boolean) => void;
   setSplatUrl: (url: string) => void;
+  setSplatSource: (s: SplatSource) => void;
+  setSplatTransform: (patch: Partial<SplatTransform>) => void;
+  setSplatExposure: (v: number) => void;
+  setSplatBakeUrl: (url: string) => void;
+  // ---- hero render ----
+  openHero: (capture: HeroCaptureData) => void;
+  closeHero: () => void;
+  patchHero: (patch: Partial<HeroState>) => void;
+  setHeroEndpoint: (patch: Partial<HeroEndpoint>) => void;
+  setHeroCaptureFn: (fn: ((cfg: { maxEdge: number }) => Promise<HeroCaptureData | null>) | null) => void;
+  addHeroLayer: (layer: HeroLayer) => void;
+  updateHeroLayer: (id: string, patch: Partial<HeroLayer>) => void;
+  removeHeroLayer: (id: string) => void;
+  reorderHeroLayer: (id: string, dir: -1 | 1) => void;
 };
 
 export const useStore = create<Store>()(
@@ -219,6 +320,13 @@ export const useStore = create<Store>()(
       gradeStrength: 0.6,
       splatEnabled: false,
       splatUrl: "",
+      splatSource: "file",
+      splatTransform: { ...DEFAULT_SPLAT_TRANSFORM },
+      splatExposure: 1,
+      splatBakeUrl: "",
+      hero: { ...DEFAULT_HERO },
+      heroCaptureFn: null,
+      heroEndpoint: { ...DEFAULT_HERO_ENDPOINT },
 
       setModel: (bySem) =>
         set({ meshesBySemantic: bySem, semanticsPresent: [...bySem.keys()].sort(), ready: true }),
@@ -272,6 +380,41 @@ export const useStore = create<Store>()(
       setGradeStrength: (v) => set({ gradeStrength: v }),
       setSplatEnabled: (on) => set({ splatEnabled: on }),
       setSplatUrl: (url) => set({ splatUrl: url.trim() }),
+      setSplatSource: (s) => set({ splatSource: s }),
+      setSplatTransform: (patch) => set({ splatTransform: { ...get().splatTransform, ...patch } }),
+      setSplatExposure: (v) => set({ splatExposure: v }),
+      setSplatBakeUrl: (url) => set({ splatBakeUrl: url.trim() }),
+      // ---- hero render ----
+      openHero: (capture) =>
+        set({
+          hero: { ...DEFAULT_HERO, ...get().hero, open: true, capture, busy: false },
+          selected: null,
+        }),
+      closeHero: () => set({ hero: { ...get().hero, open: false } }),
+      patchHero: (patch) => set({ hero: { ...get().hero, ...patch } }),
+      setHeroEndpoint: (patch) => set({ heroEndpoint: { ...get().heroEndpoint, ...patch } }),
+      setHeroCaptureFn: (fn) => set({ heroCaptureFn: fn }),
+      addHeroLayer: (layer) =>
+        set({ hero: { ...get().hero, layers: [...get().hero.layers, layer], activeLayerId: layer.id } }),
+      updateHeroLayer: (id, patch) =>
+        set({
+          hero: {
+            ...get().hero,
+            layers: get().hero.layers.map((l) => (l.id === id ? { ...l, ...patch } : l)),
+          },
+        }),
+      removeHeroLayer: (id) =>
+        set({ hero: { ...get().hero, layers: get().hero.layers.filter((l) => l.id !== id) } }),
+      reorderHeroLayer: (id, dir) =>
+        set((state) => {
+          const layers = [...state.hero.layers];
+          const i = layers.findIndex((l) => l.id === id);
+          const j = i + dir;
+          // Keep base (index 0) pinned at the bottom of the composite stack.
+          if (i <= 0 || j <= 0 || j >= layers.length) return state;
+          [layers[i], layers[j]] = [layers[j], layers[i]];
+          return { hero: { ...state.hero, layers } };
+        }),
     }),
     {
       name: "web3d-layers-v1",
@@ -292,6 +435,17 @@ export const useStore = create<Store>()(
           contactShadows: s.contactShadows,
           grade: s.grade,
           gradeStrength: s.gradeStrength,
+          // Splat: persist the asset URL + alignment + endpoints, never auto-enable
+          // (Spark loading is heavy; explicit click only).
+          splatUrl: s.splatUrl,
+          splatSource: s.splatSource,
+          splatTransform: s.splatTransform,
+          splatExposure: s.splatExposure,
+          splatBakeUrl: s.splatBakeUrl,
+          // Hero: persist only the Modal endpoint config (URLs + secret), like
+          // cinematicUrl. The transient `hero` modal state (capture buffers, object
+          // URLs, layers) is never persisted.
+          heroEndpoint: s.heroEndpoint,
           // Persist geo settings (key/location/offsets) but never auto-enable on
           // reload — tile loading bills per session, so it must be an explicit click.
           geo: { ...s.geo, enabled: false },

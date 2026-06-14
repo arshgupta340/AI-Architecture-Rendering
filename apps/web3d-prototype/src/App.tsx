@@ -3,6 +3,8 @@ import { Sidebar } from "./ui/Sidebar";
 import { NavBar } from "./ui/NavBar";
 import { SkyPanel } from "./ui/SkyPanel";
 import { Cinematic } from "./Cinematic";
+import { HeroRender } from "./HeroRender";
+import { SplatPanel } from "./SplatPanel";
 import { useStore } from "./state/store";
 
 // All three stages are code-split with React.lazy. The key win is StageWebGPU,
@@ -65,9 +67,13 @@ export default function App() {
           <SkyPanel />
           <Sidebar />
           <NavBar />
+          <SplatPanel />
         </>
       )}
       <Cinematic />
+      {/* Hero-render overlay modal (depth+canny-locked diffusion). Renderer-independent,
+          store-driven, outside Suspense — same pattern as Cinematic. */}
+      <HeroRender />
     </div>
   );
 }

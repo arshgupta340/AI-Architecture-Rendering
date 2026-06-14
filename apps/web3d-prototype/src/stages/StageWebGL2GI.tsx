@@ -6,6 +6,8 @@ import { EffectsGI } from "./EffectsGI";
 import { ReflectiveGround } from "./ReflectiveGround";
 import { ContactGround } from "./ContactGround";
 import { ExportCapture } from "../lib/exportImage";
+import { HeroCapture } from "../lib/heroCapture";
+import { SplatContext } from "../SplatContext";
 import { useStore } from "../state/store";
 
 /**
@@ -50,9 +52,11 @@ export function StageWebGL2GI() {
             (real occlusion/reflection cues), not extra light sources. */}
         {!rendering && <ReflectiveGround />}
         {!rendering && <ContactGround />}
+        {!rendering && <SplatContext />}
       </Suspense>
       {!rendering && <EffectsGI />}
       <ExportCapture />
+      <HeroCapture />
     </Canvas>
   );
 }

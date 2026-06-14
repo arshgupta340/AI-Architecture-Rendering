@@ -5,6 +5,8 @@ import { Scene } from "../Scene";
 import { Effects } from "../Effects";
 import { ContactGround } from "./ContactGround";
 import { ExportCapture } from "../lib/exportImage";
+import { HeroCapture } from "../lib/heroCapture";
+import { SplatContext } from "../SplatContext";
 import { useStore } from "../state/store";
 
 /**
@@ -33,9 +35,11 @@ export function StageWebGL2() {
       <Suspense fallback={null}>
         <Scene />
         {!rendering && <ContactGround />}
+        {!rendering && <SplatContext />}
       </Suspense>
       {!rendering && <Effects />}
       <ExportCapture />
+      <HeroCapture />
     </Canvas>
   );
 }

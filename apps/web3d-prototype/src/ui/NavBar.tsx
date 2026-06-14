@@ -130,7 +130,26 @@ export function NavBar() {
   const exportCfg = useStore((s) => s.exportCfg);
   const setExportCfg = useStore((s) => s.setExportCfg);
   const captureFn = useStore((s) => s.captureFn);
+  const heroCaptureFn = useStore((s) => s.heroCaptureFn);
+  const openHero = useStore((s) => s.openHero);
   const [exporting, setExporting] = useState(false);
+  const [heroBusy, setHeroBusy] = useState(false);
+
+  const doHero = async () => {
+    if (heroBusy) return;
+    if (renderMode === "webgpu" || !heroCaptureFn) {
+      alert("Hero render runs in WebGL2 / + GI modes. Switch render mode and try again.");
+      return;
+    }
+    setHeroBusy(true);
+    try {
+      const cap = await heroCaptureFn({ maxEdge: 1536 });
+      if (cap) openHero(cap);
+      else alert("Hero capture isn't ready yet — switch to WebGL2 / + GI and retry.");
+    } finally {
+      setHeroBusy(false);
+    }
+  };
 
   const doExport = async () => {
     if (!captureFn || exporting) return;
@@ -309,6 +328,30 @@ export function NavBar() {
         >
           ◆ Cinematic
         </div>
+        {renderMode === "webgpu" ? (
+          <span style={{ opacity: 0.45, fontSize: 11, whiteSpace: "nowrap" }} title="Hero render runs in WebGL2 / + GI">
+            Hero · WebGL2 only
+          </span>
+        ) : (
+          <div
+            onClick={doHero}
+            title="Hero render — depth+canny-locked photoreal diffusion (FLUX)"
+            style={{
+              padding: "5px 11px",
+              borderRadius: 7,
+              cursor: heroBusy ? "wait" : "pointer",
+              fontWeight: 600,
+              fontSize: 11.5,
+              whiteSpace: "nowrap",
+              opacity: heroBusy ? 0.6 : 1,
+              background: "linear-gradient(90deg, rgba(255,138,77,0.28), rgba(124,77,255,0.2))",
+              border: "1px solid rgba(255,138,77,0.6)",
+              userSelect: "none",
+            }}
+          >
+            {heroBusy ? "Capturing…" : "✦ Hero render"}
+          </div>
+        )}
       </div>
 
       <Divider />
