@@ -5,9 +5,17 @@ import { SkyPanel } from "./ui/SkyPanel";
 import { Cinematic } from "./Cinematic";
 import { useStore } from "./state/store";
 
-// Lazy-load each Stage so its renderer + post stack is only fetched when selected.
-// Critically this keeps `three/webgpu` (a large bundle, pulled in by StageWebGPU)
-// out of the WebGL2 users' payload — it loads only when WebGPU mode is chosen.
+// All three stages are code-split with React.lazy. The key win is StageWebGPU,
+// which pulls `three/webgpu` + the TSL display addons (~900 kB) and runs
+// extend(three/webgpu) at module load — lazy-loading it keeps every WebGL2-only
+// user's initial payload free of it (it fetches only when WebGPU mode is selected).
+//
+// StageWebGL2 is ALSO lazy on purpose: it transitively imports the shared <Scene>
+// (~576 kB) + WebGL `three`, so eager-importing it would fold all of that into the
+// main chunk (measured: main 1.1 MB → 2.0 MB). Keeping it lazy lets the main chunk
+// stay lean so the UI panels (rendered outside <Suspense>) paint immediately; the
+// canvas is async regardless because the 6.5 MB model GLB dominates, so the tiny
+// stage-chunk hop is negligible and the fallback covers it.
 const StageWebGL2 = lazy(() =>
   import("./stages/StageWebGL2").then((m) => ({ default: m.StageWebGL2 })),
 );
@@ -21,7 +29,8 @@ const StageWebGPU = lazy(() =>
 /**
  * The render-mode switch. Each mode is a self-contained Stage owning its own
  * <Canvas> + renderer + post, all rendering the shared <Scene>. The DOM overlays
- * (panels + Cinematic) are renderer-independent and shared across modes.
+ * (panels + Cinematic) are renderer-independent, shared across modes, and render
+ * outside the Suspense boundary so they're up while a stage chunk downloads.
  */
 export default function App() {
   const renderMode = useStore((s) => s.renderMode);
@@ -34,7 +43,10 @@ export default function App() {
 
   return (
     <div style={{ position: "fixed", inset: 0 }}>
-      <Suspense fallback={null}>
+      {/* Boundary for the lazily-loaded stage chunk (and the stage's own internal
+          <Scene> Suspense nests under this). The fallback keeps the viewport from
+          going blank on first load / mode switch; the side panels stay up. */}
+      <Suspense fallback={<StageLoading />}>
         {renderMode === "webgpu" ? (
           <StageWebGPU />
         ) : renderMode === "webgl2gi" ? (
@@ -47,6 +59,25 @@ export default function App() {
       <Sidebar />
       <NavBar />
       <Cinematic />
+    </div>
+  );
+}
+
+/** Shown while a stage chunk / the model is downloading. */
+function StageLoading() {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        display: "grid",
+        placeItems: "center",
+        color: "#6b7280",
+        font: "13px ui-sans-serif, system-ui",
+        letterSpacing: "0.02em",
+      }}
+    >
+      Loading renderer…
     </div>
   );
 }
