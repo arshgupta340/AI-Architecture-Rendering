@@ -1,0 +1,51 @@
+{
+  "travertine": {
+    "assetId": "Travertine009",
+    "repeat": 4,
+    "maps": [
+      "albedo.jpg",
+      "ao.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  },
+  "red_brick": {
+    "assetId": "Bricks097",
+    "repeat": 14,
+    "maps": [
+      "albedo.jpg",
+      "ao.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  },
+  "white_stucco": {
+    "assetId": "Plaster001",
+    "repeat": 6,
+    "maps": [
+      "albedo.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  },
+  "weathered_cedar": {
+    "assetId": "WoodSiding009",
+    "repeat": 10,
+    "maps": [
+      "albedo.jpg",
+      "ao.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  },
+  "charcoal_seam": {
+    "assetId": "CorrugatedSteel009",
+    "repeat": 8,
+    "maps": [
+      "albedo.jpg",
+      "ao.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  }
+}

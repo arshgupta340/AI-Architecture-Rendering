@@ -20,6 +20,43 @@ Each entry follows the same shape so it can be scanned in 15 seconds:
 
 ---
 
+## 2026-06-13 — Realism path: bank WebGL2 wins now; client-side UE5 is a parallel spike, not a pivot {#web3d-realism-tiers}
+
+**Decision:** Pursue front-end photorealism in tiers. **Now:** upgrade the live WebGL2 R3F stack (post-processing AO/bloom/AgX, real transmission glass, VSM soft shadows, richer IBL) — $0, fully interactive, no dependency. **Parallel spike (low commitment):** a "Cinematic (UE5)" toggle via **Wonder Interactive / SimplyStream** (client-side UE5 over WebGPU+WASM) for a baked-archviz hero — to be *evaluated*, not bet on. **Later:** a staged **WebGPU three.js** migration (SSGI/GTAO/TRAA) for the ceiling. Do NOT adopt Unreal as the core.
+
+**Context:** User wants Enscape/Lumion/Twinmotion quality on the web and surfaced SimplyStream ("the death of pixel streaming"). EXA deep-research ([[research/web3d-ue-browser]]) established: SimplyStream is real (Epic MegaGrant, live `garage.cjponyparts.com` configurator, self-serve upload-a-build, local/hybrid/remote smart-render) BUT (1) **no Nanite/Lumen in-browser** → it's baked archviz, *not* the live-Lumen arcway look (that's cloud pixel-streaming); (2) you **upload a packaged UE build** authored at build time — our live Rhino→glTF edits can't stream into it (glTFRuntime-in-WASM is unverified); (3) **5% UE royalty above $1M revenue**; (4) vendor = 2-person seed-stage startup. A tuned WebGPU three.js reaches comparable realism (both lack Lumen) with full interactivity, $0, and no royalties.
+
+**Alternatives considered:** (a) Pivot to client-side UE5 now — rejected: heavy per-model UE pipeline, sacrifices our live-edit moat *in that view*, vendor/royalty risk, and it isn't even the true Lumen look. (b) Cloud pixel-streamed UE5 (the real arcway look) — rejected for now: per-viewer GPU cost, the exact thing we set out to avoid; revisit only if a client demands pixel-perfect Lumen while freely navigating. (c) Stay WebGL2 forever — rejected: WebGPU is the realism ceiling worth a later spike.
+
+**Reasoning:** The cheap WebGL2 wins are immediate, interactive and $0; the UE toggle is worth a proof-of-concept but its honest ceiling (baked, no Lumen) doesn't justify adopting the whole Unreal toolchain as the core; WebGPU three.js is the better long-term bet because it keeps interactivity + $0.
+
+**Revisit if:** a SimplyStream POC looks dramatically better on our model than the WebGPU three.js path AND the per-model UE build cost is acceptable; or a client needs literal arcway/Lumion fidelity (→ pixel-streaming); or glTFRuntime-in-WASM matures enough to stream our live scene into UE.
+
+---
+
+## 2026-06-13 — Geo-context: bring the city to the model (tiles→local feet), not the model to the globe {#web3d-geo-context}
+
+**Decision:** Real-world site context loads **Google Photorealistic 3D Tiles** via `3d-tiles-renderer`'s **`ReorientationPlugin`**, which re-centres the tileset so the site lat/lon sits at the **local world origin (Y-up)**. An outer group then **scales metres→feet (×3.2808)**, offsets to the building's ground-centre (`siteAnchor`), and rotates for north (`heading`). The model and every existing feet-based system (shadows, entourage heights, box-projected UVs, saved views) stay **untouched**. Site lat/lng is the **same** state the sun uses (`sky.lat/lng`). `geo.enabled` is **never persisted** (tiles bill per session, so loading must be an explicit click). Google tiles are decoded with a **`DRACOLoader` via `GLTFExtensionsPlugin`** (geometry is Draco; textures are JPEG — no KTX2). Key handling: an in-app field (persisted to localStorage) **or** `.env.local` `VITE_GOOGLE_MAPS_API_KEY`; never committed.
+
+**Context:** Roadmap pillar #3 ([[research/web3d-geo-context]]). Two ways to fuse a local Rhino model (feet, near-origin) with Google's planet-wide ECEF tiles (metres, ~6.4e6 m coords). The model is the precious, precise thing; the existing app is entirely feet-based.
+
+**Alternatives considered:** (1) **Model→globe** (place the model in ECEF via `EastNorthUpFrame`, use `GlobeControls`) — rejected: ~6.4e6 m float32 jitter on a small building, and it would force re-basing shadows/entourage/UVs/controls into metres. (2) **Scale the model down to metres** to match tiles — rejected: same invasive rewrite of every feet-based system. (3) **Cesium/threebox/three-geo** — rejected per [[research/web3d-geo-context]] (wrong architecture / abandoned). (4) Persist `enabled` for convenience — rejected: auto-loads (bills) on every reload.
+
+**Reasoning:** Reorienting the *tileset* to a local Y-up origin keeps the building at small, precise coordinates and leaves the whole existing engine intact — the only new transform is one outer group (scale + offset + heading). Sharing one lat/lng for sun + context means "the site" is a single concept. Decoders had to be wired by hand because `GoogleCloudAuthPlugin.useRecommendedSettings` only sets `errorTarget=20` (verified in the 0.4.28 source), not loaders.
+
+**Revisit if:** terrain auto-snap (raycast the tiles to seat the building) replaces the manual Seat slider; Rhino true-north is exported so `heading` is automatic; the in-browser tile realism warrants `EnvironmentControls`/`GlobeControls` for a true globe mode; or Google changes the P3DT compression (KTX2) so a `KTX2Loader` is also needed.
+
+---
+
+## 2026-06-13 — Engine-first web 3D rendering tool; 2D diffusion becomes a future add-in {#web3d-pivot}
+**Decision:** Build the product as a **web-native 3D configurator** — export real geometry + semantic IDs from Rhino to glTF, render live in three.js/R3F, configure materials / sun / entourage in 3D. Demote the 2D diffusion pipeline (FLUX.2 + semantic masking, `apps/canvas-prototype`) to a future "diffusion hero" **add-in** on a 3D viewport grab.
+**Context:** Teardown of competitor [[research/arcway-teardown|arcway.ai]] showed photoreal web configurators run on a real renderer (Unreal, pixel-streamed) — multi-view consistency + instant swaps are *free* with real geometry, the exact thing the diffusion spike bled on (the multiview-lock saga, [[#multiview-honest-metric]]). We already extract clean geometry + semantic IDs from Rhino — which Arcway's "Bridge AI" exists only to reverse-engineer from flat PDFs.
+**Alternatives considered:** (1) keep refining the 2D diffusion canvas — rejected: consistency/geometry fidelity is a permanent uphill fight there. (2) Unreal + pixel streaming like Arcway — rejected for now: heavy infra + per-viewer GPU cost (QOOP sunset theirs on cost); revisit if the web-PBR realism ceiling blocks sales. (3) Babylon/PlayCanvas — rejected per [[research/web3d-engine-choice]].
+**Reasoning:** With Rhino geometry + semantics in hand, engine-first gives exact geometry, free multi-view consistency, instant swaps, $0/client-side, and a clean path to sun studies / entourage / geo-context. Diffusion becomes a last-10% hero/styling pass — its hardest problem (consistency) disappears.
+**Revisit if:** the in-browser PBR realism ceiling ([[research/web3d-realism]]) proves unsellable (add pixel-streamed UE for hero scenes), or a diffusion model gains reliable multi-view + exact-geometry control (the 2D path could lead again).
+
+---
+
 ## 2026-06-13 — Cross-view consistency is measured illuminant-invariantly; the textured lock (A2) already beats naive {#multiview-honest-metric}
 
 **Decision:** The honest measure of "same material across views" is **illumination-invariant chroma**: de-light each view's wall by its own white-trim illuminant (a von-Kries divide — the trim is painted white, so its rendered colour *is* that view's sun), then compare `(a*, b*)`. This — not v2's lit-chroma `dE_ab` — is the bar for the multi-view lock. Under it the **A2 neutral-reference lock BEATS swatch-only naive for textured red_brick (honest dE_ab 1.59 vs 4.41, −64%)**, so no new technique is adopted (the candidate A4 was built and rejected). `spike/run_multiview_lock_v3.py:_delit_wall_lab/honest_de_ab` is the reference implementation.

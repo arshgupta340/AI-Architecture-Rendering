@@ -7,6 +7,58 @@ updated: 2026-05-19
 
 Append-only conversation log. **Newest at top.** One entry per chat session.
 
+## 2026-06-13 — web3d realism pass (WebGL2 post stack + glass + soft shadows) + UE-in-browser research
+
+**Scope:** Make the web3d graphics dramatically more realistic ("Enscape/Lumion/Twinmotion but front-end"). Researched the realism landscape (5 parallel web agents), then mid-session the user surfaced **client-side UE5-in-browser** (Wonder Interactive / SimplyStream) — researched via **EXA** (new standing preference). Then banked the cheap WebGL2 realism wins, verifying each in the browser.
+
+**Decisions:** [[DECISIONS#web3d-realism-tiers]] — stay WebGL2 for the live tool and bank the post-stack/glass/shadow wins now; treat client-side UE5 (SimplyStream) as a low-commitment parallel *spike* for a "Cinematic" hero toggle, not a product bet (it's baked archviz — **no Lumen/Nanite in-browser** — and needs a per-model UE build); WebGPU three.js = later staged spike.
+
+**Tried / built (each verified in preview):**
+- **Post-processing stack** (`src/Effects.tsx`, NEW): `<EffectComposer>` = **N8AO** (the big AO win) + tamed **Bloom** + BrightnessContrast/HueSaturation + Vignette + SMAA + **AgX ToneMapping** last. `App.tsx`: renderer → `NoToneMapping` + `antialias:false` (the AgX *effect* owns tone mapping; double-mapping was the first washout). `vite.config`: added `@react-three/postprocessing`+drei to `dedupe`/`optimizeDeps` (Invalid-hook-call fix).
+- **Real glass windows** (`Scene.tsx`): ONE shared `MeshPhysicalMaterial` (transmission 1, ior 1.5, roughness 0.07) across all `window` meshes, castShadow off — replaces the flat opaque panels (the #1 "toy model" tell).
+- **Lighting** (`SolarSky.tsx`): baked-sky env 128→**256px** + a re-bake `key` so glass/metal reflections track time-of-day; **VSM soft shadows** (`shadows="variance"` + `shadow-radius`/`blurSamples`).
+- **Anisotropy** 8→16 on swatch textures (sharper brick at grazing angles).
+- Research: 5 web agents extend [[research/web3d-realism]]; **EXA deep-research → [[research/web3d-ue-browser]]** (UE-in-browser feasibility / toggle architecture / licensing).
+
+**Dead ends / gotchas (load-bearing):**
+- drei `<SoftShadows>` (PCSS) **breaks on three r0.184** — emits `unpackRGBAToDepth`, which r184 removed → shader won't compile → every MeshStandardMaterial fails → washout. **Use `shadows="variance"` (VSM) instead.**
+- Default **Bloom veils the whole frame white** (procedural sky is very bright in the HalfFloat HDR buffer) — tamed to intensity 0.12 / threshold 1.1 / radius 0.6.
+- Pre-existing harmless console noise: 3d-tiles `'content'` + "Invalid hook call" (geo r3f) and stale SoftShadows shader errors — the preview CDP buffer doesn't flush on `console.clear()`; the *render* is the reliable signal.
+
+**Outcome:** `apps/web3d-prototype/` markedly more realistic on the live WebGL2 stack (AO depth, real glass, soft VSM sun shadows, AgX grade). NEW `Effects.tsx`; edited `App`/`Scene`/`SolarSky`/`swatches`/`vite.config`. **$0** (one EXA deep-research call on the user's EXA quota, not the Anthropic budget). New memory: prefer EXA for research.
+
+**UE toggle — also BUILT this session:** `src/Cinematic.tsx` + NavBar "◆ Cinematic (UE5)" button + store `cinematic`/`cinematicUrl`. Full-screen overlay embeds a SimplyStream UE5 WebGPU build in an `<iframe>` deep-linked with current materials+sun; setup card + runbook when no URL; Open-in-tab / Change-build / Exit. **Verified in preview:** SimplyStream **allows iframe embedding** (`garage.cjponyparts.com` streamed to 100% in-app); the UE render itself needs a real WebGPU GPU (headless preview is black). Remaining = the user's own UE build (Datasmith→bake→variant configurator→upload) + a camera-sync TODO.
+
+**Follow-ups:** user produces a SimplyStream UE build of the house + pastes the URL; camera-sync into the Cinematic deep-link; ground/reflective-floor + detail-map anti-tiling; WebGPU three.js staged spike (SSGI/GTAO/TRAA); optional real-HDRI IBL (trades dynamic-sky consistency for richer reflections); the app is still git-untracked — commit it.
+
+## 2026-06-13 — web3d geo-context pillar: Google Photorealistic 3D Tiles + georeference
+
+**Scope:** Built roadmap pillar #3 — enter lat/long → load **Google Photorealistic 3D Tiles** (via `3d-tiles-renderer`) around the model and **georeference** the Rhino model into the real site. `apps/web3d-prototype/`, still **$0 until a key is present** (tiles only fetch/bill when enabled + keyed).
+
+**Decisions:** [[DECISIONS#web3d-geo-context]] — "bring the city to the model" coordinate strategy (ReorientationPlugin recenters tiles to the site origin; outer group scales metres→feet so every existing feet-based system is untouched; site lat/lng shared with the sun; `enabled` never persisted so reload can't auto-bill).
+
+**Tried / built:**
+- Researched the (version-churny) `3d-tiles-renderer` API against the **0.4.28 source** before writing a line: confirmed r3f exports (`TilesRenderer`/`TilesPlugin`/`TilesAttributionOverlay`/`EastNorthUpFrame`), `ReorientationPlugin{lat,lon (radians),height,recenter}`, `GoogleCloudAuthPlugin{apiToken}`, and that **Google tiles need a `DRACOLoader` via `GLTFExtensionsPlugin`** (geometry is Draco; textures JPEG, no KTX2) — `useRecommendedSettings` only sets `errorTarget=20`, it does NOT auto-wire decoders.
+- New `src/GeoTiles.tsx`: TilesRenderer + GoogleCloudAuth + GLTFExtensions(draco) + Reorientation + TileCompression + Fade + AttributionOverlay, wrapped in an outer group `position=siteAnchor+groundOffset, scale=3.2808, rotation-y=heading`. `key` on apiKey/lat/lng/height for clean reload.
+- Store `geo` slice (`enabled`/`apiKey`/`height`/`heading`/`groundOffset`/`hideRhinoSite`) + runtime `siteAnchor` (building ground-centre, set on model prep). `enabled` forced false in `partialize`.
+- Scene wires `<GeoTiles>` (only when enabled + key), hides non-`BUILDING` semantics when geo on, sets `siteAnchor`. App `frameloop="always"` while geo on (tiles must stream).
+- SkyPanel "Real-world context" section: API-key field (persist-local + `.env.local` `VITE_GOOGLE_MAPS_API_KEY` fallback), enable button (gated on key), elevation/seat/heading sliders, hide-site toggle, cost/attribution note. Added `.gitignore` + `.env.example` + `vite-env.d.ts` (the app had none — `node_modules`/`.env.local` were untracked-but-unignored).
+
+**Verified (preview, no key):** typecheck clean; app loads error-free; new section renders with correct no-key disabled state; entering a key enables controls; **clicking Load mounts GeoTiles without crashing — all plugins construct and the Google auth request fires with the correct URL** (bad key → 400, non-fatal lib log, app stays alive). Restored clean state. **Could NOT verify actual tile imagery / georeference fidelity — needs the user's valid key** (expected split).
+
+**Outcome:** geo-context pillar built; `apps/web3d-prototype/` gains `GeoTiles.tsx`, `vite-env.d.ts`, `.gitignore`, `.env.example`, +`3d-tiles-renderer@0.4.28` dep; store/Scene/App/SkyPanel edited. $0 spent. App still untracked (not committed).
+
+**Follow-ups:** user validates with a real key (set elevation≈site m, then Seat/Heading sliders to align); bad/expired key logs a non-fatal lib error (could add a `load-error` toast); raycast auto-snap to terrain (replace manual Seat slider); pull Rhino true-north into `heading` automatically; remaining pillars — diffusion-hero add-in, real entourage assets, PMREM env-from-sky.
+
+## 2026-06-13 — Arcway teardown → web3d engine-first pivot → MVP+V2+V3 built
+
+**Scope:** Reverse-engineered competitor **arcway.ai** (Unreal pixel-streaming), then pivoted to an **engine-first web 3D rendering tool** and built it end-to-end in `apps/web3d-prototype/` (Vite+React+R3F).
+**Decisions:** [[DECISIONS#web3d-pivot]] (engine-first; 2D diffusion → future add-in).
+**Tried / built:** Rhino→semantic-glTF pipeline (`spike/rhino_export_gltf.py`, `gltf_postprocess.py`); R3F configurator (click element → PBR swap, layers, persistence); V2 (local→procedural lighting, box-projected metric UVs + scale slider, walk mode + saved views, meshopt compression 14.5→6.5 MB); V3 (entourage Tree/Bush/Person with real-ft height sliders; **Sky & Sun** panel with suncalc solar position + mood/time/date/intensity/cloud presets). 9 research/Explore agents (6 web-research docs under `wiki/research/`).
+**Dead ends:** in-browser **path tracer** — runs but renders only sky; `three-gpu-pathtracer` incompatible with our meshopt/KHR_mesh_quantization geometry. Recommend diffusion hero instead.
+**Outcome:** working $0 client-side tool at localhost:5181; new direction captured in [[STATE]]; handoff in [[../docs/HANDOFF-web3d.md]]; pip unblocked (removed deny rule).
+**Follow-ups:** geo-context (Google 3D Tiles) pillar; diffusion-hero add-in; real entourage assets; PMREM env-from-sky + sun-path arc; fix or replace path tracer.
+
 ## 2026-06-13 — Brick lock honest metric (v3) + apply-engine unify (1 bg agent + foreground)
 
 **Scope:** Two parallel candidate-next-steps the user picked: (A, foreground, paid-call-controlled) push the textured-material lock to actually beat naive; (B, background `general-purpose` agent) consolidate the single-view apply path onto the shared `multiview_apply` engine. Partitioned by disjoint file sets so they couldn't collide (A owns `run_multiview_lock_v3.py`+report+outputs and treats `multiview_apply.py` read-only; B owns `multiview_apply.py`+`server.py`+tests).
@@ -17,7 +69,7 @@ Append-only conversation log. **Newest at top.** One entry per chat session.
 - **A (`483cfe8`):** built `run_multiview_lock_v3.py` with an honest metric — de-light each view by its own trim illuminant, compare (a*,b*). FREE re-score of cached v1/v2 composites: **red_brick A2 honest dE_ab 1.59 vs naive 4.41 (−64%, BEATS naive)**; A1 2.92. Verified the metric (illuminants sane: ANCHOR warm RGB(1.10,1.00,0.90), FRONT cool (0.99,0.99,1.02); ~49k trim px in both views → no grey-world fallback; intrinsic-chroma mechanism — A2 (12.4,21.5) matches anchor (13.9,20.9), naive drifts red a*=18.2). Hypothesised A4 (chroma-preserving neutral ref); built it, **refuted offline** (A4-ref a*=23.2 redder than anchor 13.9 → would regress). **$0 spent.** Surfaced the travertine lit/honest tension (v1-raw is lit-best but honest-worst, 12.86).
 - **B (`bca016b`):** extracted `materialize_view()` in `multiview_apply` (the anchor stage), moved `SWATCH_PROMPTS` there as the sole def + `material_desc_for()`; `server.apply_material` now delegates. API shapes, no-spend travertine path, and `MAX_LIVE_CALLS` guard all preserved. **75 → 82 tests.** Reviewed the diff myself; the one real change is the single-view live prompt now using the engine's `anchor_prompt` (one-comma difference, semantically identical).
 
-**Outcome:** 2 commits on `overnight/spike-builder-2026-05-17`. 82 tests green. `REPORTS/multiview_v3.md` + sidebyside evidence + `metrics_v3.json`. Total fal spend unchanged at **≈ $1.99** (this session $0).
+**Outcome:** 2 commits on `overnight/spike-builder-2026-05-17`. 82 tests green. `REPORTS/multiview_v3.md` + sidebyside evidence + `metrics_v3.json`. Total fal spend unchanged at **≈ $1.99** (this session $0). **B additionally re-verified end-to-end on a fresh PORT-8766 server ($0, no live calls):** `verify_api` 22/22 + `verify_multiview_api` 15/15 (HTTP-level, beyond the 82 pytest), forcing the no-spend layer to regenerate through `materialize_view` by clearing its cache first. Measured nuance the suites don't assert: the unified no-spend travertine layer now soft-composites the precomputed image via `paste_tile` (like the multi-view anchor) instead of direct-masking, so feather edges blend slightly toward base — inside-mask mean|diff| 75.1→74.3 (~1%); interior, response shape, cost, and cache unchanged.
 
 **Follow-ups:** **user product call** on the smooth-material lock strategy (route smooth → A2, or keep raw-anchor for perceptual sameness); optional ~$0.12 stochastic-robustness re-run of brick naive/A2 (prove the win is seed-stable); wire the honest metric into the canvas if it ever surfaces a consistency number; material library; Revit add-in.
 
