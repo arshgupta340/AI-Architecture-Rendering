@@ -7,6 +7,27 @@ updated: 2026-05-19
 
 Append-only conversation log. **Newest at top.** One entry per chat session.
 
+## 2026-06-14 — 3-way render comparison: WebGPU SSGI + WebGL2-GI + path-trace/Twinmotion (3 parallel Opus agents)
+
+**Scope:** User goal: build three rendering paths in parallel to "see and compare" quality on the RTX — (1) three.js **WebGPU**, (2) a **WebGL2 GI** stack, (3) **UE5/Lumen** quality. Scaffolded a `renderMode` toggle (3 self-contained Stage components), committed the app, dispatched 3 worktree-isolated Opus agents, integrated + verified on the user's hardware.
+
+**Decisions:** extends [[DECISIONS#web3d-realism-tiers]] — the WebGPU tier is now BUILT (not just a future spike); UE5/Lumen #3 is delivered via **Twinmotion** (installed), not an agent (an autonomous agent can't drive UE's GUI).
+
+**Built (`apps/web3d-prototype`, branch overnight/…, commits d99d8ae→7299b38):**
+- **Scaffold:** `store.renderMode` (`webgl2`|`webgl2gi`|`webgpu`) + NavBar segmented toggle; `App` lazy-loads the 3 Stages (so `three/webgpu` loads only in WebGPU mode); path-trace button guarded out of WebGPU mode. Committed the previously-untracked app so worktrees could branch.
+- **Agent A — WebGPU** (`stages/StageWebGPU.tsx`+`WebGPUPost.tsx`+`WebGPUAreaLights.tsx`): three.js `WebGPURenderer` + native TSL post graph (**SSGI** + GTAO + TRAA + Bloom) + LTC area lights; AgX on the renderer (WebGPU applies it via `outputColorTransform`). **Renders — verified on the integrated build with a real WebGPU context; SSGI gives softer/warmer GI than the WebGL2 baseline.**
+- **Agent B — WebGL2 GI** (`stages/StageWebGL2GI.tsx`+`AreaLights`+`ReflectiveGround`+`EffectsGI`): RectAreaLight (LTC) sky-fill + per-window emitters, `MeshReflectorMaterial` plaza, stronger N8AO. Verified (headless). Softened sky-fill 1.6→0.55 (was competing with the sun).
+- **Agent C — path-trace reference + machine scout** (`PathTracer.tsx` on dequantized `public/model/house_pt.glb`, `UE_LUMEN_RUNBOOK.md`): scout → **Twinmotion 2025.1 + Lumion 2024 Student installed, RTX 4070; UE5/Blender/D5 not**. Path-trace geometry fixed (dequantized), but a **material-color crash remains** (deferred — task chip).
+
+**Gotchas / verification:**
+- WebGPU mode needed a fix: the shared drei `<Sky>`/`<Environment>` GLSL **ShaderMaterials don't compile on the WebGPU node renderer** → `SolarSky` is now render-mode-aware (node-safe color sky + lights in WebGPU; HDRI IBL there is a follow-up).
+- **Capture trap:** Claude-in-Chrome screenshots can't grab the GPU canvas (shows black) and `canvas.toDataURL` is black without `preserveDrawingBuffer` — but the **headless preview has an AMD WebGPU adapter**, so it can screenshot WebGPU. Also lost time because the headless preview had drifted onto a **stale agent-worktree dev server (`:5196`)**; the integrated build is **`:5181`**.
+- Path-tracer crash: `MaterialsTexture.updateFrom` reads `.r` of an undefined material color (glass/material without a color) — deferred.
+
+**Outcome:** 3 working render modes behind one `renderMode` toggle on the live app, $0/client-side. 3 agent branches merged + integrated. Path-trace deferred; Twinmotion is the real Lumen reference.
+
+**Follow-ups:** fix the path-tracer material crash (spawned task); WebGPU HDRI IBL (node-safe env) so its reflections match the WebGL2 modes; drive Twinmotion for the real Lumen render (runbook ready); kill the stale `:5196` server + prune leftover `.claude/worktrees/` dirs.
+
 ## 2026-06-13 — web3d realism pass (WebGL2 post stack + glass + soft shadows) + UE-in-browser research
 
 **Scope:** Make the web3d graphics dramatically more realistic ("Enscape/Lumion/Twinmotion but front-end"). Researched the realism landscape (5 parallel web agents), then mid-session the user surfaced **client-side UE5-in-browser** (Wonder Interactive / SimplyStream) — researched via **EXA** (new standing preference). Then banked the cheap WebGL2 realism wins, verifying each in the browser.
