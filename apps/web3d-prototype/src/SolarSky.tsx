@@ -46,6 +46,7 @@ function computeSky(sky: SkyState) {
 
 export function SolarSky({ radius }: { radius: number }) {
   const sky = useStore((s) => s.sky);
+  const renderMode = useStore((s) => s.renderMode);
   const c = useMemo(() => computeSky(sky), [sky]);
   const lp = c.lightPos.clone().multiplyScalar(radius * 3);
   // Re-bake the IBL env only when the sun/clouds/date meaningfully change (coarse
@@ -55,27 +56,41 @@ export function SolarSky({ radius }: { radius: number }) {
 
   return (
     <>
-      {/* crisp visible sky dome */}
-      <Sky
-        sunPosition={c.sunPos}
-        turbidity={c.turbidity}
-        rayleigh={c.rayleigh}
-        mieCoefficient={0.005}
-        mieDirectionalG={0.8}
-        distance={45000}
-      />
-      {/* same sky baked to an env map so reflective/metal/glass surfaces read
-          correctly; re-baked on `envKey` so reflections track the sun. */}
-      <Environment key={envKey} frames={1} resolution={256}>
-        <Sky
-          sunPosition={c.sunPos}
-          turbidity={c.turbidity}
-          rayleigh={c.rayleigh}
-          mieCoefficient={0.005}
-          mieDirectionalG={0.8}
-          distance={45000}
-        />
-      </Environment>
+      {renderMode === "webgpu" ? (
+        // WebGPU node renderer can't compile the drei <Sky> GLSL ShaderMaterial, so
+        // use a node-safe color background + an HDRI image-based-lighting env (no
+        // Sky shader). Keeps reflections/ambient on glass + metal in WebGPU mode.
+        <>
+          <color attach="background" args={[`#${c.skyCol.getHexString()}`]} />
+          {/* No drei <Environment> here: its PMREM/equirect passes are GLSL
+              ShaderMaterials that don't compile on the WebGPU node renderer. WebGPU
+              IBL via a node-safe equirect env is a follow-up; lights carry it for now. */}
+        </>
+      ) : (
+        <>
+          {/* crisp visible sky dome */}
+          <Sky
+            sunPosition={c.sunPos}
+            turbidity={c.turbidity}
+            rayleigh={c.rayleigh}
+            mieCoefficient={0.005}
+            mieDirectionalG={0.8}
+            distance={45000}
+          />
+          {/* same sky baked to an env map so reflective/metal/glass surfaces read
+              correctly; re-baked on `envKey` so reflections track the sun. */}
+          <Environment key={envKey} frames={1} resolution={256}>
+            <Sky
+              sunPosition={c.sunPos}
+              turbidity={c.turbidity}
+              rayleigh={c.rayleigh}
+              mieCoefficient={0.005}
+              mieDirectionalG={0.8}
+              distance={45000}
+            />
+          </Environment>
+        </>
+      )}
 
       <ambientLight intensity={c.ambientI} color={c.ambCol} />
       <hemisphereLight intensity={c.hemiI} color={c.skyCol} groundColor={c.groundCol} />
