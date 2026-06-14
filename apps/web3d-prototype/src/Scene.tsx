@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useThree, type ThreeEvent } from "@react-three/fiber";
-import { OrbitControls, useGLTF } from "@react-three/drei";
+import { OrbitControls, useGLTF, Clouds, Cloud } from "@react-three/drei";
 import * as THREE from "three";
 import { useStore, type NavMode, type SavedView } from "./state/store";
 import { swatchMaterial, setInvalidate } from "./lib/swatches";
@@ -8,6 +8,7 @@ import { WalkControls } from "./Walk";
 import { PathTracer } from "./PathTracer";
 import { Entourage } from "./Entourage";
 import { SolarSky } from "./SolarSky";
+import { SunPath } from "./SunPath";
 import { GeoTiles } from "./GeoTiles";
 
 // Effective Google key: the in-app field wins, else a build-time .env.local fallback.
@@ -108,6 +109,9 @@ export function Scene() {
   const goto = useStore((s) => s.goto);
   const clearGoto = useStore((s) => s.clearGoto);
   const rendering = useStore((s) => s.rendering);
+  const sunPath = useStore((s) => s.sunPath);
+  const showClouds = useStore((s) => s.showClouds);
+  const renderMode = useStore((s) => s.renderMode);
   const setSiteAnchor = useStore((s) => s.setSiteAnchor);
   const geoEnabled = useStore((s) => s.geo.enabled);
   const geoApiKey = useStore((s) => s.geo.apiKey);
@@ -292,6 +296,38 @@ export function Scene() {
   return (
     <>
       <SolarSky radius={radius} />
+      {sunPath && <SunPath radius={radius} />}
+      {/* Cheap billboard cloud plate floating above the building. drei <Cloud> uses
+          a MeshLambertMaterial (unverified on the WebGPU node renderer), so it's
+          gated to the WebGL2 modes this session; WebGPU clouds are a follow-up. */}
+      {showClouds && renderMode !== "webgpu" && (
+        <Clouds
+          material={THREE.MeshLambertMaterial}
+          position={[center.x, center.y + radius * 1.7, center.z]}
+          frustumCulled={false}
+        >
+          <Cloud
+            seed={3}
+            segments={28}
+            bounds={[radius * 3.2, radius * 0.5, radius * 2.2]}
+            volume={radius * 0.9}
+            color="#f3f5fa"
+            opacity={0.6}
+            growth={radius * 0.3}
+            speed={0.08}
+          />
+          <Cloud
+            seed={11}
+            segments={18}
+            bounds={[radius * 2.4, radius * 0.4, radius * 1.8]}
+            volume={radius * 0.7}
+            color="#dfe6f1"
+            opacity={0.45}
+            growth={radius * 0.25}
+            speed={0.05}
+          />
+        </Clouds>
+      )}
       <primitive object={scene} onClick={onPick} />
       <Entourage />
       {geoEnabled && geoKey && <GeoTiles apiToken={geoKey} />}

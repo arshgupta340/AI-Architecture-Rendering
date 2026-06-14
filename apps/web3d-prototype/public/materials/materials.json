@@ -1,7 +1,14 @@
 {
   "travertine": {
     "assetId": "Travertine009",
-    "repeat": 4,
+    "category": "stone",
+    "tags": [
+      "travertine",
+      "buff",
+      "floor",
+      "wall"
+    ],
+    "tileFeet": 4.0,
     "maps": [
       "albedo.jpg",
       "ao.jpg",
@@ -11,7 +18,14 @@
   },
   "red_brick": {
     "assetId": "Bricks097",
-    "repeat": 14,
+    "category": "brick",
+    "tags": [
+      "red",
+      "wall",
+      "masonry",
+      "facade"
+    ],
+    "tileFeet": 3.0,
     "maps": [
       "albedo.jpg",
       "ao.jpg",
@@ -21,7 +35,14 @@
   },
   "white_stucco": {
     "assetId": "Plaster001",
-    "repeat": 6,
+    "category": "plaster",
+    "tags": [
+      "white",
+      "stucco",
+      "wall",
+      "smooth"
+    ],
+    "tileFeet": 6.0,
     "maps": [
       "albedo.jpg",
       "normal.jpg",
@@ -30,7 +51,14 @@
   },
   "weathered_cedar": {
     "assetId": "WoodSiding009",
-    "repeat": 10,
+    "category": "wood",
+    "tags": [
+      "cedar",
+      "siding",
+      "plank",
+      "gray"
+    ],
+    "tileFeet": 3.5,
     "maps": [
       "albedo.jpg",
       "ao.jpg",
@@ -40,7 +68,409 @@
   },
   "charcoal_seam": {
     "assetId": "CorrugatedSteel009",
-    "repeat": 8,
+    "category": "metal",
+    "tags": [
+      "seam",
+      "panel",
+      "dark",
+      "roof"
+    ],
+    "tileFeet": 2.5,
+    "maps": [
+      "albedo.jpg",
+      "ao.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  },
+  "buff_brick": {
+    "assetId": "Bricks066",
+    "category": "brick",
+    "tags": [
+      "buff",
+      "tan",
+      "wall",
+      "masonry"
+    ],
+    "tileFeet": 2.75,
+    "maps": [
+      "albedo.jpg",
+      "ao.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  },
+  "clinker_brick": {
+    "assetId": "Bricks058",
+    "category": "brick",
+    "tags": [
+      "dark",
+      "clinker",
+      "wall",
+      "masonry"
+    ],
+    "tileFeet": 2.75,
+    "maps": [
+      "albedo.jpg",
+      "ao.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  },
+  "stone_veneer": {
+    "assetId": "Rock029",
+    "category": "stone",
+    "tags": [
+      "veneer",
+      "wall",
+      "natural",
+      "gray"
+    ],
+    "tileFeet": 3.0,
+    "maps": [
+      "albedo.jpg",
+      "ao.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  },
+  "ashlar_stone": {
+    "assetId": "PavingStones131",
+    "category": "stone",
+    "tags": [
+      "ashlar",
+      "wall",
+      "cut",
+      "gray"
+    ],
+    "tileFeet": 3.0,
+    "maps": [
+      "albedo.jpg",
+      "ao.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  },
+  "limestone": {
+    "assetId": "Marble016",
+    "category": "stone",
+    "tags": [
+      "limestone",
+      "buff",
+      "wall",
+      "smooth"
+    ],
+    "tileFeet": 3.0,
+    "maps": [
+      "albedo.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  },
+  "fieldstone": {
+    "assetId": "Rock023",
+    "category": "stone",
+    "tags": [
+      "fieldstone",
+      "rubble",
+      "wall",
+      "natural"
+    ],
+    "tileFeet": 4.0,
+    "maps": [
+      "albedo.jpg",
+      "ao.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  },
+  "smooth_concrete": {
+    "assetId": "Concrete034",
+    "category": "concrete",
+    "tags": [
+      "smooth",
+      "wall",
+      "panel",
+      "gray"
+    ],
+    "tileFeet": 8.0,
+    "maps": [
+      "albedo.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  },
+  "board_concrete": {
+    "assetId": "Concrete032",
+    "category": "concrete",
+    "tags": [
+      "board-formed",
+      "wall",
+      "texture"
+    ],
+    "tileFeet": 7.0,
+    "maps": [
+      "albedo.jpg",
+      "ao.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  },
+  "rough_concrete": {
+    "assetId": "Concrete016",
+    "category": "concrete",
+    "tags": [
+      "rough",
+      "wall",
+      "raw",
+      "gray"
+    ],
+    "tileFeet": 8.0,
+    "maps": [
+      "albedo.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  },
+  "tan_stucco": {
+    "assetId": "Plaster003",
+    "category": "plaster",
+    "tags": [
+      "tan",
+      "stucco",
+      "wall"
+    ],
+    "tileFeet": 6.0,
+    "maps": [
+      "albedo.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  },
+  "wood_planks": {
+    "assetId": "WoodFloor043",
+    "category": "wood",
+    "tags": [
+      "plank",
+      "floor",
+      "deck",
+      "warm"
+    ],
+    "tileFeet": 3.5,
+    "maps": [
+      "albedo.jpg",
+      "ao.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  },
+  "wood_siding": {
+    "assetId": "WoodSiding007",
+    "category": "wood",
+    "tags": [
+      "siding",
+      "plank",
+      "painted",
+      "wall"
+    ],
+    "tileFeet": 3.5,
+    "maps": [
+      "albedo.jpg",
+      "ao.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  },
+  "white_marble": {
+    "assetId": "Marble006",
+    "category": "stone",
+    "tags": [
+      "marble",
+      "white",
+      "floor",
+      "polished"
+    ],
+    "tileFeet": 4.0,
+    "maps": [
+      "albedo.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  },
+  "gray_marble": {
+    "assetId": "Marble012",
+    "category": "stone",
+    "tags": [
+      "marble",
+      "gray",
+      "floor",
+      "veined"
+    ],
+    "tileFeet": 4.0,
+    "maps": [
+      "albedo.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  },
+  "paving_stones": {
+    "assetId": "PavingStones070",
+    "category": "paving",
+    "tags": [
+      "paver",
+      "ground",
+      "patio",
+      "gray"
+    ],
+    "tileFeet": 2.5,
+    "maps": [
+      "albedo.jpg",
+      "ao.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  },
+  "cobblestone": {
+    "assetId": "PavingStones128",
+    "category": "paving",
+    "tags": [
+      "cobble",
+      "ground",
+      "round",
+      "old"
+    ],
+    "tileFeet": 2.0,
+    "maps": [
+      "albedo.jpg",
+      "ao.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  },
+  "brushed_metal": {
+    "assetId": "Metal032",
+    "category": "metal",
+    "tags": [
+      "brushed",
+      "panel",
+      "silver",
+      "cladding"
+    ],
+    "tileFeet": 2.0,
+    "maps": [
+      "albedo.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  },
+  "terracotta": {
+    "assetId": "Tiles101",
+    "category": "roofing",
+    "tags": [
+      "terracotta",
+      "clay",
+      "roof",
+      "warm"
+    ],
+    "tileFeet": 1.5,
+    "maps": [
+      "albedo.jpg",
+      "ao.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  },
+  "grass": {
+    "assetId": "Grass004",
+    "category": "ground",
+    "tags": [
+      "grass",
+      "lawn",
+      "landscape",
+      "green"
+    ],
+    "tileFeet": 5.0,
+    "maps": [
+      "albedo.jpg",
+      "ao.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  },
+  "gravel": {
+    "assetId": "Gravel022",
+    "category": "ground",
+    "tags": [
+      "gravel",
+      "ground",
+      "path",
+      "loose"
+    ],
+    "tileFeet": 4.0,
+    "maps": [
+      "albedo.jpg",
+      "ao.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  },
+  "brown_brick": {
+    "assetId": "Bricks045",
+    "category": "brick",
+    "tags": [
+      "brown",
+      "wall",
+      "masonry"
+    ],
+    "tileFeet": 3.0,
+    "maps": [
+      "albedo.jpg",
+      "ao.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  },
+  "brick_paving": {
+    "assetId": "PavingStones126A",
+    "category": "paving",
+    "tags": [
+      "brick",
+      "ground",
+      "herringbone"
+    ],
+    "tileFeet": 2.0,
+    "maps": [
+      "albedo.jpg",
+      "ao.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  },
+  "corten_steel": {
+    "assetId": "Metal041B",
+    "category": "metal",
+    "tags": [
+      "corten",
+      "weathered",
+      "rust",
+      "panel"
+    ],
+    "tileFeet": 2.5,
+    "maps": [
+      "albedo.jpg",
+      "normal.jpg",
+      "roughness.jpg"
+    ]
+  },
+  "roof_tiles": {
+    "assetId": "RoofingTiles013A",
+    "category": "roofing",
+    "tags": [
+      "tile",
+      "roof",
+      "terracotta"
+    ],
+    "tileFeet": 1.5,
     "maps": [
       "albedo.jpg",
       "ao.jpg",

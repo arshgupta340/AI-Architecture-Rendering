@@ -13,7 +13,14 @@ import {
   sample,
   add,
   vec4,
+  vec2,
+  uniform,
+  screenUV,
+  smoothstep,
+  mix,
+  float,
 } from "three/tsl";
+import { useStore } from "../state/store";
 import { ssgi } from "three/addons/tsl/display/SSGINode.js";
 import { ao } from "three/addons/tsl/display/GTAONode.js";
 import { traa } from "three/addons/tsl/display/TRAANode.js";
@@ -67,8 +74,14 @@ export function WebGPUPost() {
   const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
   const size = useThree((s) => s.size);
+  const grade = useStore((s) => s.grade);
+  const gradeStrength = useStore((s) => s.gradeStrength);
 
   const postRef = useRef<THREE.RenderPipeline | null>(null);
+  // Cinematic-grade strength uniform — built into the graph so toggling the grade
+  // never rebuilds the (expensive) pipeline; we just push a new value.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const gradeURef = useRef<any>(null);
 
   // Build the node graph once per (scene, camera, renderer). The TSL nodes capture
   // live references to scene/camera, so they keep tracking changes without a rebuild.
@@ -133,10 +146,21 @@ export function WebGPUPost() {
     // PostProcessing pre/post hooks in r184; no setTRAANode call needed).
     const traaPass: any = traa(withBloom, depth, sceneVelocity, camera);
 
+    // Cinematic grade — a strength-driven radial VIGNETTE applied in linear HDR
+    // before the final AgX output transform. Kept minimal (vignette only) on the
+    // WebGPU node graph to stay node-safe + verifiable; the WebGL2 stages add the
+    // richer contrast/saturation/grain grade. gradeU=0 → exact pass-through.
+    const gradeU: any = uniform(0);
+    gradeURef.current = gradeU;
+    const dist: any = screenUV.distance(vec2(0.5, 0.5)); // 0 centre … ~0.707 corner
+    const vig: any = smoothstep(0.78, 0.3, dist); // 1 centre → 0 edge
+    const vigFactor: any = mix(float(1), vig, gradeU.mul(0.55));
+    const graded: any = vec4(traaPass.rgb.mul(vigFactor), traaPass.a);
+
     const p = new THREE.RenderPipeline(gl);
     // outputColorTransform defaults to true → the pipeline applies the renderer's
     // tone mapping (AgX) + sRGB to this final node. Everything upstream is linear HDR.
-    p.outputNode = traaPass;
+    p.outputNode = graded;
 
     return p;
     /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -162,6 +186,11 @@ export function WebGPUPost() {
   useEffect(() => {
     if (postRef.current) postRef.current.needsUpdate = true;
   }, [size.width, size.height]);
+
+  // Push the cinematic-grade strength into the graph uniform (no pipeline rebuild).
+  useEffect(() => {
+    if (gradeURef.current) gradeURef.current.value = grade ? gradeStrength : 0;
+  }, [grade, gradeStrength, post]);
 
   // Drive the whole pipeline. renderPriority 1 turns OFF R3F's own render.
   useFrame(() => {

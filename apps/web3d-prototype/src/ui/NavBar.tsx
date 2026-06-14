@@ -1,11 +1,17 @@
-import { useStore } from "../state/store";
+import { useState } from "react";
+import { useStore, type ExportCfg } from "../state/store";
 import { ENT_ASSETS, ENT_RANGE } from "../Entourage";
+import { downloadBlob, exportFilename } from "../lib/exportImage";
 
+// Bottom-LEFT-of-centre so it never overlaps the full-height Sky panel (left) or the
+// Sidebar (right); scrolls if it ever exceeds the viewport height.
 const panel: React.CSSProperties = {
   position: "absolute",
-  left: 14,
+  left: 264,
   bottom: 14,
-  width: 232,
+  width: 244,
+  maxHeight: "calc(100vh - 28px)",
+  overflowY: "auto",
   background: "rgba(18,20,23,0.82)",
   backdropFilter: "blur(8px)",
   border: "1px solid rgba(255,255,255,0.08)",
@@ -40,6 +46,13 @@ const chip: React.CSSProperties = {
   gap: 6,
 };
 
+const miniChip = (active: boolean): React.CSSProperties => ({
+  padding: "3px 7px",
+  fontSize: 11,
+  border: `1px solid ${active ? "#2f6df6" : "rgba(255,255,255,0.12)"}`,
+  background: active ? "rgba(47,109,246,0.2)" : "rgba(255,255,255,0.04)",
+});
+
 const cinematicBtn: React.CSSProperties = {
   marginTop: 8,
   textAlign: "center",
@@ -73,6 +86,30 @@ export function NavBar() {
   const clearEnt = useStore((s) => s.clearEnt);
   const entHeight = useStore((s) => s.entHeight);
   const setEntHeight = useStore((s) => s.setEntHeight);
+  const setPresentation = useStore((s) => s.setPresentation);
+  const grade = useStore((s) => s.grade);
+  const setGrade = useStore((s) => s.setGrade);
+  const gradeStrength = useStore((s) => s.gradeStrength);
+  const setGradeStrength = useStore((s) => s.setGradeStrength);
+  const exportCfg = useStore((s) => s.exportCfg);
+  const setExportCfg = useStore((s) => s.setExportCfg);
+  const captureFn = useStore((s) => s.captureFn);
+  const [exporting, setExporting] = useState(false);
+
+  const doExport = async () => {
+    if (!captureFn || exporting) return;
+    setExporting(true);
+    try {
+      const blob = await captureFn(exportCfg);
+      if (blob) downloadBlob(blob, exportFilename(exportCfg));
+      else
+        alert(
+          "Export couldn't read the frame. Switch to a WebGL2 render mode (WebGL2 / + GI) and try again.",
+        );
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <div style={panel}>
@@ -134,6 +171,94 @@ export function NavBar() {
           ))}
         </div>
       </div>
+      {/* ---- Output: presentation · cinematic grade · high-res export ---- */}
+      <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 10 }}>
+        <span style={{ opacity: 0.5, textTransform: "uppercase", letterSpacing: "0.06em", fontSize: 10 }}>
+          Output
+        </span>
+        <div
+          onClick={() => setPresentation(true)}
+          style={{
+            marginTop: 6,
+            textAlign: "center",
+            padding: "6px 0",
+            borderRadius: 7,
+            cursor: "pointer",
+            background: "rgba(255,255,255,0.05)",
+            border: "1px solid rgba(255,255,255,0.14)",
+            userSelect: "none",
+          }}
+        >
+          ▣ Presentation mode
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
+          <span onClick={() => setGrade(!grade)} style={{ cursor: "pointer", userSelect: "none" }}>
+            {grade ? "◉" : "○"} Cinematic grade
+          </span>
+        </div>
+        {grade && (
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.05}
+            value={gradeStrength}
+            onChange={(e) => setGradeStrength(parseFloat(e.target.value))}
+            style={{ width: "100%", accentColor: "#7c4dff" }}
+          />
+        )}
+
+        <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 4 }}>
+          {(["16:9", "3:2", "4:3", "1:1", "free"] as const).map((a) => (
+            <span
+              key={a}
+              onClick={() => setExportCfg({ aspect: a })}
+              style={{ ...chip, ...miniChip(exportCfg.aspect === a) }}
+            >
+              {a === "free" ? "Free" : a}
+            </span>
+          ))}
+        </div>
+        <div style={{ marginTop: 4, display: "flex", gap: 4 }}>
+          {([1, 2, 4] as const).map((s) => (
+            <span
+              key={s}
+              onClick={() => setExportCfg({ scale: s })}
+              style={{ ...chip, ...miniChip(exportCfg.scale === s), flex: 1, justifyContent: "center" }}
+            >
+              {s}×
+            </span>
+          ))}
+          {(["jpg", "png"] as const).map((f) => (
+            <span
+              key={f}
+              onClick={() => setExportCfg({ format: f })}
+              style={{ ...chip, ...miniChip(exportCfg.format === f), flex: 1, justifyContent: "center" }}
+            >
+              {f.toUpperCase()}
+            </span>
+          ))}
+        </div>
+        <div
+          onClick={doExport}
+          style={{
+            marginTop: 8,
+            textAlign: "center",
+            padding: "7px 0",
+            borderRadius: 7,
+            cursor: captureFn && !exporting ? "pointer" : "wait",
+            fontWeight: 600,
+            opacity: captureFn ? 1 : 0.5,
+            background: "rgba(47,109,246,0.18)",
+            border: "1px solid #2f6df6",
+            userSelect: "none",
+          }}
+        >
+          {exporting ? "Rendering…" : "⬇ Export still"}
+        </div>
+      </div>
+
       <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 10 }}>
         {!rendering ? (
           renderMode === "webgpu" ? (

@@ -1,5 +1,6 @@
+import { useMemo, useState } from "react";
 import { useStore } from "../state/store";
-import { SWATCHES, swatchById } from "../lib/swatches";
+import { SWATCHES, swatchById, swatchCategories, type Swatch } from "../lib/swatches";
 
 const card: React.CSSProperties = {
   position: "absolute",
@@ -36,6 +37,41 @@ const chip = (active: boolean): React.CSSProperties => ({
   userSelect: "none",
 });
 
+// Small filter pill for category + search. Slightly tighter than `chip`.
+const pill = (active: boolean): React.CSSProperties => ({
+  padding: "3px 9px",
+  borderRadius: 999,
+  border: `1px solid ${active ? "#2f6df6" : "rgba(255,255,255,0.12)"}`,
+  background: active ? "rgba(47,109,246,0.18)" : "rgba(255,255,255,0.04)",
+  cursor: "pointer",
+  fontSize: 11,
+  textTransform: "capitalize",
+  userSelect: "none",
+  whiteSpace: "nowrap",
+});
+
+const searchInput: React.CSSProperties = {
+  width: "100%",
+  boxSizing: "border-box",
+  padding: "6px 9px",
+  borderRadius: 6,
+  border: "1px solid rgba(255,255,255,0.12)",
+  background: "rgba(255,255,255,0.05)",
+  color: "inherit",
+  fontSize: 12,
+  outline: "none",
+};
+
+function matches(sw: Swatch, q: string): boolean {
+  if (!q) return true;
+  const hay = `${sw.label} ${sw.category} ${sw.tags.join(" ")}`.toLowerCase();
+  return q
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .every((term) => hay.includes(term));
+}
+
 export function Sidebar() {
   const present = useStore((s) => s.semanticsPresent);
   const selected = useStore((s) => s.selected);
@@ -47,6 +83,15 @@ export function Sidebar() {
   const clearLayers = useStore((s) => s.clearLayers);
   const swatchScale = useStore((s) => s.swatchScale);
   const setSwatchScale = useStore((s) => s.setSwatchScale);
+
+  const [query, setQuery] = useState("");
+  const [cat, setCat] = useState<string | null>(null);
+  const categories = useMemo(() => swatchCategories(), []);
+
+  const results = useMemo(
+    () => SWATCHES.filter((sw) => (cat ? sw.category === cat : true) && matches(sw, query)),
+    [query, cat]
+  );
 
   return (
     <div style={card}>
@@ -69,42 +114,87 @@ export function Sidebar() {
       </div>
 
       <div>
-        <div style={h}>Material</div>
+        <div style={h}>Material · {SWATCHES.length}</div>
         {!selected && <div style={{ opacity: 0.5, fontSize: 12 }}>Select an element first.</div>}
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {selected &&
-            SWATCHES.map((sw) => {
-              const active = layers.some((l) => l.semantic === selected && l.swatch === sw.id);
-              return (
-                <div
-                  key={sw.id}
-                  onClick={() => applySwatch(selected, sw.id)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    padding: 6,
-                    borderRadius: 7,
-                    cursor: "pointer",
-                    border: `1px solid ${active ? "#2f6df6" : "transparent"}`,
-                    background: active ? "rgba(47,109,246,0.14)" : "rgba(255,255,255,0.03)",
-                  }}
-                >
-                  <span
+
+        {selected && (
+          <>
+            <input
+              style={searchInput}
+              placeholder="Search brick, wood, concrete…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 5, margin: "8px 0" }}>
+              <span style={pill(cat === null)} onClick={() => setCat(null)}>
+                all
+              </span>
+              {categories.map((c) => (
+                <span key={c} style={pill(cat === c)} onClick={() => setCat(cat === c ? null : c)}>
+                  {c}
+                </span>
+              ))}
+            </div>
+
+            {results.length === 0 && (
+              <div style={{ opacity: 0.5, fontSize: 12 }}>No materials match.</div>
+            )}
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: 8,
+              }}
+            >
+              {results.map((sw) => {
+                const active = layers.some((l) => l.semantic === selected && l.swatch === sw.id);
+                return (
+                  <div
+                    key={sw.id}
+                    onClick={() => applySwatch(selected, sw.id)}
+                    title={sw.label}
                     style={{
-                      width: 26,
-                      height: 26,
-                      borderRadius: 5,
-                      background: sw.color,
-                      border: "1px solid rgba(0,0,0,0.3)",
-                      flex: "0 0 auto",
+                      cursor: "pointer",
+                      borderRadius: 7,
+                      overflow: "hidden",
+                      border: `1px solid ${active ? "#2f6df6" : "rgba(255,255,255,0.1)"}`,
+                      boxShadow: active ? "0 0 0 1px rgba(47,109,246,0.6)" : "none",
+                      background: "rgba(255,255,255,0.03)",
                     }}
-                  />
-                  <span>{sw.label}</span>
-                </div>
-              );
-            })}
-        </div>
+                  >
+                    <div
+                      style={{
+                        position: "relative",
+                        width: "100%",
+                        aspectRatio: "1 / 1",
+                        background: sw.color, // chip fallback shows behind the image
+                        backgroundImage: `url(/materials/${sw.id}/albedo.jpg)`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                      }}
+                    />
+                    <div
+                      style={{
+                        fontSize: 9.5,
+                        lineHeight: 1.15,
+                        padding: "3px 4px",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        opacity: active ? 1 : 0.75,
+                      }}
+                    >
+                      {sw.label}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
         {selected &&
           layers.some((l) => l.semantic === selected) &&
           (() => {

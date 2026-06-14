@@ -1,4 +1,5 @@
 import { useStore, type Mood } from "../state/store";
+import { HDRI_PRESETS } from "../SolarSky";
 
 const card: React.CSSProperties = {
   position: "absolute",
@@ -75,6 +76,12 @@ export function SkyPanel() {
   const geo = useStore((s) => s.geo);
   const setGeo = useStore((s) => s.setGeo);
   const hasKey = Boolean(geo.apiKey || ENV_GOOGLE_KEY);
+  const hdriPreset = useStore((s) => s.hdriPreset);
+  const setHdriPreset = useStore((s) => s.setHdriPreset);
+  const sunPath = useStore((s) => s.sunPath);
+  const setSunPath = useStore((s) => s.setSunPath);
+  const showClouds = useStore((s) => s.showClouds);
+  const setShowClouds = useStore((s) => s.setShowClouds);
 
   return (
     <div style={card}>
@@ -148,6 +155,50 @@ export function SkyPanel() {
           onChange={(e) => setSky({ cloudCover: parseFloat(e.target.value) })}
           style={{ width: "100%", accentColor: "#2f6df6" }}
         />
+      </div>
+
+      <div>
+        <div style={h}>HDRI sky</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {HDRI_PRESETS.map((p) => (
+            <span
+              key={p.id}
+              style={chip(hdriPreset === p.id)}
+              onClick={() => setHdriPreset(p.id)}
+            >
+              {p.label}
+            </span>
+          ))}
+        </div>
+        <div style={{ opacity: 0.45, fontSize: 10.5, lineHeight: 1.4, marginTop: 6 }}>
+          Drives image-based lighting + reflections (WebGPU + path-traced hero).
+        </div>
+      </div>
+
+      <div>
+        <div style={h}>Overlays</div>
+        <label
+          style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 12, marginBottom: 8 }}
+        >
+          <input
+            type="checkbox"
+            checked={sunPath}
+            onChange={(e) => setSunPath(e.target.checked)}
+            style={{ accentColor: "#2f6df6" }}
+          />
+          Sun-path arc (day track + analemma)
+        </label>
+        <label
+          style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 12 }}
+        >
+          <input
+            type="checkbox"
+            checked={showClouds}
+            onChange={(e) => setShowClouds(e.target.checked)}
+            style={{ accentColor: "#2f6df6" }}
+          />
+          Clouds
+        </label>
       </div>
 
       <div>

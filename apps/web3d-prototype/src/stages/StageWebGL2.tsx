@@ -3,6 +3,8 @@ import { Suspense } from "react";
 import * as THREE from "three";
 import { Scene } from "../Scene";
 import { Effects } from "../Effects";
+import { ContactGround } from "./ContactGround";
+import { ExportCapture } from "../lib/exportImage";
 import { useStore } from "../state/store";
 
 /**
@@ -19,7 +21,9 @@ export function StageWebGL2() {
     <Canvas
       shadows="variance"
       dpr={[1, 2]}
-      gl={{ antialias: false }}
+      // preserveDrawingBuffer lets the high-res "Export still" read the post-processed
+      // frame via toBlob (the WebGL buffer is otherwise cleared after compositing).
+      gl={{ antialias: false, preserveDrawingBuffer: true }}
       frameloop={mode === "walk" || rendering || geoEnabled ? "always" : "demand"}
       onPointerMissed={() => select(null)}
       onCreated={({ gl }) => {
@@ -28,8 +32,10 @@ export function StageWebGL2() {
     >
       <Suspense fallback={null}>
         <Scene />
+        {!rendering && <ContactGround />}
       </Suspense>
       {!rendering && <Effects />}
+      <ExportCapture />
     </Canvas>
   );
 }

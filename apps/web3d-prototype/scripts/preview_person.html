@@ -1,0 +1,37 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>body{margin:0;background:#7a8a6a;display:flex;gap:12px;padding:16px}</style></head>
+<body>
+<script>
+const PERSON_PALETTES = [
+  { skin: "#caa07a", shirt: "#3b5566", shirtDark: "#2c4150", pants: "#2d2f36", pantsDark: "#212329" },
+  { skin: "#e0b48c", shirt: "#8a4b3b", shirtDark: "#6e3b2e", pants: "#3a3f4a", pantsDark: "#2b2f37" },
+  { skin: "#9c7350", shirt: "#5a6b4a", shirtDark: "#46543a", pants: "#454952", pantsDark: "#34373e" },
+  { skin: "#d9a47e", shirt: "#6d6f78", shirtDark: "#54565d", pants: "#23252b", pantsDark: "#191b1f" },
+];
+function personTexture(variant){
+  const W=256,H=512;const c=document.createElement('canvas');c.width=W;c.height=H;
+  const x=c.getContext('2d');const p=PERSON_PALETTES[variant%PERSON_PALETTES.length];
+  const walking=variant%2===1;const cx=W/2;
+  const top=24,bottom=H-12,totalH=bottom-top;const headH=totalH*0.13,headR=headH*0.5,headCy=top+headR;
+  const neckY=top+headH;const hipY=top+totalH*0.52;const torsoH=hipY-neckY;const shoulderW=totalH*0.20;
+  const fillShade=(light,dark,drawer)=>{drawer(dark,3);drawer(light,0);};
+  const legW=shoulderW*0.34;const legTopY=hipY;const footY=bottom;const stride=walking?totalH*0.05:0;
+  fillShade(p.pants,p.pantsDark,(col,dx)=>{x.fillStyle=col;
+    x.beginPath();x.moveTo(cx-legW*1.05+dx,legTopY);x.lineTo(cx-1+dx,legTopY);x.lineTo(cx-1-stride+dx,footY);x.lineTo(cx-legW*1.05-stride+dx,footY);x.closePath();x.fill();
+    x.beginPath();x.moveTo(cx+1+dx,legTopY);x.lineTo(cx+legW*1.05+dx,legTopY);x.lineTo(cx+legW*1.05+stride+dx,footY);x.lineTo(cx+1+stride+dx,footY);x.closePath();x.fill();});
+  x.fillStyle='#1a1c20';x.fillRect(cx-legW*1.1-stride,footY-8,legW*1.1,8);x.fillRect(cx+1+stride,footY-8,legW*1.1,8);
+  fillShade(p.shirt,p.shirtDark,(col,dx)=>{x.fillStyle=col;x.beginPath();x.moveTo(cx-shoulderW*0.5+dx,neckY);x.lineTo(cx+shoulderW*0.5+dx,neckY);x.lineTo(cx+shoulderW*0.42+dx,hipY);x.lineTo(cx-shoulderW*0.42+dx,hipY);x.closePath();x.fill();});
+  const armW=shoulderW*0.22;const armLen=torsoH*1.02;const armSwing=walking?totalH*0.04:0;
+  fillShade(p.shirt,p.shirtDark,(col,dx)=>{x.fillStyle=col;
+    x.beginPath();x.moveTo(cx-shoulderW*0.5+dx,neckY+4);x.lineTo(cx-shoulderW*0.5+armW+dx,neckY+4);x.lineTo(cx-shoulderW*0.5+armW+armSwing+dx,neckY+armLen);x.lineTo(cx-shoulderW*0.5+armSwing+dx,neckY+armLen);x.closePath();x.fill();
+    x.beginPath();x.moveTo(cx+shoulderW*0.5-armW+dx,neckY+4);x.lineTo(cx+shoulderW*0.5+dx,neckY+4);x.lineTo(cx+shoulderW*0.5-armSwing+dx,neckY+armLen);x.lineTo(cx+shoulderW*0.5-armW-armSwing+dx,neckY+armLen);x.closePath();x.fill();});
+  x.fillStyle=p.skin;x.beginPath();x.arc(cx-shoulderW*0.5+armW*0.5+armSwing,neckY+armLen,armW*0.5,0,Math.PI*2);x.fill();
+  x.beginPath();x.arc(cx+shoulderW*0.5-armW*0.5-armSwing,neckY+armLen,armW*0.5,0,Math.PI*2);x.fill();
+  x.fillStyle=p.skin;x.fillRect(cx-headR*0.4,neckY-headH*0.18,headR*0.8,headH*0.3);
+  x.fillStyle=p.skin;x.beginPath();x.arc(cx,headCy,headR,0,Math.PI*2);x.fill();
+  x.fillStyle='#2b2620';x.beginPath();x.arc(cx,headCy-headR*0.18,headR*0.92,Math.PI*1.08,Math.PI*1.92);x.fill();
+  return c;
+}
+for(let v=0;v<4;v++){document.body.appendChild(personTexture(v));}
+</script>
+</body></html>

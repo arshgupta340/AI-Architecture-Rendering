@@ -6,6 +6,26 @@ import * as THREE from "three";
 import SunCalc from "suncalc";
 import { useStore, type SkyState } from "./state/store";
 
+/**
+ * Equirect HDRI sky presets. `id` is the filename slug under `public/hdri/<id>.hdr`
+ * (2k Radiance, CC0 from Poly Haven). `sky` is the existing analytic-sky fallback
+ * HDRI kept as the Default; the rest are mood/golden-hour skies downloaded this
+ * session. The store's `hdriPreset` (default "sky") selects which one drives the
+ * WebGPU IBL + path-traced hero environment. */
+export const HDRI_PRESETS: { id: string; label: string }[] = [
+  { id: "sky", label: "Default" },
+  { id: "spruit_sunrise", label: "Sunrise" },
+  { id: "qwantani_puresky", label: "Clear noon" },
+  { id: "kloofendal_48d_partly_cloudy_puresky", label: "Overcast" },
+  { id: "the_sky_is_on_fire", label: "Dusk" },
+];
+
+const HDRI_PRESET_IDS = new Set(HDRI_PRESETS.map((p) => p.id));
+/** Resolve a stored preset slug to a safe `public/hdri/<slug>.hdr` URL. */
+export function hdriUrlFor(slug: string): string {
+  return `/hdri/${HDRI_PRESET_IDS.has(slug) ? slug : "sky"}.hdr`;
+}
+
 function dateFor(sky: SkyState): Date {
   const d = new Date(`${sky.date}T00:00:00`);
   d.setHours(Math.floor(sky.timeOfDay), Math.round((sky.timeOfDay % 1) * 60), 0, 0);
@@ -59,7 +79,8 @@ function computeSky(sky: SkyState) {
  * tracks daylight so the static HDRI doesn't keep the scene bright at night.
  */
 function WebGPUEnv({ intensity }: { intensity: number }) {
-  const hdr = useLoader(HDRLoader, "/hdri/sky.hdr");
+  const hdriPreset = useStore((s) => s.hdriPreset);
+  const hdr = useLoader(HDRLoader, hdriUrlFor(hdriPreset));
   const scene = useThree((s) => s.scene);
   useEffect(() => {
     hdr.mapping = THREE.EquirectangularReflectionMapping;
@@ -75,9 +96,20 @@ function WebGPUEnv({ intensity }: { intensity: number }) {
   return null;
 }
 
+/**
+ * WebGL2 reflections from a real HDRI file (only used when a non-default preset is
+ * selected). drei <Environment files=...> PMREM-filters the equirect HDR on the
+ * WebGL renderer and assigns it to scene.environment, so glass/metal reflect the
+ * chosen mood sky while the analytic <Sky> dome stays the *visible* backdrop
+ * (background={false}). On the default "sky" preset we keep the all-analytic path. */
+function WebGL2HdriEnv({ slug }: { slug: string }) {
+  return <Environment files={hdriUrlFor(slug)} background={false} resolution={256} />;
+}
+
 export function SolarSky({ radius }: { radius: number }) {
   const sky = useStore((s) => s.sky);
   const renderMode = useStore((s) => s.renderMode);
+  const hdriPreset = useStore((s) => s.hdriPreset);
   const c = useMemo(() => computeSky(sky), [sky]);
   const lp = c.lightPos.clone().multiplyScalar(radius * 3);
   // Re-bake the IBL env only when the sun/clouds/date meaningfully change (coarse
@@ -106,18 +138,24 @@ export function SolarSky({ radius }: { radius: number }) {
             mieDirectionalG={0.8}
             distance={45000}
           />
-          {/* same sky baked to an env map so reflective/metal/glass surfaces read
-              correctly; re-baked on `envKey` so reflections track the sun. */}
-          <Environment key={envKey} frames={1} resolution={256}>
-            <Sky
-              sunPosition={c.sunPos}
-              turbidity={c.turbidity}
-              rayleigh={c.rayleigh}
-              mieCoefficient={0.005}
-              mieDirectionalG={0.8}
-              distance={45000}
-            />
-          </Environment>
+          {/* Reflections env. Default preset ("sky"): bake the analytic <Sky> to an
+              env map so reflective/metal/glass surfaces track the sun (re-baked on
+              `envKey`). A non-default mood HDRI preset instead drives reflections
+              from that real HDR file, while the visible dome above stays analytic. */}
+          {hdriPreset === "sky" ? (
+            <Environment key={envKey} frames={1} resolution={256}>
+              <Sky
+                sunPosition={c.sunPos}
+                turbidity={c.turbidity}
+                rayleigh={c.rayleigh}
+                mieCoefficient={0.005}
+                mieDirectionalG={0.8}
+                distance={45000}
+              />
+            </Environment>
+          ) : (
+            <WebGL2HdriEnv slug={hdriPreset} />
+          )}
         </>
       )}
 

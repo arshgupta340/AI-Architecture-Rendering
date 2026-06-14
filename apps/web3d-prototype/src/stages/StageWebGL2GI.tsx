@@ -5,6 +5,8 @@ import { Scene } from "../Scene";
 import { EffectsGI } from "./EffectsGI";
 import { AreaLights } from "./AreaLights";
 import { ReflectiveGround } from "./ReflectiveGround";
+import { ContactGround } from "./ContactGround";
+import { ExportCapture } from "../lib/exportImage";
 import { useStore } from "../state/store";
 
 /**
@@ -37,7 +39,7 @@ export function StageWebGL2GI() {
     <Canvas
       shadows="variance"
       dpr={[1, 2]}
-      gl={{ antialias: false }}
+      gl={{ antialias: false, preserveDrawingBuffer: true }}
       frameloop={mode === "walk" || rendering || geoEnabled ? "always" : "demand"}
       onPointerMissed={() => select(null)}
       onCreated={({ gl }) => {
@@ -51,8 +53,10 @@ export function StageWebGL2GI() {
             path-trace pass (PathTracer owns the frame then). */}
         {!rendering && <AreaLights />}
         {!rendering && <ReflectiveGround />}
+        {!rendering && <ContactGround />}
       </Suspense>
       {!rendering && <EffectsGI />}
+      <ExportCapture />
     </Canvas>
   );
 }

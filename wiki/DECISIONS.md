@@ -20,6 +20,22 @@ Each entry follows the same shape so it can be scanned in 15 seconds:
 
 ---
 
+## 2026-06-14 — Client-ready render = the WebGPU realtime Stage made presentable + captured high-res; T3/T4 deferred {#web3d-clientready-composition}
+
+**Decision:** After the research sweep ([[research/web3d-clientready]]), the client-ready image is **NOT a new render route** — it is the **existing WebGPU realtime Stage made presentable then captured at high-res**: expanded KTX2/jpg materials → real CC0 entourage → golden-hour HDRI + atmosphere → a subtle TSL/post grade → Presentation mode + high-res Export. This whole path is **$0, deterministic, interactive, and was built this session**. The Gaussian-splat environment (T3) and depth+canny FLUX diffusion hero (T4) are **explicitly deferred to scaffold-only** — they are paid and/or renderer-forking finishing layers, documented (not built).
+
+**Context:** Refines [[#client-ready-render]] (the planning-phase "compose all four routes" decision) with what the deep research actually found about cost, renderer compatibility, and effort. The build phase delivered the $0 tracks (T1/T2/T5/T6) and verified them; T3/T4 got a research bible instead of code.
+
+**Alternatives considered:** (a) Build the splat-context now — rejected: no three.js WebGPU splat renderer exists in 2026 (Spark/mkkellogg/drei are all WebGLRenderer-only), so splats can't appear in the WebGPU quality tier; a *good* generated environment costs ~$20/mo (World Labs Marble) or a capture rig; baked-lighting-vs-our-sun mismatch is unsolved at $0. (b) Wire the FLUX diffusion hero now — rejected: FLUX.2 has NO hosted depth/canny ControlNet (only a local 80GB-VRAM checkpoint), the geometry lock stays FLUX.1-dev Union, and the call is paid (~$0.04–0.13/img) needing a FAL_KEY backend shim (app is backendless) — gate behind explicit auth + the $0.05 cap. (c) Lightmap bake — deferred: the model's `uv1` is a box-projection not a real unwrap; runtime N8AO/SSGI already covers exterior GI.
+
+**Reasoning:** The $0 realtime tracks deliver ~90% of the "toy→real" jump (entourage + materials + grounding + grade + atmosphere) with full live editing and zero vendor/cost risk; the export + presentation mode turn that into an actually-sendable file. T3/T4 are higher cost/risk for the last 10% and fork either the renderer or the budget — best as opt-in finishing layers once the realtime base is rich, exactly the order shipped.
+
+**Revisit if:** a production three.js WebGPU/TSL Gaussian-splat renderer ships (unforks T3), or BFL/fal host a FLUX.2 depth+canny ControlNet (upgrades T4), or a client demands the literal Lumen/Nanite look while navigating (→ pixel-streamed UE).
+
+**Orchestration note (reusable):** Same-tree parallel build agents on **strictly disjoint files** merge with zero conflicts IF the one universally-shared file (`store.ts`) is **pre-edited by the orchestrator with every slice up front** so agents only *read* it, and all cross-cutting wiring (shared `App`/`NavBar`/stages) is reserved for the orchestrator. De-risk every asset-download URL before fan-out. This beat worktree isolation (no node_modules-per-worktree, no merge step) for a 3-agent web build.
+
+---
+
 ## 2026-06-14 — Path to a client-ready render: compose WebGPU-realtime + consistency-locked diffusion + splat context; WebGPU is the live quality tier {#client-ready-render}
 
 **Decision:** The route to an architect-sendable, "decked-out" render is a **composition**, not one technique: (1) push the **WebGPU real-time** tier (SSGI/GTAO/TRAA + HDRI IBL + VSM shadows — now built) with a much bigger material library, real entourage, lightmaps + atmosphere; (2) an optional **diffusion hero** still on top, with the **hallucination/consistency problem solved by conditioning on the render's own depth + canny edges** (the depth+canny multi-ControlNet we already proved, [[#render-mask-registration]]) and single-still scope; (3) a **Gaussian-splat environment** for photoreal surroundings around the editable polygon building; (4) **Twinmotion / UE Lumen** as the absolute ceiling (runbook ready). WebGPU is the live quality tier; splat-bake-of-the-whole-scene and pixel-streamed UE stay **terminal "publish" exports** (they bake away live editing).

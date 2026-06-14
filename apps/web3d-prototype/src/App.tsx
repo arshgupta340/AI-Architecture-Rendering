@@ -34,6 +34,7 @@ const StageWebGPU = lazy(() =>
  */
 export default function App() {
   const renderMode = useStore((s) => s.renderMode);
+  const presentation = useStore((s) => s.presentation);
 
   // Re-apply persisted per-swatch texture scales to the material engine on load.
   useEffect(() => {
@@ -55,10 +56,45 @@ export default function App() {
           <StageWebGL2 />
         )}
       </Suspense>
-      <SkyPanel />
-      <Sidebar />
-      <NavBar />
+      {/* Presentation mode hides every DOM panel so the on-screen frame == the export
+          frame (and gives a clean client view). A single floating "Exit" pill remains. */}
+      {presentation ? (
+        <PresentationExit />
+      ) : (
+        <>
+          <SkyPanel />
+          <Sidebar />
+          <NavBar />
+        </>
+      )}
       <Cinematic />
+    </div>
+  );
+}
+
+/** The only chrome shown in presentation mode — a discreet pill to leave it. */
+function PresentationExit() {
+  const setPresentation = useStore((s) => s.setPresentation);
+  return (
+    <div
+      onClick={() => setPresentation(false)}
+      style={{
+        position: "absolute",
+        top: 14,
+        right: 14,
+        padding: "6px 12px",
+        borderRadius: 8,
+        cursor: "pointer",
+        fontSize: 12,
+        color: "#e8e6e3",
+        background: "rgba(18,20,23,0.55)",
+        backdropFilter: "blur(8px)",
+        border: "1px solid rgba(255,255,255,0.14)",
+        userSelect: "none",
+        opacity: 0.7,
+      }}
+    >
+      ✕ Exit presentation
     </div>
   );
 }

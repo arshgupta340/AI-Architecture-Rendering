@@ -6,6 +6,7 @@ import { Scene } from "../Scene";
 import { useStore } from "../state/store";
 import { WebGPUPost } from "./WebGPUPost";
 import { WebGPUAreaLights } from "./WebGPUAreaLights";
+import { ExportCapture } from "../lib/exportImage";
 
 /**
  * RENDER MODE "webgpu" — OWNED BY AGENT A. The realism ceiling.
@@ -119,6 +120,7 @@ export function StageWebGPU() {
           PT result identical to the other stages. */}
       {!rendering && <WebGPUAreaLights />}
       {!rendering && <WebGPUPost />}
+      <ExportCapture />
     </Canvas>
   );
 }

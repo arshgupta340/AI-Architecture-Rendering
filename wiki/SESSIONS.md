@@ -7,6 +7,24 @@ updated: 2026-06-14
 
 Append-only conversation log. **Newest at top.** One entry per chat session.
 
+## 2026-06-14 — Client-ready render push: materials@scale + real entourage + atmosphere + export (ultracode, 10 agents)
+
+**Scope:** Take the minimal 3-mode web3d base to a **client-ready, sendable render**. Two ultracode Workflow phases: (1) a 7-agent research sweep (6 tracks + synthesis, EXA + deep_researcher), (2) a 3-agent parallel build on disjoint files, then a hand-integrated output layer + full preview verification.
+
+**Decisions:** [[DECISIONS#web3d-clientready-composition]] — the client-ready image is the **WebGPU realtime Stage made presentable + captured high-res**, not a new route; splat-env (T3) + diffusion-hero (T4) are paid/renderer-forking → **scaffold/deferred**, documented not built. Research bible: [[research/web3d-clientready]].
+
+**Tried:** Pre-edited `store.ts` with every new slice FIRST so the 3 parallel build agents only *read* it (eliminated the store merge-collision) → same-tree, file-disjoint agents merged with zero conflicts, whole-tree `tsc` clean on first try. De-risked all asset downloads up front (ambientCG zip, PolyHaven HDRI, poly.pizza page→uuid→glb scrape all verified before fan-out). Kept the delicate WebGPU node graph low-risk (vignette-only grade behind a uniform) and verified it on the headless AMD adapter.
+
+**Outcome (all verified in preview):**
+- **Materials 5→29** CC0 ambientCG PBR (correct per-category metric `tileFeet`), **searchable swatch grid** (search + category pills + albedo thumbnails). KTX2 encode script written; jpg ships ($0, no `ktx` binary in env).
+- **Real entourage**: 12 CC0 Quaternius GLBs (8 trees, 4 bushes) instanced per-species behind the unchanged scatter-paint UX; improved-procedural people (licensing-safe). Procedural placeholders gone.
+- **Atmosphere**: 4 golden-hour CC0 HDRI presets, sun-path arc (node-safe line/points), drei clouds (WebGL2-gated).
+- **Path tracer FIXED** (was fully broken): isolated `ptScene` + `house_pt.glb` + live-swatch mirroring + glass + HDRI env + `.color` guard → building path-traces with the architect's chosen materials + HDRI GI (verified at 46 spp).
+- **Output layer (hand-integrated)**: high-res **Export still** (verified 2620×1474 16:9 JPEG, non-black, 2× supersample + aspect crop, preserveDrawingBuffer), **Presentation mode** (hides all panels), **Cinematic grade** (WebGL2 contrast/sat/vignette/grain + WebGPU vignette), **ContactShadows** grounding (WebGL2 only), NavBar moved off the Sky panel.
+- All 3 render modes verified (WebGPU not black on AMD adapter); production `npm run build` green; `tsc` clean.
+
+**Follow-ups:** (1) WebGPU emits 6 benign `NodeBuilder: ShaderMaterial not compatible` warnings — pre-existing, = the 6-face equirect→cube PMREM of the HDRI `scene.environment`; render is correct. (2) KTX2 encode (needs `ktx` CLI + sharp). (3) CC0 cutout-people PNGs (license call) to replace procedural people. (4) Verify entourage real-world scale (trees read slightly small). (5) Scaffold T4 depth+canny capture / T3 Spark splat-context per [[research/web3d-clientready]]. (6) Optional takram physically-based atmosphere (ECEF rebasing).
+
 ## 2026-06-14 — Graphify the wiki: cross-link research pages + de-stale pre-pivot pages
 
 **Scope:** Ran `/graphify` on `wiki/` (knowledge-graph build — 84 nodes, 150 edges, 12 communities) to audit links + staleness, then acted on the findings.

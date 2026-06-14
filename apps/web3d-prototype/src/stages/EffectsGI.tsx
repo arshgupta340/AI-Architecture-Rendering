@@ -6,9 +6,11 @@ import {
   BrightnessContrast,
   HueSaturation,
   Vignette,
+  Noise,
   SMAA,
 } from "@react-three/postprocessing";
-import { ToneMappingMode } from "postprocessing";
+import { ToneMappingMode, BlendFunction } from "postprocessing";
+import { useStore } from "../state/store";
 
 /**
  * Post stack for the WebGL2-GI stage — OWNED BY AGENT B. A tuned fork of the
@@ -32,6 +34,10 @@ import { ToneMappingMode } from "postprocessing";
  *     handles the window/sky blowout gracefully.
  */
 export function EffectsGI() {
+  const grade = useStore((s) => s.grade);
+  const gradeStrength = useStore((s) => s.gradeStrength);
+  const s = grade ? gradeStrength : 0;
+
   return (
     <EffectComposer>
       <N8AO
@@ -44,10 +50,11 @@ export function EffectsGI() {
         quality="high"
         halfRes
       />
-      <Bloom mipmapBlur luminanceThreshold={1.1} luminanceSmoothing={0.3} intensity={0.12} radius={0.6} />
-      <BrightnessContrast brightness={0} contrast={0.1} />
-      <HueSaturation saturation={0.08} />
-      <Vignette offset={0.3} darkness={0.42} />
+      <Bloom mipmapBlur luminanceThreshold={1.1} luminanceSmoothing={0.3} intensity={0.12 + 0.06 * s} radius={0.6} />
+      <BrightnessContrast brightness={-0.01 * s} contrast={0.1 + 0.13 * s} />
+      <HueSaturation saturation={0.08 + 0.12 * s} />
+      <Vignette offset={0.3} darkness={0.42 + 0.4 * s} />
+      <Noise premultiply blendFunction={BlendFunction.OVERLAY} opacity={0.06 * s} />
       <SMAA />
       <ToneMapping mode={ToneMappingMode.AGX} />
     </EffectComposer>

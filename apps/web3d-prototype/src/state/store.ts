@@ -83,6 +83,11 @@ export const MOODS: Record<Mood, Partial<SkyState>> = {
 
 const DEFAULT_ENT_HEIGHT: Record<string, number> = { tree: 18, bush: 3, person: 5.7 };
 
+/** High-res "client-ready" still export config. `scale` multiplies the canvas
+ *  pixel size; aspect crops the framed still; format picks the encoder. */
+export type ExportCfg = { aspect: "16:9" | "3:2" | "4:3" | "1:1" | "free"; scale: number; format: "jpg" | "png" };
+const DEFAULT_EXPORT: ExportCfg = { aspect: "16:9", scale: 2, format: "jpg" };
+
 type Store = {
   // ---- runtime ----
   meshesBySemantic: Map<string, THREE.Mesh[]>;
@@ -100,6 +105,12 @@ type Store = {
   siteAnchor: [number, number, number] | null;
   /** Cinematic (UE5) hero mode on/off — overlays an embedded SimplyStream WebGPU build. */
   cinematic: boolean;
+  /** Presentation mode: hide all DOM panels so the on-screen preview == the export frame. */
+  presentation: boolean;
+  /** Async high-res capture fn registered by the ACTIVE Stage (it owns the renderer +
+   *  scene + camera). NavBar's export button calls it; returns a Blob (or null on
+   *  failure). Runtime-only (never persisted). */
+  captureFn: ((cfg: ExportCfg) => Promise<Blob | null>) | null;
 
   // ---- persisted ----
   layers: Layer[];
@@ -113,6 +124,22 @@ type Store = {
   cinematicUrl: string;
   /** Active renderer/quality path (see RenderMode). */
   renderMode: RenderMode;
+  /** High-res still export config (aspect / scale / format). */
+  exportCfg: ExportCfg;
+  /** Equirect HDRI sky preset slug → public/hdri/<slug>.hdr (drives WebGPU IBL + PT hero). */
+  hdriPreset: string;
+  /** Sun-path arc overlay (analemma + day arc from the suncalc sun) on/off. */
+  sunPath: boolean;
+  /** Cheap billboard cloud plate for the hero (drei <Cloud>) on/off. */
+  showClouds: boolean;
+  /** Ground contact-shadow catcher under the building (WebGL2 stages) on/off. */
+  contactShadows: boolean;
+  /** Cinematic post grade (DoF/film-grain/vignette/LUT) on/off + strength 0–1. */
+  grade: boolean;
+  gradeStrength: number;
+  /** Gaussian-splat "context backdrop" scaffold (webgl2gi only) — enable + asset URL. */
+  splatEnabled: boolean;
+  splatUrl: string;
 
   // ---- actions ----
   setModel: (bySem: Map<string, THREE.Mesh[]>) => void;
@@ -143,6 +170,17 @@ type Store = {
   setCinematic: (on: boolean) => void;
   setCinematicUrl: (url: string) => void;
   setRenderMode: (m: RenderMode) => void;
+  setPresentation: (on: boolean) => void;
+  setCaptureFn: (fn: ((cfg: ExportCfg) => Promise<Blob | null>) | null) => void;
+  setExportCfg: (patch: Partial<ExportCfg>) => void;
+  setHdriPreset: (slug: string) => void;
+  setSunPath: (on: boolean) => void;
+  setShowClouds: (on: boolean) => void;
+  setContactShadows: (on: boolean) => void;
+  setGrade: (on: boolean) => void;
+  setGradeStrength: (v: number) => void;
+  setSplatEnabled: (on: boolean) => void;
+  setSplatUrl: (url: string) => void;
 };
 
 export const useStore = create<Store>()(
@@ -161,6 +199,8 @@ export const useStore = create<Store>()(
       placeAsset: null,
       siteAnchor: null,
       cinematic: false,
+      presentation: false,
+      captureFn: null,
       layers: [],
       views: [],
       swatchScale: {},
@@ -170,6 +210,15 @@ export const useStore = create<Store>()(
       geo: { ...DEFAULT_GEO },
       cinematicUrl: "",
       renderMode: "webgl2",
+      exportCfg: { ...DEFAULT_EXPORT },
+      hdriPreset: "sky",
+      sunPath: false,
+      showClouds: false,
+      contactShadows: true,
+      grade: false,
+      gradeStrength: 0.6,
+      splatEnabled: false,
+      splatUrl: "",
 
       setModel: (bySem) =>
         set({ meshesBySemantic: bySem, semanticsPresent: [...bySem.keys()].sort(), ready: true }),
@@ -212,6 +261,17 @@ export const useStore = create<Store>()(
       setCinematic: (on) => set({ cinematic: on, selected: on ? null : get().selected }),
       setCinematicUrl: (url) => set({ cinematicUrl: url.trim() }),
       setRenderMode: (m) => set({ renderMode: m }),
+      setPresentation: (on) => set({ presentation: on, selected: on ? null : get().selected }),
+      setCaptureFn: (fn) => set({ captureFn: fn }),
+      setExportCfg: (patch) => set({ exportCfg: { ...get().exportCfg, ...patch } }),
+      setHdriPreset: (slug) => set({ hdriPreset: slug }),
+      setSunPath: (on) => set({ sunPath: on }),
+      setShowClouds: (on) => set({ showClouds: on }),
+      setContactShadows: (on) => set({ contactShadows: on }),
+      setGrade: (on) => set({ grade: on }),
+      setGradeStrength: (v) => set({ gradeStrength: v }),
+      setSplatEnabled: (on) => set({ splatEnabled: on }),
+      setSplatUrl: (url) => set({ splatUrl: url.trim() }),
     }),
     {
       name: "web3d-layers-v1",
@@ -225,6 +285,13 @@ export const useStore = create<Store>()(
           sky: s.sky,
           cinematicUrl: s.cinematicUrl,
           renderMode: s.renderMode,
+          exportCfg: s.exportCfg,
+          hdriPreset: s.hdriPreset,
+          sunPath: s.sunPath,
+          showClouds: s.showClouds,
+          contactShadows: s.contactShadows,
+          grade: s.grade,
+          gradeStrength: s.gradeStrength,
           // Persist geo settings (key/location/offsets) but never auto-enable on
           // reload — tile loading bills per session, so it must be an explicit click.
           geo: { ...s.geo, enabled: false },
