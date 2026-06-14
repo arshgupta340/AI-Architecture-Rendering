@@ -136,20 +136,26 @@ export function NavBar() {
       </div>
       <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 10 }}>
         {!rendering ? (
-          <div
-            onClick={() => setRendering(true)}
-            style={{
-              textAlign: "center",
-              padding: "7px 0",
-              borderRadius: 7,
-              cursor: "pointer",
-              background: "rgba(47,109,246,0.18)",
-              border: "1px solid #2f6df6",
-              fontWeight: 600,
-            }}
-          >
-            ◆ Path-trace render
-          </div>
+          renderMode === "webgpu" ? (
+            <div style={{ textAlign: "center", padding: "7px 0", opacity: 0.5, fontSize: 11, lineHeight: 1.4 }}>
+              Path-trace runs in WebGL2 / + GI modes
+            </div>
+          ) : (
+            <div
+              onClick={() => setRendering(true)}
+              style={{
+                textAlign: "center",
+                padding: "7px 0",
+                borderRadius: 7,
+                cursor: "pointer",
+                background: "rgba(47,109,246,0.18)",
+                border: "1px solid #2f6df6",
+                fontWeight: 600,
+              }}
+            >
+              ◆ Path-trace render
+            </div>
+          )
         ) : (
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <span style={{ flex: 1, color: "#9db8ff" }}>
