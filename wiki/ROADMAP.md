@@ -1,9 +1,11 @@
 ---
 type: roadmap
-updated: 2026-06-13
+updated: 2026-06-14
 ---
 
 # Roadmap
+
+> ⚠️ **Superseded by the engine-first web3d pivot (2026-06-13/14).** The active direction is now the web 3D rendering tool (`apps/web3d-prototype/`) — see [[STATE]] and [[DECISIONS#web3d-pivot]]. The plugin-first **M1–M4** below is the **prior arc**; its keystone insight (extract host **geometry + semantic IDs** instead of reverse-engineering them from pixels) carried *directly* into web3d, which realizes that ground truth as real 3D rather than ID masks. **Next milestone = the "decked-out, client-ready render" push** (material library at scale · real entourage · Gaussian-splat environment · consistency-locked diffusion hero) — plan + paste-in prompt in [[../docs/HANDOFF-web3d.md]] §Next-steps; direction at [[DECISIONS#client-ready-render]]. The Revit add-in (M4) is deferred behind that.
 
 Strategic milestones under the plugin-first pivot ([[DECISIONS#plugin-first-pivot]], [master plan v2](../docs/plans/master-plan.md)). The live experiment board is [docs/plans/experiments.md](../docs/plans/experiments.md).
 

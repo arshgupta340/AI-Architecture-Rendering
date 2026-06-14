@@ -28,3 +28,7 @@ Will look worse than Enscape/D5: multi-bounce diffuse GI, sharp off-screen refle
 WebGPU is "baseline" (~95% coverage, auto WebGL2 fallback via `three/webgpu`). Unlocks SSGINode/GTAONode/TRAA/compute + 10× lower draw-call overhead. **But** target **WebGL2** for the MVP: three-gpu-pathtracer is WebGL2-only and the @react-three/postprocessing WebGPU bridge is still rough.
 
 Sources: [SSGINode docs](https://threejs.org/docs/pages/SSGINode.html) · [three-gpu-pathtracer](https://github.com/gkjohnson/three-gpu-pathtracer) · [Deferred Path Tracing by Enscape (AMD)](https://gpuopen.com/learn/deferred-path-tracing-enscape/) · [lightmap baking in Blender](https://www.pixel-capture.com/tutorials/lightmap-baking-in-blender).
+
+> **Since-built (2026-06-14):** the WebGPU path this doc called "still rough, target WebGL2 for the MVP" is now a working render mode (SSGI/GTAO/TRAA + node-safe HDRI IBL + VSM cast shadows) — [[web3d-webgpu]], [[STATE]]. The `three-gpu-pathtracer` hero is still deferred (the KHR_mesh_quantization incompatibility above + a material-color crash, [[web3d-rhino-gltf]]); the **diffusion hero** is the recommended route, with the hallucination/consistency fix = condition on the render's own depth + canny edges ([[DECISIONS#render-mask-registration]]).
+
+**See also:** [[web3d-webgpu]] · [[web3d-ue-browser]] · [[web3d-rhino-gltf]] · [[web3d-entourage]] · [[STATE]].

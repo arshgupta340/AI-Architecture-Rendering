@@ -45,3 +45,5 @@ The directional **sun casts real shadow maps** computed by the WebGPU renderer f
 
 ## Sources (primary)
 - WebGPU PMREM: PR #27829 (r163). · WebGPU VSM: PR #29225 (r169), #32209 / #32327 (r182), #32705 (r183). · Dynamic shadowmap type: #32105 (r181). · Scene.environment direct-equirect: forum 0.184.0 example + issue #28827. · WebGPURenderer manual: threejs.org/manual/en/webgpurenderer.html. · SSGI example: `webgpu_postprocessing_ssgi`.
+
+**See also:** [[web3d-realism]] (the in-browser realism ceiling) · [[web3d-ue-browser]] (the honest tiers table) · [[web3d-sky-sun]] (the sky/IBL this swaps for a node-safe HDRI) · [[web3d-engine-choice]] · [[STATE]].

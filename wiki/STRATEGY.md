@@ -1,10 +1,12 @@
 ---
 type: strategy
-updated: 2026-06-12
+updated: 2026-06-14
 ---
 
 # Strategy — Photoshop route vs VLM route
 
+> **2026-06-14 update — engine-first web3d pivot (supersedes the plugin-first frame below, too).** The product is now a **web 3D rendering tool** ([[STATE]], [[DECISIONS#web3d-pivot]]). Both threads below are realized in real 3D: the **Photoshop route** (click an element → swap a material → non-destructive layers) is the live web3d UI, and the **VLM route** (auto-tagging regions) is largely *obviated* for the 3D path — semantic element IDs come straight from the host geometry, so there's nothing to pixel-tag — surviving only inside the future **"diffusion hero"** add-in. The route framing below is the **historical 2D-pipeline strategy**, preserved for context. Path to a sendable render: [[DECISIONS#client-ready-render]].
+>
 > **2026-06-12 update — plugin-first pivot.** The frame below is superseded in one important way: the VLM route is no longer the *only* plumbing. The primary tier now extracts ground truth (ID masks, depth, semantics) from the host via plugins, deleting the tag+segment AI stages; the VLM route survives as the fallback tier for screenshot-only input (web demo, Forma, no-plugin users). See [[DECISIONS#plugin-first-pivot]] and [master plan v2](../docs/plans/master-plan.md). The open questions Q1–Q3 below are now answered:
 >
 > - **Q1 (no renderer passes the gate):** superseded — the render stage moves to true-depth+Canny conditioning (E2 tests this); hybrid two-pass remains the fallback.

@@ -31,3 +31,5 @@ Procedural low-poly **Tree / Bush / Person** (`src/Entourage.tsx`): instanced tr
 
 ## Key libs (June 2026)
 `three` r176+, `@react-three/fiber` v9, `@react-three/drei` (Billboard), `@three.ez/instanced-mesh` (InstancedMesh2 + BVH culling + LOD), `three-mesh-bvh` v0.9+, `meshoptimizer` v0.23.
+
+**See also:** [[STATE]] (the NEXT-step "real entourage" track — replace the procedural placeholders with these assets) · [[web3d-realism]] · [[../docs/HANDOFF-web3d.md]] §Next-steps.

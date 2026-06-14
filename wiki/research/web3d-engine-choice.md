@@ -21,3 +21,7 @@ agent: "Sonnet research agent (planning phase, 2026-06-13)"
 `three` 0.184, `@react-three/fiber` 9, `@react-three/drei` 10, `@react-three/postprocessing`, `three-mesh-bvh`, `zustand`, Vite. **WebGL2 target** for now (three-gpu-pathtracer is WebGL2-only; WebGPU postproc bridge still rough mid-2026). Gotchas: dedupe react in Vite (`resolve.dedupe`) or R3F throws "Invalid hook call"; IBL not optional; serve Draco/KTX2/meshopt WASM as static.
 
 Sources: [three.js vs Babylon vs PlayCanvas 2026 (Utsubo)](https://www.utsubo.com/blog/threejs-vs-babylonjs-vs-playcanvas-comparison) · [WebGPU baseline 2026](https://vr.org/articles/webgpu-baseline-2026-three-js-webxr-default) · [Babylon 9.0](https://blogs.windows.com/windowsdeveloper/2026/03/26/announcing-babylon-js-9-0/).
+
+> **Since-built (2026-06-14):** the WebGPU path this doc deferred ("postproc bridge still rough, target WebGL2 for now") is now a working render mode (SSGI/GTAO/TRAA + node-safe HDRI IBL + VSM) — see [[web3d-webgpu]] and [[STATE]]. The MVP stack ([[STATE]]) settled on `three` 0.184.
+
+**See also:** [[web3d-rhino-gltf]] · [[web3d-realism]] · [[web3d-webgpu]] · [[STATE]].

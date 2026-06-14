@@ -24,3 +24,5 @@ agent: "Sonnet research agent (planning phase, 2026-06-13)"
 326 objects → `house.glb`, **581/581 mesh nodes tagged**, all 12 semantic classes, 14.5 MB → 6.5 MB meshopt (semantics preserved). Brep→render-mesh via `Mesh.CreateFromBrep` + `MeshingParameters` (we relied on FileGltf's internal meshing).
 
 Sources: [FileGltfWriteOptions API](https://developer.rhino3d.com/api/rhinocommon/rhino.fileio.filegltfwriteoptions) · [GLTFLoader extras bug #15728](https://github.com/mrdoob/three.js/issues/15728) · [gltfpack](https://meshoptimizer.org/gltf/) · [gltf-transform](https://gltf-transform.dev/).
+
+**See also:** [[web3d-engine-choice]] · [[web3d-realism]] (the KHR_mesh_quantization issue is why the path-tracer hero is deferred) · [[web3d-geo-context]] (units/true-north for georeferencing) · [[arcway-teardown]] (the geometry + semantics Bridge AI reverse-engineers) · [[STATE]].

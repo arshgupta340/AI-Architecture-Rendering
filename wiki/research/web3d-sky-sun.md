@@ -37,3 +37,7 @@ Sun scrubber (0–24h), tight ortho shadow frustum + `PCFSoftShadowMap` @2048/40
 
 ## Key libs
 `suncalc` ^1.9.0, `three` ≥0.177 (r183+ for clouds), drei `<Sky>/<Environment>/<AccumulativeShadows>`.
+
+> **Since-built:** the env map now bakes at **256²** (not 128²); the WebGPU render mode swaps drei `<Sky>`/`<Environment>` (which don't compile on the WebGPU node renderer) for a node-safe HDRI on `scene.environment` — [[web3d-webgpu]]. Note: drei `<SoftShadows>`/`<AccumulativeShadows>` broke on three r184 → VSM shadows instead ([[STATE]]).
+
+**See also:** [[web3d-webgpu]] (node-safe HDRI IBL + real VSM cast shadows) · [[web3d-realism]] · [[STATE]].

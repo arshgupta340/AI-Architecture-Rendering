@@ -22,3 +22,7 @@ agent: "Sonnet research agent (V3 phase, 2026-06-13)"
 Primary: **Google P3DT via 3d-tiles-renderer** (needs a Google Maps API key; factor session cost into pricing). Free fallback: **MapLibre + AWS DEM + OSM footprints + satellite** (lower fidelity, no lock-in, fine for dev). Do NOT use Cesium/threebox/three-geo/geo-three.
 
 Key links: [3DTilesRendererJS R3F README](https://github.com/NASA-AMMOS/3DTilesRendererJS/blob/master/src/r3f/README.md) · [Google P3DT overview](https://developers.google.com/maps/documentation/tile/3d-tiles-overview) · [billing](https://developers.google.com/maps/documentation/tile/usage-and-billing) · [policies](https://developers.google.com/maps/documentation/tile/policies) · [Mapbox Terrain-DEM](https://docs.mapbox.com/data/tilesets/reference/mapbox-terrain-dem-v1/) · [MapLibre](https://github.com/maplibre/maplibre-gl-js).
+
+> **Since-built:** the "not yet built" note above is stale — `GeoTiles.tsx` ships the Google P3DT path ([[STATE]]); it needs the user's Google Maps key to validate live.
+
+**See also:** [[DECISIONS#web3d-geo-context]] · [[web3d-rhino-gltf]] (georeference reuses the Rhino units + true-north) · [[STATE]].

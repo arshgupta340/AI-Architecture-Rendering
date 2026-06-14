@@ -21,3 +21,5 @@ Blueprint → full walkable UE home, every plan + structural option, "days not m
 
 ## The strategic insight for us
 Arcway proves: with **real geometry + a real renderer**, multi-view consistency + instant swaps are *free* — exactly what diffusion (our old 2D spike) bleeds on. **Our unfair advantage:** we already have clean geometry + semantic IDs from Rhino — the thing Bridge AI is built to manufacture. So go engine-first (web 3D) and reserve diffusion for the final hero frame. This is the origin of the [[STATE|web3d]] direction.
+
+**See also:** [[web3d-ue-browser]] (the client-side-UE path Arcway's cloud-Lumen model implies) · [[web3d-rhino-gltf]] (our geometry + semantic IDs — exactly what Bridge AI reverse-engineers from PDFs) · [[DECISIONS#web3d-pivot]] · [[STATE]].

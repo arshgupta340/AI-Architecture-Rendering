@@ -7,7 +7,7 @@ method: EXA (company_research + advanced search + deep_researcher_pro) — user-
 
 # UE5 client-side in the browser (WASM + WebGPU) — feasibility for a "Cinematic" toggle
 
-> Spawned by the user finding **Wonder Interactive / SimplyStream** ("the death of pixel streaming"). The round-1 agents ([[../STATE|web3d-realism]], competitor sweep) covered **cloud pixel-streaming** (arcway model) and **native JS engines** (Babylon/PlayCanvas/three.js) but **missed the middle path**: compiling UE5 itself to run client-side via WASM + a custom WebGPU RHI. This doc fills that gap.
+> Spawned by the user finding **Wonder Interactive / SimplyStream** ("the death of pixel streaming"). The round-1 agents ([[web3d-realism]], competitor sweep) covered **cloud pixel-streaming** (arcway model) and **native JS engines** (Babylon/PlayCanvas/three.js) but **missed the middle path**: compiling UE5 itself to run client-side via WASM + a custom WebGPU RHI. This doc fills that gap.
 
 ## What Wonder Interactive / SimplyStream actually is (verified)
 - **Wonder Interactive** (Edmonton, founded 2020, ~2 people, seed-stage, **Epic MegaGrant** recipient). Product = **SimplyStream** (`simplystream.com`, `app.simplystream.com/docs`).
@@ -57,3 +57,5 @@ The **app-side toggle is built** (`apps/web3d-prototype/src/Cinematic.tsx` + Nav
 - glTFRuntime (runtime glTF + dynamic materials, native UE; WASM unverified): https://github.com/rdeioris/glTFRuntime
 - UE EULA / 5% royalty: https://www.unrealengine.com/license
 - HN "SimplyStream – UE5 meets WebGPU": https://news.ycombinator.com/item?id=42190897
+
+**See also:** [[arcway-teardown]] (the cloud-Lumen competitor this contrasts) · [[web3d-webgpu]] (tier-1, the $0 WebGPU path we banked) · [[web3d-realism]] · [[STATE]] (the Cinematic toggle's built status). Rationale: [[DECISIONS#web3d-realism-tiers]] · [[DECISIONS#client-ready-render]].
