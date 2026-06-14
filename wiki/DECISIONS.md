@@ -20,6 +20,20 @@ Each entry follows the same shape so it can be scanned in 15 seconds:
 
 ---
 
+## 2026-06-14 — Unified physically-grounded lighting: one sun + slight ambient, no fake fills; same model in all 3 modes {#web3d-unified-lighting}
+
+**Decision:** Lighting is a SINGLE key light (the sun) + a slight, sun-altitude/time/cloud-dependent diffuse ambient, computed once in `SolarSky.computeSky` and shared identically by WebGL2, +GI, and WebGPU. All fake fill lights were **removed** — the +GI per-window LTC emitters + sky-fill (`AreaLights.tsx`) and the WebGPU front-fill RectAreaLights (`WebGPUAreaLights.tsx`) are **deleted**. Render modes now differ ONLY in technique (N8AO vs SSGI vs reflective ground), never in light sources.
+
+**Context:** The user reported a glow on the front façade/ground that contradicted the sun direction (sun low and behind). Root cause was twofold: (1) the +GI window emitters flipped to full "interior glow" on a hard clock cutoff (`tod 7–18`) that mislabeled a 06:15 summer sunrise as night; (2) more broadly, every mode added DIFFERENT extra fill lights, so lighting was inconsistent and non-physical. The user asked for one consistent sun-driven model and explicitly requested researching the real equations.
+
+**Alternatives considered:** (a) Keep the area lights but fix their day/night ramp (shipped first as `f0dc97f`) — insufficient: still extra non-sun sources, still mode-inconsistent. (b) Keep WebGPU front fills as a soft "studio fill" — rejected: still a non-sun source that lifts the shaded side regardless of sun. (c) Add iq's single "indirect bounce" directional (opposite the sun) — skipped to honor "one source"; SSGI (WebGPU) + N8AO + IBL already supply indirect/occlusion cues.
+
+**Reasoning:** Researched models (iquilezles.org outdoor-lighting rig; Kasten-Young air mass; Beer–Lambert extinction; CIE overcast sky; measured daylight CCT, JOSA/Nature). The sun's directional intensity = direct-NORMAL illuminance `exp(-opticalDepth·airMass)` (dims+reddens at low altitude, cloud thickens optical depth), NOT pre-scaled by sin(h) so it rakes sun-facing façades; N·L does geometry; the shadow map (never AO) does occlusion. The IBL/env map is the real sky-bounce ambient (LearnOpenGL: env replaces the flat ambient constant), so the flat `ambientLight`/`hemisphereLight` are only a slight daylight-scaled floor, applied the same in every mode (removed the old WebGPU `×0.35` dialing). This is physically consistent, single-source, and identical across modes — exactly the request.
+
+**Revisit if:** an interior-lights feature is wanted (re-introduce window glow as emissive glass driven by a separate "lights on" toggle, NOT exterior-facing emitters), or a night/moonlight model is needed (currently night ≈ dark + tiny ambient floor, which is physically correct). Supersedes the area-light additions from [[#web3d-realism-tiers]].
+
+---
+
 ## 2026-06-14 — Client-ready render = the WebGPU realtime Stage made presentable + captured high-res; T3/T4 deferred {#web3d-clientready-composition}
 
 **Decision:** After the research sweep ([[research/web3d-clientready]]), the client-ready image is **NOT a new render route** — it is the **existing WebGPU realtime Stage made presentable then captured at high-res**: expanded KTX2/jpg materials → real CC0 entourage → golden-hour HDRI + atmosphere → a subtle TSL/post grade → Presentation mode + high-res Export. This whole path is **$0, deterministic, interactive, and was built this session**. The Gaussian-splat environment (T3) and depth+canny FLUX diffusion hero (T4) are **explicitly deferred to scaffold-only** — they are paid and/or renderer-forking finishing layers, documented (not built).
