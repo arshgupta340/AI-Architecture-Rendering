@@ -32,27 +32,69 @@ function dateFor(sky: SkyState): Date {
   return d;
 }
 
-/** Derive sun direction + lighting from lat/long + date/time + cloud/intensity. */
+/**
+ * Physically-grounded daylight — ONE key light (the sun) + a slight sky-diffuse
+ * ambient, both derived from the real sun altitude + cloud cover. The SAME model
+ * feeds all three render modes (this component is shared); only the rendering
+ * technique (N8AO / SSGI / reflections) differs, never the light sources.
+ *
+ * SUN — a directional light whose intensity is the direct-NORMAL illuminance, dimmed
+ * and reddened at low altitude by atmospheric extinction (Kasten-Young air mass +
+ * Beer–Lambert), and cut by cloud. It is NOT pre-scaled by sin(altitude): N·L on each
+ * surface does the geometric projection, so a low sun still rakes brightly across a
+ * façade facing it (the sunset look), while the shadow map — NOT ambient occlusion —
+ * handles occlusion (per iquilezles.org/articles/outdoorslighting). Cloud thickens the
+ * optical depth so an overcast sky extinguishes the beam and shadows fade (CIE overcast).
+ *
+ * AMBIENT — the env map (IBL) is the real sky-bounce ambient in every mode (LearnOpenGL
+ * IBL: the environment replaces the flat ambient constant); these `ambientLight` +
+ * `hemisphereLight` are only a SMALL, daylight-scaled floor on top so AO-dark areas
+ * aren't pure black and the base reads identically across modes. Colours track measured
+ * daylight CCT: warm low sun → neutral high; blue clear sky → grey overcast.
+ */
 function computeSky(sky: SkyState) {
   const pos = SunCalc.getPosition(dateFor(sky), sky.lat, sky.lng);
   const vec = new THREE.Vector3().setFromSphericalCoords(1, Math.PI / 2 - pos.altitude, pos.azimuth);
-  const sunUp = Math.max(0, Math.sin(pos.altitude)); // 0 below horizon, 1 at zenith
-  const cc = sky.cloudCover;
-  const warmth = 1 - Math.min(1, sunUp * 2.2); // 1 near horizon, 0 high
+  const sinH = Math.sin(pos.altitude); // < 0 below the horizon
+  const sunUp = Math.max(0, sinH); // 0 below horizon, 1 at zenith
+  const hDeg = (pos.altitude * 180) / Math.PI;
+  const cc = THREE.MathUtils.clamp(sky.cloudCover, 0, 1);
+  const mult = sky.sunIntensity;
 
-  const dirIntensity = sky.sunIntensity * (0.15 + 2.7 * sunUp) * (1 - 0.78 * cc);
-  const sunColor = new THREE.Color("#ff8a4d").lerp(new THREE.Color("#fff3e0"), Math.min(1, sunUp * 2));
-  const ambientI = 0.1 + 0.5 * cc + 0.18 * sunUp;
-  const hemiI = 0.22 + 0.65 * cc + 0.22 * sunUp;
-  const skyCol = new THREE.Color("#aecbff").lerp(new THREE.Color("#ffb27a"), warmth);
-  const groundCol = new THREE.Color("#5a4f3e");
-  const ambCol = new THREE.Color("#dfe6f5").lerp(new THREE.Color("#ffd9b0"), warmth * 0.6);
+  // Smooth horizon / day-amount / warmth factors reused across the model.
+  const horizonFade = THREE.MathUtils.smoothstep(sinH, -0.04, 0.06); // sun crossing the horizon
+  const dayAmount = THREE.MathUtils.smoothstep(sinH, -0.1, 0.22); // 0 night → 1 day
+  const warmth = THREE.MathUtils.clamp(1 - sunUp * 2.2, 0, 1); // 1 low sun → 0 high
 
+  // ---- DIRECT SUN: atmospheric extinction over air mass (Kasten-Young) ----
+  const airMass = sinH > 0.001 ? 1 / (sinH + 0.50572 * Math.pow(hDeg + 6.07995, -1.6364)) : 38;
+  // Optical depth ~0.12 on a clear day; cloud thickens it so overcast kills the beam.
+  const opticalDepth = 0.12 + 1.4 * cc;
+  const transmittance = Math.exp(-opticalDepth * airMass); // 0 … ~0.9
+  // Direct-normal illuminance (HDR, pre-AgX); N·L does the surface geometry.
+  const dirIntensity = mult * 3.2 * transmittance * horizonFade * (1 - 0.9 * cc);
+  // Sun colour: ~2200K orange at the horizon → ~6000K neutral-warm high (measured CCT).
+  const sunColor = new THREE.Color("#fff3e4").lerp(new THREE.Color("#ff7a2a"), warmth);
+
+  // ---- SKY DIFFUSE: the slight, consistent ambient floor (IBL is the real ambient) ----
+  const overcastLift = 1 + 0.6 * cc; // an overcast dome scatters a little more diffuse
+  const ambientI = (0.045 + 0.1 * dayAmount) * overcastLift; // tiny flat floor
+  const hemiI = (0.08 + 0.2 * dayAmount) * overcastLift; // sky/ground gradient
+  // Colours: blue clear → warm near the horizon → grey under cloud.
+  const skyCol = new THREE.Color("#aecbff")
+    .lerp(new THREE.Color("#ffc89a"), warmth * 0.7)
+    .lerp(new THREE.Color("#c4c8cc"), cc * 0.8);
+  const groundCol = new THREE.Color("#564b3c");
+  const ambCol = new THREE.Color("#dfe6f5")
+    .lerp(new THREE.Color("#ffe2c4"), warmth * 0.5)
+    .lerp(new THREE.Color("#cdd0d3"), cc * 0.7);
+
+  // ---- visible sky dome (drei <Sky>) params ----
   const turbidity = 2 + 9 * cc;
   const rayleigh = 1 + 2 * cc + 1.6 * warmth;
-  // WebGPU IBL strength tracks daylight (the static HDRI env would otherwise keep
-  // the scene lit at night) and dims with cloud the same way the sun does.
-  const envIntensity = sky.sunIntensity * (0.18 + 0.95 * Math.min(1, sunUp * 1.4)) * (1 - 0.5 * cc);
+  // ---- IBL env-map strength: tracks daylight, dimmed by heavy cloud. Applied the
+  // SAME way in every mode (scene.environmentIntensity / <Environment intensity>). ----
+  const envIntensity = mult * (0.15 + 0.85 * dayAmount) * (1 - 0.45 * cc);
 
   return {
     sunPos: [vec.x, vec.y, vec.z] as [number, number, number],
@@ -102,8 +144,10 @@ function WebGPUEnv({ intensity }: { intensity: number }) {
  * WebGL renderer and assigns it to scene.environment, so glass/metal reflect the
  * chosen mood sky while the analytic <Sky> dome stays the *visible* backdrop
  * (background={false}). On the default "sky" preset we keep the all-analytic path. */
-function WebGL2HdriEnv({ slug }: { slug: string }) {
-  return <Environment files={hdriUrlFor(slug)} background={false} resolution={256} />;
+function WebGL2HdriEnv({ slug, intensity }: { slug: string; intensity: number }) {
+  return (
+    <Environment files={hdriUrlFor(slug)} background={false} resolution={256} environmentIntensity={intensity} />
+  );
 }
 
 export function SolarSky({ radius }: { radius: number }) {
@@ -143,7 +187,7 @@ export function SolarSky({ radius }: { radius: number }) {
               `envKey`). A non-default mood HDRI preset instead drives reflections
               from that real HDR file, while the visible dome above stays analytic. */}
           {hdriPreset === "sky" ? (
-            <Environment key={envKey} frames={1} resolution={256}>
+            <Environment key={envKey} frames={1} resolution={256} environmentIntensity={c.envIntensity}>
               <Sky
                 sunPosition={c.sunPos}
                 turbidity={c.turbidity}
@@ -154,19 +198,16 @@ export function SolarSky({ radius }: { radius: number }) {
               />
             </Environment>
           ) : (
-            <WebGL2HdriEnv slug={hdriPreset} />
+            <WebGL2HdriEnv slug={hdriPreset} intensity={c.envIntensity} />
           )}
         </>
       )}
 
-      {/* In WebGPU mode the HDRI env supplies image-based ambient, so the flat
-          ambient/hemisphere fills are dialed back to avoid double-lighting. */}
-      <ambientLight intensity={renderMode === "webgpu" ? c.ambientI * 0.35 : c.ambientI} color={c.ambCol} />
-      <hemisphereLight
-        intensity={renderMode === "webgpu" ? c.hemiI * 0.35 : c.hemiI}
-        color={c.skyCol}
-        groundColor={c.groundCol}
-      />
+      {/* The env map (IBL) is the real sky ambient in every mode; these flat fills are
+          only a slight, daylight-scaled floor — kept identical across modes (no per-mode
+          dialing) so the base lighting is consistent everywhere. */}
+      <ambientLight intensity={c.ambientI} color={c.ambCol} />
+      <hemisphereLight intensity={c.hemiI} color={c.skyCol} groundColor={c.groundCol} />
       <directionalLight
         position={[lp.x, lp.y, lp.z]}
         intensity={c.dirIntensity}

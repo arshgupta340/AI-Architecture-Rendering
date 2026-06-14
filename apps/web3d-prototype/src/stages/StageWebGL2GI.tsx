@@ -3,32 +3,28 @@ import { Suspense } from "react";
 import * as THREE from "three";
 import { Scene } from "../Scene";
 import { EffectsGI } from "./EffectsGI";
-import { AreaLights } from "./AreaLights";
 import { ReflectiveGround } from "./ReflectiveGround";
 import { ContactGround } from "./ContactGround";
 import { ExportCapture } from "../lib/exportImage";
 import { useStore } from "../state/store";
 
 /**
- * RENDER MODE "webgl2gi" — OWNED BY AGENT B.
+ * RENDER MODE "webgl2gi".
  *
  * Goal: the best real-GI LOOK achievable on WebGL2, a clear step above StageWebGL2.
- * Implemented (all WebGL2, $0, client-side):
- *   - <AreaLights/> — RectAreaLight (LTC) sky-fill above the building + per-window
- *     warm emitters. RectAreaLightUniformsLib.init() runs once inside it. Soft,
- *     directional sky bounce + interior-glow cue the baseline can't produce.
+ * Lighting is IDENTICAL to every other mode — the single SolarSky sun + slight ambient
+ * (the old fake RectAreaLight fills were removed; they double-lit the scene and broke
+ * sun-direction consistency). What distinguishes this stage is the RENDERING, not the
+ * lights:
  *   - <ReflectiveGround/> — drei MeshReflectorMaterial plane at the building base:
  *     real-time planar reflection of building + sky (the "wet plaza" hero look).
- *   - <EffectsGI/> — a tuned fork of Effects.tsx with stronger N8AO; Bloom kept
- *     subtle + AgX tonemap LAST (procedural sky blows out the HDR buffer otherwise).
- * Boundaries honoured: only this file + the three NEW sibling files were touched.
- * Camera / Scene / sun behaviour is IDENTICAL to StageWebGL2 (same <Canvas> props,
- * same shared <Scene/>) so the A/B is fair — the new lights/ground/post are pure
- * additions layered on top.
+ *   - <ContactGround/> — soft contact-shadow catcher grounding the building.
+ *   - <EffectsGI/> — a tuned fork of Effects.tsx with stronger N8AO (deeper occlusion
+ *     reads as GI); Bloom kept subtle + AgX tonemap LAST.
  *
  * Gotchas avoided (verified on three r0.184): no drei <SoftShadows>/PCSS (emits the
- * removed unpackRGBAToDepth → white-out); RectAreaLight casts no shadows (sun owns
- * them); Bloom held low so the bright sky + reflections don't veil the frame white.
+ * removed unpackRGBAToDepth → white-out); Bloom held low so the bright sky + reflections
+ * don't veil the frame white.
  */
 export function StageWebGL2GI() {
   const select = useStore((s) => s.select);
@@ -48,10 +44,10 @@ export function StageWebGL2GI() {
     >
       <Suspense fallback={null}>
         <Scene />
-        {/* GI additions render alongside the shared Scene. Suspended with it so the
-            reflector/lights only mount once the model + bbox exist. Hidden during a
-            path-trace pass (PathTracer owns the frame then). */}
-        {!rendering && <AreaLights />}
+        {/* GI additions render alongside the shared Scene. The fake RectAreaLight fills
+            were removed — lighting is now the single SolarSky sun + slight ambient, same
+            as every mode; this stage's "GI" is the reflective ground + stronger N8AO
+            (real occlusion/reflection cues), not extra light sources. */}
         {!rendering && <ReflectiveGround />}
         {!rendering && <ContactGround />}
       </Suspense>
