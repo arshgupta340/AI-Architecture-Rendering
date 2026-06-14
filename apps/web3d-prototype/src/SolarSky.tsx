@@ -1,5 +1,7 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
+import { useLoader, useThree } from "@react-three/fiber";
 import { Sky, Environment } from "@react-three/drei";
+import { HDRLoader } from "three/addons/loaders/HDRLoader.js";
 import * as THREE from "three";
 import SunCalc from "suncalc";
 import { useStore, type SkyState } from "./state/store";
@@ -28,6 +30,9 @@ function computeSky(sky: SkyState) {
 
   const turbidity = 2 + 9 * cc;
   const rayleigh = 1 + 2 * cc + 1.6 * warmth;
+  // WebGPU IBL strength tracks daylight (the static HDRI env would otherwise keep
+  // the scene lit at night) and dims with cloud the same way the sun does.
+  const envIntensity = sky.sunIntensity * (0.18 + 0.95 * Math.min(1, sunUp * 1.4)) * (1 - 0.5 * cc);
 
   return {
     sunPos: [vec.x, vec.y, vec.z] as [number, number, number],
@@ -41,7 +46,33 @@ function computeSky(sky: SkyState) {
     groundCol,
     turbidity,
     rayleigh,
+    envIntensity,
   };
+}
+
+/**
+ * WebGPU-safe image-based lighting. drei's <Sky>/<Environment> (and PMREMGenerator
+ * on WebGL) pre-filter the env with GLSL ShaderMaterials, which the WebGPU node
+ * renderer can't compile. Assigning an equirect HDRI straight to scene.environment
+ * lets the WebGPU renderer PMREM-filter it internally (node-based) — so glass + metal
+ * get real reflections in WebGPU mode with no ShaderMaterial. environmentIntensity
+ * tracks daylight so the static HDRI doesn't keep the scene bright at night.
+ */
+function WebGPUEnv({ intensity }: { intensity: number }) {
+  const hdr = useLoader(HDRLoader, "/hdri/sky.hdr");
+  const scene = useThree((s) => s.scene);
+  useEffect(() => {
+    hdr.mapping = THREE.EquirectangularReflectionMapping;
+    const prev = scene.environment;
+    scene.environment = hdr;
+    return () => {
+      scene.environment = prev;
+    };
+  }, [hdr, scene]);
+  useEffect(() => {
+    scene.environmentIntensity = intensity;
+  }, [scene, intensity]);
+  return null;
 }
 
 export function SolarSky({ radius }: { radius: number }) {
@@ -57,14 +88,12 @@ export function SolarSky({ radius }: { radius: number }) {
   return (
     <>
       {renderMode === "webgpu" ? (
-        // WebGPU node renderer can't compile the drei <Sky> GLSL ShaderMaterial, so
-        // use a node-safe color background + an HDRI image-based-lighting env (no
-        // Sky shader). Keeps reflections/ambient on glass + metal in WebGPU mode.
+        // Node-safe sky for WebGPU: a dynamic color background (tracks time-of-day)
+        // + an equirect HDRI on scene.environment for real glass/metal reflections
+        // (WebGPUEnv — PMREM-filtered internally by the WebGPU renderer, no shader).
         <>
           <color attach="background" args={[`#${c.skyCol.getHexString()}`]} />
-          {/* No drei <Environment> here: its PMREM/equirect passes are GLSL
-              ShaderMaterials that don't compile on the WebGPU node renderer. WebGPU
-              IBL via a node-safe equirect env is a follow-up; lights carry it for now. */}
+          <WebGPUEnv intensity={c.envIntensity} />
         </>
       ) : (
         <>
@@ -92,8 +121,14 @@ export function SolarSky({ radius }: { radius: number }) {
         </>
       )}
 
-      <ambientLight intensity={c.ambientI} color={c.ambCol} />
-      <hemisphereLight intensity={c.hemiI} color={c.skyCol} groundColor={c.groundCol} />
+      {/* In WebGPU mode the HDRI env supplies image-based ambient, so the flat
+          ambient/hemisphere fills are dialed back to avoid double-lighting. */}
+      <ambientLight intensity={renderMode === "webgpu" ? c.ambientI * 0.35 : c.ambientI} color={c.ambCol} />
+      <hemisphereLight
+        intensity={renderMode === "webgpu" ? c.hemiI * 0.35 : c.hemiI}
+        color={c.skyCol}
+        groundColor={c.groundCol}
+      />
       <directionalLight
         position={[lp.x, lp.y, lp.z]}
         intensity={c.dirIntensity}
