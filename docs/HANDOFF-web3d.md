@@ -28,6 +28,12 @@ This doc lets a fresh session continue with zero re-derivation. **Read `wiki/STA
 >
 > **Constraints / gotchas:** three r0.184 — drei `<SoftShadows>` and `<Sky>`/`<Environment>` break on WebGPU (use VSM + the node-safe HDRI env); WebGPU VSM = single shadow-casting light; **verify WebGPU via the headless preview's AMD adapter** (Claude-in-Chrome screenshots the GPU canvas black — confirm port `:5181` + `canvas.getContext('webgpu')`); keep the `renderMode` Stage architecture (each mode self-contained, lazy-loaded).
 
+### Suggested ultracode fan-out (waves; keep agents on disjoint files for clean worktree merges)
+
+- **Wave 0 — research (parallel, EXA `mcp__exa__*`; `deep_researcher_*` for the two genuinely open questions):** **(T3)** Gaussian-splat environment feasibility — text/photo → 3D-splat generation + compositing a splat *context* in the same three.js scene around the editable polygon building (`@sparkjsdev/spark` / a gsplat loader; depth-sort + tonemap interplay); **(T4)** does conditioning FLUX.2 on the render's own **depth + canny** actually kill the hallucination/inconsistency on a real viewport grab (reuse `apps/canvas-prototype` + `DECISIONS#render-mask-registration`). Tracks T1/T2/T5 need only light EXA scouting (asset sources, KTX2/impostor/atmosphere libs) — they can skip straight to build.
+- **Wave 1 — build (parallel, worktree-isolated, file-disjoint):** **T1 materials-at-scale** (`lib/swatches.ts` + a materials manifest + swatch-library UI + KTX2/Basis) · **T2 entourage** (`Entourage.tsx` + asset ingest scripts) · **T3 splat-env** (new `SplatEnv.tsx` + loader) · **T4 diffusion-hero** (new module reusing canvas-prototype FLUX.2 + depth/canny) · **T5 atmosphere + path-tracer fix** (new atmosphere components + `PathTracer.tsx`). These touch mostly separate files → clean merges. **The only shared-file collision risks** are `Scene.tsx`/`SolarSky.tsx` (atmosphere) and `state/store.ts` (everyone adds state): give each agent **append-only store slices** (don't rewrite the store), and keep `Scene.tsx` edits to **one** agent.
+- **Wave 2 — integrate + verify:** merge worktrees, `npm run build` + `npx tsc --noEmit`, verify each `renderMode` in the headless preview (AMD WebGPU adapter, `:5181`), compare quality vs the Twinmotion Lumen reference, then update the wiki per `CLAUDE.md` § Session-log protocol.
+
 ---
 
 ## 0. Latest update — 2026-06-14 (3-way render build + WebGPU IBL/shadows + bundle split)
