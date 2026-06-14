@@ -2,7 +2,22 @@ import { useEffect, useMemo, useRef } from "react";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { RectAreaLightUniformsLib } from "three/examples/jsm/lights/RectAreaLightUniformsLib.js";
-import { useStore } from "../state/store";
+import SunCalc from "suncalc";
+import { useStore, type SkyState } from "../state/store";
+
+/**
+ * Real sun-altitude factor (0 below the horizon → 1 at zenith), computed the SAME
+ * way SolarSky drives the actual sun light, so this fill logic stays consistent with
+ * the rendered sun rather than guessing from the clock. (The old `tod >= 7 && tod<=18`
+ * cutoff wrongly treated a 06:15 summer sunrise as "night" and switched the window
+ * emitters to full interior-glow brightness, spilling a glow onto the lit façade.)
+ */
+function sunUpFactor(sky: SkyState): number {
+  const d = new Date(`${sky.date}T00:00:00`);
+  d.setHours(Math.floor(sky.timeOfDay), Math.round((sky.timeOfDay % 1) * 60), 0, 0);
+  const pos = SunCalc.getPosition(d, sky.lat, sky.lng);
+  return Math.max(0, Math.sin(pos.altitude));
+}
 
 /**
  * RectAreaLight (LTC) area lights for the WebGL2-GI stage — OWNED BY AGENT B.
@@ -201,18 +216,22 @@ export function AreaLights() {
 
   if (!placement || !anchor) return null;
 
-  // Sky-fill colour + strength track time-of-day a little: cooler & dimmer at
-  // night, warmer near golden hour. Kept low — it's a FILL on top of the sun.
-  const tod = sky.timeOfDay;
-  const daylight = tod >= 7 && tod <= 18;
-  const fillColor = daylight ? "#cfe0ff" : "#34406a";
-  // A true soft FILL under the sun — at 1.6 it competed with the sun, pushed HDR
-  // past the bloom threshold and veiled the frame white (worst on un-textured
-  // default surfaces). 0.55 lifts the sky-bounce without blowing out.
-  const fillIntensity = daylight ? 0.55 : 0.3;
-  // Warm interior-glow emitters; brighten after dusk so windows "switch on".
+  // Drive both fills off the REAL sun altitude (matches the rendered sun) instead of
+  // a clock cutoff, so they stay physically consistent with the sky.
+  const sunUp = sunUpFactor(sky); // 0 sun below horizon → 1 high sun
+  // Cool soft sky-bounce fill — present in day, dimmer (and never warm) at night.
+  // Kept low so it lifts the sky bounce without pushing HDR past the bloom threshold.
+  const fillColor = "#cfe0ff";
+  const fillIntensity = 0.22 + 0.4 * sunUp;
+  // Interior-glow emitters: windows only "switch on" as the sun drops to/below the
+  // horizon. During the day real windows reflect the sky (handled by the glass +
+  // IBL), they do NOT spill light onto the exterior — so ramp these to ~0 in daylight
+  // (kills the bright glow on the lit façade/ground). `darkness` hits 0 once the sun
+  // is more than a few degrees up, 1 at/below the horizon.
+  const darkness = THREE.MathUtils.clamp(1 - sunUp * 6, 0, 1);
   const winColor = "#ffdfb0";
-  const winIntensity = daylight ? 0.7 : 2.4;
+  const winIntensity = 2.2 * darkness;
+  const showWindows = winIntensity > 0.03;
 
   return (
     <group>
@@ -224,9 +243,10 @@ export function AreaLights() {
         intensity={fillIntensity}
         color={fillColor}
       />
-      {placement.windows.map((w, i) => (
-        <WindowEmitter key={i} light={w} intensity={winIntensity} color={winColor} />
-      ))}
+      {showWindows &&
+        placement.windows.map((w, i) => (
+          <WindowEmitter key={i} light={w} intensity={winIntensity} color={winColor} />
+        ))}
     </group>
   );
 }
