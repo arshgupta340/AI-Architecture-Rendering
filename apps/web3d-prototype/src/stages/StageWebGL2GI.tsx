@@ -2,25 +2,31 @@ import { Canvas } from "@react-three/fiber";
 import { Suspense } from "react";
 import * as THREE from "three";
 import { Scene } from "../Scene";
-import { Effects } from "../Effects";
+import { EffectsGI } from "./EffectsGI";
+import { AreaLights } from "./AreaLights";
+import { ReflectiveGround } from "./ReflectiveGround";
 import { useStore } from "../state/store";
 
 /**
  * RENDER MODE "webgl2gi" — OWNED BY AGENT B.
  *
- * Goal: the best real-GI look achievable on WebGL2, a clear step above StageWebGL2.
- * This file starts as a functional copy of StageWebGL2 so the mode is never broken;
- * ENHANCE it here. Boundaries:
- *   - Edit ONLY this file + NEW files you create (e.g. EffectsGI.tsx, AreaLights.tsx,
- *     ReflectiveGround.tsx). Do NOT edit StageWebGL2/StageWebGPU/Scene.tsx/Effects.tsx
- *     /SolarSky.tsx (shared) — add your lights/ground/post as siblings of <Scene/>.
- * Planned techniques (implement what lifts realism most on WebGL2):
- *   - RectAreaLight (LTC) area lights — sky-fill + per-window glow. Needs
- *     RectAreaLightUniformsLib.init() (three/addons/lights/RectAreaLightUniformsLib.js).
- *   - MeshReflectorMaterial reflective ground plane (drei) for floor/wet reflections.
- *   - Tuned/stronger N8AO + your own post composer (don't mutate shared Effects.tsx).
- *   - Optional: GTAOPass alternative, contact shadows, color-grade tweaks.
- * Keep the camera/scene/sun behavior identical to StageWebGL2 so modes A/B compare fairly.
+ * Goal: the best real-GI LOOK achievable on WebGL2, a clear step above StageWebGL2.
+ * Implemented (all WebGL2, $0, client-side):
+ *   - <AreaLights/> — RectAreaLight (LTC) sky-fill above the building + per-window
+ *     warm emitters. RectAreaLightUniformsLib.init() runs once inside it. Soft,
+ *     directional sky bounce + interior-glow cue the baseline can't produce.
+ *   - <ReflectiveGround/> — drei MeshReflectorMaterial plane at the building base:
+ *     real-time planar reflection of building + sky (the "wet plaza" hero look).
+ *   - <EffectsGI/> — a tuned fork of Effects.tsx with stronger N8AO; Bloom kept
+ *     subtle + AgX tonemap LAST (procedural sky blows out the HDR buffer otherwise).
+ * Boundaries honoured: only this file + the three NEW sibling files were touched.
+ * Camera / Scene / sun behaviour is IDENTICAL to StageWebGL2 (same <Canvas> props,
+ * same shared <Scene/>) so the A/B is fair — the new lights/ground/post are pure
+ * additions layered on top.
+ *
+ * Gotchas avoided (verified on three r0.184): no drei <SoftShadows>/PCSS (emits the
+ * removed unpackRGBAToDepth → white-out); RectAreaLight casts no shadows (sun owns
+ * them); Bloom held low so the bright sky + reflections don't veil the frame white.
  */
 export function StageWebGL2GI() {
   const select = useStore((s) => s.select);
@@ -40,9 +46,13 @@ export function StageWebGL2GI() {
     >
       <Suspense fallback={null}>
         <Scene />
+        {/* GI additions render alongside the shared Scene. Suspended with it so the
+            reflector/lights only mount once the model + bbox exist. Hidden during a
+            path-trace pass (PathTracer owns the frame then). */}
+        {!rendering && <AreaLights />}
+        {!rendering && <ReflectiveGround />}
       </Suspense>
-      {/* AGENT B: add <AreaLights/>, <ReflectiveGround/>, and your <EffectsGI/> here. */}
-      {!rendering && <Effects />}
+      {!rendering && <EffectsGI />}
     </Canvas>
   );
 }
