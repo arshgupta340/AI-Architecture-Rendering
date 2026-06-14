@@ -3,67 +3,103 @@ import { useStore, type ExportCfg } from "../state/store";
 import { ENT_ASSETS, ENT_RANGE } from "../Entourage";
 import { downloadBlob, exportFilename } from "../lib/exportImage";
 
-// Bottom-LEFT-of-centre so it never overlaps the full-height Sky panel (left) or the
-// Sidebar (right); scrolls if it ever exceeds the viewport height.
-const panel: React.CSSProperties = {
+/**
+ * Horizontal toolbar, anchored bottom-CENTRE between the two side panels (Sky left,
+ * Sidebar right). Laid out as a single wrapping flex row of control groups separated
+ * by dividers, so it hugs the bottom edge and never rises up into the model space
+ * the way a tall vertical panel did. Groups: Nav · Views · Render mode · Output
+ * (presentation/grade/export) · Render actions · Entourage.
+ */
+const bar: React.CSSProperties = {
   position: "absolute",
-  left: 264,
   bottom: 14,
-  width: 244,
-  maxHeight: "calc(100vh - 28px)",
-  overflowY: "auto",
-  background: "rgba(18,20,23,0.82)",
-  backdropFilter: "blur(8px)",
-  border: "1px solid rgba(255,255,255,0.08)",
-  borderRadius: 10,
-  padding: 12,
+  left: "50%",
+  transform: "translateX(-50%)",
+  // Stay clear of the 250px Sky panel (left) and 280px Sidebar (right).
+  maxWidth: "calc(100vw - 548px)",
   display: "flex",
-  flexDirection: "column",
-  gap: 10,
+  flexWrap: "wrap",
+  alignItems: "center",
+  justifyContent: "center",
+  columnGap: 8,
+  rowGap: 8,
+  padding: "7px 12px",
+  background: "rgba(18,20,23,0.86)",
+  backdropFilter: "blur(10px)",
+  border: "1px solid rgba(255,255,255,0.09)",
+  borderRadius: 12,
+  boxShadow: "0 8px 28px rgba(0,0,0,0.35)",
   fontSize: 12,
 };
 
+const group: React.CSSProperties = { display: "flex", alignItems: "center", gap: 5 };
+
+function Divider() {
+  return <div style={{ width: 1, height: 22, background: "rgba(255,255,255,0.12)", margin: "0 2px" }} />;
+}
+
+// Compact segmented button (does NOT stretch — sized to content for a horizontal bar).
 const seg = (active: boolean): React.CSSProperties => ({
-  flex: 1,
-  textAlign: "center",
-  padding: "6px 0",
+  padding: "5px 10px",
   borderRadius: 6,
   cursor: "pointer",
+  fontSize: 11.5,
   background: active ? "rgba(47,109,246,0.22)" : "rgba(255,255,255,0.05)",
-  border: `1px solid ${active ? "#2f6df6" : "transparent"}`,
+  border: `1px solid ${active ? "#2f6df6" : "rgba(255,255,255,0.08)"}`,
   userSelect: "none",
 });
 
-const chip: React.CSSProperties = {
+const chip = (active: boolean): React.CSSProperties => ({
   padding: "4px 9px",
   borderRadius: 6,
   cursor: "pointer",
-  background: "rgba(255,255,255,0.05)",
-  border: "1px solid rgba(255,255,255,0.1)",
   fontSize: 11.5,
   display: "flex",
   alignItems: "center",
-  gap: 6,
-};
-
-const miniChip = (active: boolean): React.CSSProperties => ({
-  padding: "3px 7px",
-  fontSize: 11,
-  border: `1px solid ${active ? "#2f6df6" : "rgba(255,255,255,0.12)"}`,
-  background: active ? "rgba(47,109,246,0.2)" : "rgba(255,255,255,0.04)",
+  gap: 5,
+  background: active ? "rgba(47,109,246,0.2)" : "rgba(255,255,255,0.05)",
+  border: `1px solid ${active ? "#2f6df6" : "rgba(255,255,255,0.1)"}`,
+  userSelect: "none",
 });
 
-const cinematicBtn: React.CSSProperties = {
-  marginTop: 8,
-  textAlign: "center",
-  padding: "7px 0",
-  borderRadius: 7,
+const iconBtn = (active = false): React.CSSProperties => ({
+  padding: "5px 8px",
+  borderRadius: 6,
   cursor: "pointer",
-  background: "linear-gradient(90deg, rgba(124,77,255,0.25), rgba(47,109,246,0.18))",
-  border: "1px solid rgba(124,77,255,0.6)",
+  userSelect: "none",
+  background: active ? "rgba(47,109,246,0.2)" : "rgba(255,255,255,0.05)",
+  border: `1px solid ${active ? "#2f6df6" : "rgba(255,255,255,0.12)"}`,
+});
+
+const sel: React.CSSProperties = {
+  background: "rgba(255,255,255,0.06)",
+  border: "1px solid rgba(255,255,255,0.14)",
+  borderRadius: 5,
+  color: "#e8e6e3",
+  fontSize: 11,
+  padding: "3px 4px",
+  cursor: "pointer",
+};
+
+const primaryBtn = (enabled: boolean): React.CSSProperties => ({
+  padding: "5px 11px",
+  borderRadius: 7,
+  cursor: enabled ? "pointer" : "wait",
   fontWeight: 600,
   fontSize: 11.5,
+  opacity: enabled ? 1 : 0.55,
+  background: "rgba(47,109,246,0.2)",
+  border: "1px solid #2f6df6",
   userSelect: "none",
+  whiteSpace: "nowrap",
+});
+
+const label: React.CSSProperties = {
+  opacity: 0.4,
+  textTransform: "uppercase",
+  letterSpacing: "0.05em",
+  fontSize: 9.5,
+  marginRight: 1,
 };
 
 export function NavBar() {
@@ -112,8 +148,9 @@ export function NavBar() {
   };
 
   return (
-    <div style={panel}>
-      <div style={{ display: "flex", gap: 6 }}>
+    <div style={bar}>
+      {/* ── Navigation ── */}
+      <div style={group}>
         <div style={seg(mode === "orbit")} onClick={() => setMode("orbit")}>
           Orbit
         </div>
@@ -121,81 +158,60 @@ export function NavBar() {
           Walk
         </div>
       </div>
-      {mode === "walk" && (
-        <div style={{ opacity: 0.55, fontSize: 11, lineHeight: 1.45 }}>
-          Click to look · WASD move · Space/Shift up·down · Esc to exit
-        </div>
-      )}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ opacity: 0.5, textTransform: "uppercase", letterSpacing: "0.06em", fontSize: 10 }}>
-          Views
-        </span>
-        <span onClick={requestSave} style={{ cursor: "pointer", color: "#9db8ff" }}>
-          + Save view
-        </span>
-      </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+
+      <Divider />
+
+      {/* ── Views ── */}
+      <div style={group}>
+        <span style={label}>View</span>
         {presets.map((v) => (
-          <span key={v.id} style={chip} onClick={() => requestGoto(v)}>
+          <span key={v.id} style={chip(false)} onClick={() => requestGoto(v)} title={v.label}>
             {v.label}
           </span>
         ))}
         {views.map((v) => (
-          <span key={v.id} style={chip}>
+          <span key={v.id} style={chip(false)}>
             <span onClick={() => requestGoto(v)}>{v.label}</span>
             <span onClick={() => removeView(v.id)} style={{ opacity: 0.5 }}>
               ✕
             </span>
           </span>
         ))}
-      </div>
-      <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 10 }}>
-        <span style={{ opacity: 0.5, textTransform: "uppercase", letterSpacing: "0.06em", fontSize: 10 }}>
-          Render mode
+        <span style={{ ...chip(false), color: "#9db8ff" }} onClick={requestSave}>
+          + Save
         </span>
-        <div style={{ display: "flex", gap: 4, marginTop: 6 }}>
-          {(
-            [
-              ["webgl2", "WebGL2"],
-              ["webgl2gi", "+ GI"],
-              ["webgpu", "WebGPU"],
-            ] as const
-          ).map(([m, label]) => (
-            <div
-              key={m}
-              style={{ ...seg(renderMode === m), fontSize: 10.5, padding: "5px 0" }}
-              onClick={() => setRenderMode(m)}
-            >
-              {label}
-            </div>
-          ))}
-        </div>
       </div>
-      {/* ---- Output: presentation · cinematic grade · high-res export ---- */}
-      <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 10 }}>
-        <span style={{ opacity: 0.5, textTransform: "uppercase", letterSpacing: "0.06em", fontSize: 10 }}>
-          Output
-        </span>
-        <div
-          onClick={() => setPresentation(true)}
-          style={{
-            marginTop: 6,
-            textAlign: "center",
-            padding: "6px 0",
-            borderRadius: 7,
-            cursor: "pointer",
-            background: "rgba(255,255,255,0.05)",
-            border: "1px solid rgba(255,255,255,0.14)",
-            userSelect: "none",
-          }}
-        >
-          ▣ Presentation mode
-        </div>
 
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
-          <span onClick={() => setGrade(!grade)} style={{ cursor: "pointer", userSelect: "none" }}>
-            {grade ? "◉" : "○"} Cinematic grade
-          </span>
+      <Divider />
+
+      {/* ── Render mode ── */}
+      <div style={group}>
+        {(
+          [
+            ["webgl2", "WebGL2"],
+            ["webgl2gi", "+ GI"],
+            ["webgpu", "WebGPU"],
+          ] as const
+        ).map(([m, lbl]) => (
+          <div key={m} style={seg(renderMode === m)} onClick={() => setRenderMode(m)}>
+            {lbl}
+          </div>
+        ))}
+      </div>
+
+      <Divider />
+
+      {/* ── Output: presentation · grade · high-res export ── */}
+      <div style={group}>
+        <div style={iconBtn()} onClick={() => setPresentation(true)} title="Presentation mode (hide panels)">
+          ▣
+        </div>
+        <div
+          style={iconBtn(grade)}
+          onClick={() => setGrade(!grade)}
+          title="Cinematic grade (contrast · vignette · grain)"
+        >
+          {grade ? "◉" : "○"} Grade
         </div>
         {grade && (
           <input
@@ -205,159 +221,137 @@ export function NavBar() {
             step={0.05}
             value={gradeStrength}
             onChange={(e) => setGradeStrength(parseFloat(e.target.value))}
-            style={{ width: "100%", accentColor: "#7c4dff" }}
+            style={{ width: 64, accentColor: "#7c4dff" }}
+            title="Grade strength"
           />
         )}
-
-        <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 4 }}>
-          {(["16:9", "3:2", "4:3", "1:1", "free"] as const).map((a) => (
-            <span
-              key={a}
-              onClick={() => setExportCfg({ aspect: a })}
-              style={{ ...chip, ...miniChip(exportCfg.aspect === a) }}
-            >
-              {a === "free" ? "Free" : a}
-            </span>
-          ))}
-        </div>
-        <div style={{ marginTop: 4, display: "flex", gap: 4 }}>
-          {([1, 2, 4] as const).map((s) => (
-            <span
-              key={s}
-              onClick={() => setExportCfg({ scale: s })}
-              style={{ ...chip, ...miniChip(exportCfg.scale === s), flex: 1, justifyContent: "center" }}
-            >
-              {s}×
-            </span>
-          ))}
-          {(["jpg", "png"] as const).map((f) => (
-            <span
-              key={f}
-              onClick={() => setExportCfg({ format: f })}
-              style={{ ...chip, ...miniChip(exportCfg.format === f), flex: 1, justifyContent: "center" }}
-            >
-              {f.toUpperCase()}
-            </span>
-          ))}
-        </div>
-        <div
-          onClick={doExport}
-          style={{
-            marginTop: 8,
-            textAlign: "center",
-            padding: "7px 0",
-            borderRadius: 7,
-            cursor: captureFn && !exporting ? "pointer" : "wait",
-            fontWeight: 600,
-            opacity: captureFn ? 1 : 0.5,
-            background: "rgba(47,109,246,0.18)",
-            border: "1px solid #2f6df6",
-            userSelect: "none",
-          }}
+        <select
+          value={exportCfg.aspect}
+          onChange={(e) => setExportCfg({ aspect: e.target.value as ExportCfg["aspect"] })}
+          style={sel}
+          title="Aspect ratio"
         >
-          {exporting ? "Rendering…" : "⬇ Export still"}
+          <option value="16:9">16:9</option>
+          <option value="3:2">3:2</option>
+          <option value="4:3">4:3</option>
+          <option value="1:1">1:1</option>
+          <option value="free">Free</option>
+        </select>
+        <select
+          value={exportCfg.scale}
+          onChange={(e) => setExportCfg({ scale: Number(e.target.value) })}
+          style={sel}
+          title="Resolution supersample"
+        >
+          <option value={1}>1×</option>
+          <option value={2}>2×</option>
+          <option value={4}>4×</option>
+        </select>
+        <select
+          value={exportCfg.format}
+          onChange={(e) => setExportCfg({ format: e.target.value as ExportCfg["format"] })}
+          style={sel}
+          title="File format"
+        >
+          <option value="jpg">JPG</option>
+          <option value="png">PNG</option>
+        </select>
+        <div style={primaryBtn(!!captureFn && !exporting)} onClick={doExport}>
+          {exporting ? "Rendering…" : "⬇ Export"}
         </div>
       </div>
 
-      <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 10 }}>
+      <Divider />
+
+      {/* ── Render actions: path-trace · cinematic UE5 ── */}
+      <div style={group}>
         {!rendering ? (
           renderMode === "webgpu" ? (
-            <div style={{ textAlign: "center", padding: "7px 0", opacity: 0.5, fontSize: 11, lineHeight: 1.4 }}>
-              Path-trace runs in WebGL2 / + GI modes
-            </div>
+            <span style={{ opacity: 0.45, fontSize: 11, whiteSpace: "nowrap" }} title="Path-trace runs in WebGL2 / + GI">
+              PT · WebGL2 only
+            </span>
           ) : (
-            <div
-              onClick={() => setRendering(true)}
-              style={{
-                textAlign: "center",
-                padding: "7px 0",
-                borderRadius: 7,
-                cursor: "pointer",
-                background: "rgba(47,109,246,0.18)",
-                border: "1px solid #2f6df6",
-                fontWeight: 600,
-              }}
-            >
-              ◆ Path-trace render
+            <div style={primaryBtn(true)} onClick={() => setRendering(true)}>
+              ◆ Path-trace
             </div>
           )
         ) : (
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <span style={{ flex: 1, color: "#9db8ff" }}>
+          <>
+            <span style={{ color: "#9db8ff", whiteSpace: "nowrap" }}>
               {ptSamples < 0
                 ? `Building… ${-ptSamples}%`
                 : ptSamples === 0
                   ? "Starting…"
-                  : `Path-tracing · ${ptSamples} spp`}
+                  : `PT · ${ptSamples} spp`}
             </span>
             <span
               onClick={() => setRendering(false)}
-              style={{ cursor: "pointer", padding: "4px 10px", borderRadius: 6, background: "rgba(255,255,255,0.08)" }}
+              style={{ cursor: "pointer", padding: "4px 9px", borderRadius: 6, background: "rgba(255,255,255,0.08)" }}
             >
               Exit
             </span>
-          </div>
-        )}
-        <div onClick={() => setCinematic(true)} style={cinematicBtn}>
-          ◆ Cinematic (UE5) — photoreal
-        </div>
-      </div>
-      <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 10 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-          <span style={{ opacity: 0.5, textTransform: "uppercase", letterSpacing: "0.06em", fontSize: 10 }}>
-            Entourage · {entourage.length}
-          </span>
-          {entourage.length > 0 && (
-            <span onClick={clearEnt} style={{ cursor: "pointer", fontSize: 11, opacity: 0.55 }}>
-              clear
-            </span>
-          )}
-        </div>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {ENT_ASSETS.map((a) => (
-            <span
-              key={a.id}
-              style={{
-                ...chip,
-                border: `1px solid ${placeAsset === a.id ? "#2f6df6" : "rgba(255,255,255,0.1)"}`,
-                background: placeAsset === a.id ? "rgba(47,109,246,0.2)" : "rgba(255,255,255,0.05)",
-              }}
-              onClick={() => setPlaceAsset(placeAsset === a.id ? null : a.id)}
-            >
-              {a.label}
-            </span>
-          ))}
-        </div>
-        {placeAsset && (
-          <>
-            <div style={{ marginTop: 8 }}>
-              <div
-                style={{
-                  opacity: 0.5,
-                  fontSize: 10,
-                  letterSpacing: "0.06em",
-                  textTransform: "uppercase",
-                  marginBottom: 4,
-                }}
-              >
-                Height · {(entHeight[placeAsset] ?? 1).toFixed(1)} ft
-              </div>
-              <input
-                type="range"
-                min={ENT_RANGE[placeAsset][0]}
-                max={ENT_RANGE[placeAsset][1]}
-                step={ENT_RANGE[placeAsset][1] - ENT_RANGE[placeAsset][0] > 10 ? 0.5 : 0.1}
-                value={entHeight[placeAsset] ?? 1}
-                onChange={(e) => setEntHeight(placeAsset, parseFloat(e.target.value))}
-                style={{ width: "100%", accentColor: "#2f6df6" }}
-              />
-            </div>
-            <div style={{ opacity: 0.55, fontSize: 11, marginTop: 6, lineHeight: 1.4 }}>
-              Click the ground to place. Click the asset again to stop.
-            </div>
           </>
         )}
+        <div
+          onClick={() => setCinematic(true)}
+          title="Cinematic (UE5) — embed a SimplyStream WebGPU build"
+          style={{
+            padding: "5px 11px",
+            borderRadius: 7,
+            cursor: "pointer",
+            fontWeight: 600,
+            fontSize: 11.5,
+            whiteSpace: "nowrap",
+            background: "linear-gradient(90deg, rgba(124,77,255,0.25), rgba(47,109,246,0.18))",
+            border: "1px solid rgba(124,77,255,0.6)",
+            userSelect: "none",
+          }}
+        >
+          ◆ Cinematic
+        </div>
       </div>
+
+      <Divider />
+
+      {/* ── Entourage ── */}
+      <div style={group}>
+        <span style={label}>Place</span>
+        {ENT_ASSETS.map((a) => (
+          <span
+            key={a.id}
+            style={chip(placeAsset === a.id)}
+            onClick={() => setPlaceAsset(placeAsset === a.id ? null : a.id)}
+          >
+            {a.label}
+          </span>
+        ))}
+        {placeAsset && (
+          <input
+            type="range"
+            min={ENT_RANGE[placeAsset][0]}
+            max={ENT_RANGE[placeAsset][1]}
+            step={ENT_RANGE[placeAsset][1] - ENT_RANGE[placeAsset][0] > 10 ? 0.5 : 0.1}
+            value={entHeight[placeAsset] ?? 1}
+            onChange={(e) => setEntHeight(placeAsset, parseFloat(e.target.value))}
+            style={{ width: 70, accentColor: "#2f6df6" }}
+            title={`Height · ${(entHeight[placeAsset] ?? 1).toFixed(1)} ft`}
+          />
+        )}
+        {entourage.length > 0 && (
+          <span onClick={clearEnt} style={{ cursor: "pointer", fontSize: 11, opacity: 0.5 }} title="Clear all entourage">
+            clear ({entourage.length})
+          </span>
+        )}
+      </div>
+
+      {/* Contextual hint row (wraps to its own line) */}
+      {(mode === "walk" || placeAsset) && (
+        <div style={{ flexBasis: "100%", textAlign: "center", opacity: 0.5, fontSize: 10.5, lineHeight: 1.4 }}>
+          {mode === "walk"
+            ? "Click to look · WASD move · Space/Shift up·down · Esc to exit"
+            : "Click the ground to place. Click the asset again to stop."}
+        </div>
+      )}
     </div>
   );
 }
