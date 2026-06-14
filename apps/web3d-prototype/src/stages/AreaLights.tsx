@@ -206,10 +206,13 @@ export function AreaLights() {
   const tod = sky.timeOfDay;
   const daylight = tod >= 7 && tod <= 18;
   const fillColor = daylight ? "#cfe0ff" : "#34406a";
-  const fillIntensity = daylight ? 1.6 : 0.5;
+  // A true soft FILL under the sun — at 1.6 it competed with the sun, pushed HDR
+  // past the bloom threshold and veiled the frame white (worst on un-textured
+  // default surfaces). 0.55 lifts the sky-bounce without blowing out.
+  const fillIntensity = daylight ? 0.55 : 0.3;
   // Warm interior-glow emitters; brighten after dusk so windows "switch on".
   const winColor = "#ffdfb0";
-  const winIntensity = daylight ? 1.2 : 3.2;
+  const winIntensity = daylight ? 0.7 : 2.4;
 
   return (
     <group>
