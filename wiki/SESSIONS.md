@@ -1,11 +1,21 @@
 ---
 type: log
-updated: 2026-05-19
+updated: 2026-06-14
 ---
 
 # Session Log
 
 Append-only conversation log. **Newest at top.** One entry per chat session.
+
+## 2026-06-14 — Graphify the wiki: cross-link research pages + de-stale pre-pivot pages
+
+**Scope:** Ran `/graphify` on `wiki/` (knowledge-graph build — 84 nodes, 150 edges, 12 communities) to audit links + staleness, then acted on the findings.
+
+**Tried:** One semantic-extraction subagent → community detection. The graph cleanly split into a **web3d era** and the prior **2D-pipeline era**, and flagged that the nine `research/` pages were the graph's god nodes yet carried **zero** internal `[[wikilinks]]` (orphaned).
+
+**Outcome:** Added "See also" cross-link footers to all research pages (wired to each other + [[STATE]] + the relevant [[DECISIONS]] anchors, per the graph's `semantically_similar_to` edges); fixed a broken link in [[research/web3d-ue-browser]] (`[[../STATE|web3d-realism]]` → `[[web3d-realism]]`); de-staled [[GLOSSARY]] (two-pivots banner + a new "web3d terms (current)" section), [[ROADMAP]] + [[STRATEGY]] (engine-first-web3d superseded banners, they were a pivot behind); added "since-built" notes to research pages that still called WebGPU "rough" / geo-context "not yet built" / the env map 128px. All `[[DECISIONS#anchor]]` targets verified. Commit `ccb019d`; `graphify-out/` (graph.html + GRAPH_REPORT.md) is gitignored.
+
+**Follow-ups:** none new — NEXT-step direction unchanged ([[../docs/HANDOFF-web3d.md]] §Next-steps). Re-run `/graphify wiki --update` to refresh the graph after future wiki edits.
 
 ## 2026-06-14 — 3-way render comparison: WebGPU SSGI + WebGL2-GI + path-trace/Twinmotion (3 parallel Opus agents)
 
