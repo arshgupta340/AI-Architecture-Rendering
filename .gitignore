@@ -67,3 +67,5 @@ apps/canvas-prototype/public/project/
 # graphify outputs (generated knowledge-graph artifacts; regenerate with /graphify)
 graphify-out/
 .graphify_*
+apps/web3d-prototype/public/splats/*.spz
+apps/web3d-prototype/public/splats/*.ply
