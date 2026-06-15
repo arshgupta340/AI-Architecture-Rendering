@@ -1,11 +1,23 @@
 ---
 type: log
-updated: 2026-06-14
+updated: 2026-06-15
 ---
 
 # Session Log
 
 Append-only conversation log. **Newest at top.** One entry per chat session.
+
+## 2026-06-15 — Hero FLUX backend DEPLOYED + live-verified through the real app UI
+
+**Scope:** Continuation of the build session below. Took the (mock-QA'd) hero pipeline live: deployed `spike/modal_flux.py` to a real Modal A100-80GB, guided the user through HF token + `HERO_SHARED_SECRET` setup, brought the backend up, and verified **both endpoints end-to-end by clicking the actual app buttons** (not just `eval`).
+
+**Decisions:** none new — confirms [[DECISIONS#web3d-hero-splat]] (FLUX.1-dev over FLUX.2 stands: FLUX.2's only depth/canny ControlNet is a local 80 GB checkpoint, no hosted Union equivalent). FLUX.2-dev-Fun ControlNet as a switchable "experimental" model is an offered follow-up, not yet built.
+
+**Tried / live-debug fixes (in order, each surfaced by a real 4xx/5xx/ERR against the live GPU):** (a) FastAPI missing from the Modal image (1.4+) → add `fastapi[standard]`, and **pin a known-good FLUX dep combo** (diffusers 0.32.2 / transformers 4.49 / accelerate 1.1.1 — unpinned pulled diffusers 0.38/transformers 5.x and broke load); (b) **CORS** — Modal's per-endpoint decorator only CORS-es the OPTIONS preflight, not the POST response → rewrote as ONE `@modal.asgi_app()` FastAPI app + `CORSMiddleware` (both routes under `…heroflux-web.modal.run`); (c) `negative_prompt`/`true_cfg_scale` don't exist on 0.32.2's pipeline → add only if `inspect.signature` supports them; (d) "expected 3 channels, got 1" → `.convert("RGB")` on canny+depth; (e) **"shape invalid for input of size …" (the blocker)** — a bare 2-image list batched on a single ControlNet → wrap as `FluxMultiControlNetModel([union, union])` with `control_mode=[0,2]`; (f) **warm container kept serving OLD code after redeploy** → must `modal app stop arch-rendering-flux -y` before `modal deploy`; (g) Windows console crashes on Modal's ✓ glyphs → prefix `PYTHONUTF8=1`.
+
+**Outcome (live, verified through the UI against the deployed A100):** all three live hits returned **200** — `/hero_render` 14.9 s warm → a **photoreal golden-hour house with every window / porch / stair / roof gable / wood-trim matching the 3D geometry (zero hallucination)**; `/hero_render` 58.3 s cold (boot included); `/region_edit` 21.0 s warm → a masked roof region layer composited over a byte-stable base. The full Photoshop modal flow (capture → base layer → add region → Run region → masked composite → 2/24 counter) works against the real backend. Idle = $0 (scale-to-zero, 300 s window). Live endpoint: `…--arch-rendering-flux-heroflux-web.modal.run` (`/hero_render` + `/region_edit`). Runbook + gotchas: `spike/REPORTS/modal_flux.md` (commit `33211cd`).
+
+**Follow-ups:** (1) **rotate the HF token** — the user pasted it in plaintext during setup; it's now in Modal's `arch-flux` secret, fine to rotate the exposed copy. (2) FLUX.2-dev-Fun ControlNet as a switchable "experimental/high-quality" model. (3) `region_edit` v2 = true `FluxControlNetInpaintPipeline` (vs full-pass+composite). (4) splat-bake (`spike/modal_splat.py`) still deploy-gated — gsplat CUDA build + 20k-iter training untested live. (5) generate a real Marble env `.spz` to seat the building in (the live hero invents its own desert/coastal context — the splat env is what grounds it in a chosen site).
 
 ## 2026-06-15 — Hero diffusion render (FLUX on Modal) + Gaussian-splat env — built + deep QA
 

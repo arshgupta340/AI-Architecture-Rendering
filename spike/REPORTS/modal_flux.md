@@ -93,5 +93,12 @@ paste `http://127.0.0.1:5999/hero_render` + `/region_edit` + secret `test` into 
 Capture + conditioning + the full hero UI flow (base → region mask → layers → composite →
 visibility → save) were verified end-to-end against the mock (depth near=white linear;
 byte-exact per-semantic ids; canny ∪ id-edges aligned to every window/mullion/trim). The
-splat loader was verified rendering a real `.spz` composited with the building. The live
-FLUX inference + the splat training are the only deploy-gated (untested-here) steps.
+splat loader was verified rendering a real `.spz` composited with the building.
+
+**LIVE-VERIFIED through the real app UI (2026-06-15):** the FLUX backend is deployed and both
+routes were exercised by clicking the actual Hero modal buttons against the warm A100 —
+- `/hero_render`: **200**, 14.9 s warm (58.3 s cold) → photoreal golden-hour house, every
+  window/porch/stair/roof-gable/wood-trim matching the 3D geometry (zero hallucination).
+- `/region_edit`: **200**, 21.0 s warm → masked roof region layer composited byte-stable over
+  the base; the modal's render counter incremented 1 → 2/24.
+The **splat training** (`spike/modal_splat.py`) is the only remaining deploy-gated/untested step.
