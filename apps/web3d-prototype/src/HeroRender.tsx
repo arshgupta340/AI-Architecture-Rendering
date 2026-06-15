@@ -57,6 +57,45 @@ async function postHero(url: string, body: Record<string, unknown>): Promise<{ i
   return res.json();
 }
 
+/** Derive the cheap keep-alive URL from the base-render URL (…/hero_render → …/warm). */
+function warmEndpoint(baseUrl: string): string {
+  return baseUrl.replace(/\/hero_render\/?$/, "/warm");
+}
+
+/**
+ * Rewrite a hero endpoint URL between the FLUX.1 (live) and FLUX.2 (experimental) Modal
+ * apps — same workspace, different app name. Lets the Backend panel switch models with
+ * one click given either URL. FLUX.1 = spike/modal_flux.py (A100, live-verified); FLUX.2
+ * = spike/modal_flux2.py (H200 + VideoX-Fun, deploy-gated; see flux2_feasibility.md).
+ */
+function switchModelUrl(url: string, to: "flux1" | "flux2"): string {
+  if (!url) return url;
+  return to === "flux2"
+    ? url.replace(/arch-rendering-flux-heroflux/g, "arch-rendering-flux2-heroflux2")
+    : url.replace(/arch-rendering-flux2-heroflux2/g, "arch-rendering-flux-heroflux");
+}
+
+/** Which backend a base URL points at (used to label the model preset). */
+function modelOfUrl(url: string): "flux1" | "flux2" {
+  return /flux2-heroflux2/.test(url) ? "flux2" : "flux1";
+}
+
+/** Ping /warm to reset the container's scaledown timer; returns the backend model id. */
+async function pingWarm(baseUrl: string, secret: string): Promise<string | null> {
+  try {
+    const res = await fetch(warmEndpoint(baseUrl), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ secret }),
+    });
+    if (!res.ok) return null;
+    const j = await res.json();
+    return (j?.model as string) ?? "warm";
+  } catch {
+    return null;
+  }
+}
+
 /** Shared render params from a layer → the Modal request body (sans images). */
 function layerParams(layer: HeroLayer, neg: string, secret: string) {
   return {
@@ -147,6 +186,11 @@ function SetupCard() {
   const [base, setBase] = useState(endpoint.baseUrl);
   const [region, setRegion] = useState(endpoint.regionUrl);
   const [secret, setSecret] = useState(endpoint.secret);
+  const model = modelOfUrl(base || region); // detect from either field (base may be blank)
+  const pickModel = (to: "flux1" | "flux2") => {
+    setBase((u) => switchModelUrl(u, to));
+    setRegion((u) => switchModelUrl(u, to));
+  };
 
   return (
     <div style={overlay}>
@@ -160,10 +204,35 @@ function SetupCard() {
       <div style={setupWrap}>
         <div style={card}>
           <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>Connect the FLUX backend</div>
-          <div style={{ opacity: 0.72, fontSize: 12.5, lineHeight: 1.55, marginBottom: 14 }}>
-            The hero render runs FLUX.1-dev + ControlNet (canny+depth), self-hosted on your Modal GPU.
+          <div style={{ opacity: 0.72, fontSize: 12.5, lineHeight: 1.55, marginBottom: 12 }}>
+            The hero render runs a self-hosted, geometry-locked diffusion backend on your Modal GPU.
             Deploy it once, then paste the two endpoint URLs + your shared secret here.
           </div>
+
+          <div style={smallLabel}>Backend model</div>
+          <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+            <div style={modelSeg(model === "flux1")} onClick={() => pickModel("flux1")}>
+              FLUX.1 · live
+            </div>
+            <div style={modelSeg(model === "flux2")} onClick={() => pickModel("flux2")}>
+              FLUX.2 · experimental
+            </div>
+          </div>
+          <div style={{ opacity: 0.55, fontSize: 11, lineHeight: 1.5, marginBottom: 14 }}>
+            {model === "flux2" ? (
+              <>
+                <b>FLUX.2-dev + Fun-Controlnet-Union</b> (H200 + VideoX-Fun, native inpaint). Heavier /
+                pricier; <b>deploy-gated</b> — deploy <code>spike/modal_flux2.py</code> first. See{" "}
+                <code>spike/REPORTS/flux2_feasibility.md</code>.
+              </>
+            ) : (
+              <>
+                <b>FLUX.1-dev + ControlNet-Union</b> (A100, canny + depth lock). The verified default —
+                ~$0.01–0.02/render, ~15s warm.
+              </>
+            )}
+          </div>
+
           <ol style={{ margin: "0 0 16px 0", paddingLeft: 18, fontSize: 12, lineHeight: 1.7, opacity: 0.85 }}>
             <li>
               Add <code>HF_TOKEN</code> (accept the FLUX.1-dev license on HuggingFace) and{" "}
@@ -236,6 +305,47 @@ function Workspace() {
   const [error, setError] = useState<string | null>(null);
   const busyRef = useRef(false);
   const [, force] = useState(0);
+
+  // ---- keep-warm + render timing (UX polish: kill the ~40-60s cold start) -------
+  const [keepWarm, setKeepWarm] = useState(false);
+  const [warmState, setWarmState] = useState<"idle" | "pinging" | "warm" | "err">("idle");
+  const [backendModel, setBackendModel] = useState<string | null>(null);
+  const [lastMs, setLastMs] = useState<number | null>(null);
+  const noteRenderMs = (ms: number | undefined) => {
+    if (typeof ms === "number") {
+      setLastMs(ms);
+      setWarmState("warm"); // a render just finished → the container is definitively warm
+    }
+  };
+
+  // While "keep warm" is on, ping /warm now + every 240s (inside the 300s scaledown
+  // window) so an active editing session never pays the cold start. Pure keep-alive —
+  // no render — so it's ~free. Stops on toggle-off or when the modal unmounts.
+  useEffect(() => {
+    if (!keepWarm || !endpoint.baseUrl) {
+      setWarmState((s) => (s === "warm" ? "idle" : s));
+      return;
+    }
+    let alive = true;
+    const ping = async () => {
+      if (!alive) return;
+      setWarmState("pinging");
+      const model = await pingWarm(endpoint.baseUrl, endpoint.secret);
+      if (!alive) return;
+      if (model) {
+        setBackendModel(model);
+        setWarmState("warm");
+      } else {
+        setWarmState("err");
+      }
+    };
+    ping();
+    const id = window.setInterval(ping, 240_000);
+    return () => {
+      alive = false;
+      window.clearInterval(id);
+    };
+  }, [keepWarm, endpoint.baseUrl, endpoint.secret]);
 
   // Seed the global prompt once.
   useEffect(() => {
@@ -313,6 +423,7 @@ function Workspace() {
         height: capture.height,
       });
       updateHeroLayer("base", { resultUrl: URL.createObjectURL(b64ToBlob(r.image)), status: "done" });
+      noteRenderMs(r.ms);
     } catch (e) {
       updateHeroLayer("base", { status: "error", error: String(e) });
       setError(String(e));
@@ -351,6 +462,7 @@ function Workspace() {
         maskUrl: r.mask ? URL.createObjectURL(b64ToBlob(r.mask)) : null,
         status: "done",
       });
+      noteRenderMs(r.ms);
     } catch (e) {
       updateHeroLayer(layer.id, { status: "error", error: String(e) });
       setError(String(e));
@@ -397,9 +509,25 @@ function Workspace() {
       <div style={bar}>
         <span style={{ fontWeight: 600, color: "#ffb27a" }}>✦ Hero render</span>
         <span style={{ opacity: 0.6, fontSize: 12 }}>
-          FLUX depth+canny lock · {capture.width}×{capture.height} · {heroCalls}/{MAX_HERO_CALLS} renders
+          {(backendModel ?? "FLUX")} · depth+canny lock · {capture.width}×{capture.height} · {heroCalls}/{MAX_HERO_CALLS} renders
         </span>
         <div style={{ flex: 1 }} />
+        {lastMs != null && (
+          <span style={timingBadge} title="Last render time (warm A100 ≈ 12–25s; a cold start adds ~40–60s)">
+            ⚡ {(lastMs / 1000).toFixed(1)}s
+          </span>
+        )}
+        <span
+          onClick={() => setKeepWarm((v) => !v)}
+          style={warmToggle(keepWarm, warmState)}
+          title={
+            keepWarm
+              ? "Pinging the GPU every 4 min so it never cold-starts (small GPU cost while on). Click to stop."
+              : "Keep the Modal GPU warm during this session to skip the ~40–60s cold start (costs a little GPU while on)."
+          }
+        >
+          {keepWarm ? (warmState === "warm" ? "🔥 Warm" : warmState === "err" ? "🔥 Unreachable" : "🔥 Warming…") : "🔥 Keep warm"}
+        </span>
         <span onClick={() => setHeroEndpoint({ baseUrl: "" })} style={linkBtn} title="Reconnect a different backend">
           ⚙ Backend
         </span>
@@ -418,7 +546,11 @@ function Workspace() {
           {busyRef.current && (
             <div style={busyOverlay}>
               <div style={{ fontSize: 13 }}>Rendering on Modal GPU…</div>
-              <div style={{ fontSize: 11, opacity: 0.6, marginTop: 4 }}>~15–25s (cold start may take longer)</div>
+              <div style={{ fontSize: 11, opacity: 0.6, marginTop: 4 }}>
+                {warmState === "warm"
+                  ? "warm GPU — ~12–25s"
+                  : "first render boots the GPU (~40–60s) — tip: enable 🔥 Keep warm"}
+              </div>
             </div>
           )}
         </div>
@@ -732,3 +864,32 @@ const card: React.CSSProperties = { maxWidth: 520, width: "100%", background: "r
 const saveBtn: React.CSSProperties = { padding: "8px 16px", borderRadius: 6, border: "1px solid #ffb27a", background: "rgba(255,138,77,0.25)", color: "#fff", cursor: "pointer", fontSize: 12.5, fontWeight: 600 };
 const linkBtn: React.CSSProperties = { color: "#9db8ff", fontSize: 12, padding: "5px 10px", borderRadius: 6, border: "1px solid rgba(157,184,255,0.3)", cursor: "pointer", userSelect: "none" };
 const exitBtn: React.CSSProperties = { cursor: "pointer", fontSize: 12, padding: "5px 12px", borderRadius: 6, background: "rgba(255,255,255,0.08)", color: "#fff", userSelect: "none" };
+const timingBadge: React.CSSProperties = { fontSize: 11.5, padding: "4px 9px", borderRadius: 6, background: "rgba(255,255,255,0.06)", color: "#bfead0", userSelect: "none", whiteSpace: "nowrap" };
+const modelSeg = (active: boolean): React.CSSProperties => ({
+  flex: 1,
+  textAlign: "center",
+  padding: "7px 0",
+  borderRadius: 6,
+  cursor: "pointer",
+  fontSize: 12,
+  fontWeight: active ? 600 : 400,
+  userSelect: "none",
+  color: active ? "#fff" : "#9aa4b2",
+  background: active ? "rgba(255,138,77,0.2)" : "rgba(255,255,255,0.05)",
+  border: `1px solid ${active ? "rgba(255,138,77,0.6)" : "rgba(255,255,255,0.12)"}`,
+});
+function warmToggle(on: boolean, state: "idle" | "pinging" | "warm" | "err"): React.CSSProperties {
+  const live = on && state === "warm";
+  const err = on && state === "err";
+  return {
+    cursor: "pointer",
+    fontSize: 12,
+    padding: "5px 10px",
+    borderRadius: 6,
+    userSelect: "none",
+    whiteSpace: "nowrap",
+    color: err ? "#ffb3b3" : live ? "#ffd9a3" : on ? "#ffcf99" : "#9aa4b2",
+    background: err ? "rgba(255,80,80,0.12)" : live ? "rgba(255,138,77,0.18)" : "rgba(255,255,255,0.05)",
+    border: `1px solid ${err ? "rgba(255,80,80,0.5)" : on ? "rgba(255,138,77,0.5)" : "rgba(255,255,255,0.14)"}`,
+  };
+}

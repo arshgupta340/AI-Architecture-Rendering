@@ -60,6 +60,10 @@ GPU = "A100-80GB"  # swap to "H100" (faster) or "A10G" (cheaper, slower, tight V
 
 FLUX_REPO = "black-forest-labs/FLUX.1-dev"
 UNION_REPO = "Shakker-Labs/FLUX.1-dev-ControlNet-Union-Pro-2.0"
+# Identity reported by /warm so the app can show which backend it's pinned to. The
+# FLUX.2 path is a SEPARATE app (spike/modal_flux2.py, H200 + VideoX-Fun) reachable at
+# its own URL — the app's Backend panel switches between the two by URL preset.
+MODEL_NAME = "flux1-dev-union"
 
 # Warm, specific default prompt — recovers terracotta siding + golden-hour light
 # while the canny lock holds geometry (ported from run_e2b_registration.WARM_PROMPT).
@@ -496,6 +500,15 @@ class HeroFlux:
         def region_edit(body: dict):
             self._check_auth(body)
             return self._region_core(body)
+
+        # Cheap keep-alive: hitting ANY route resets the container's scaledown timer,
+        # so the app's "keep GPU warm" toggle can ping this every ~4 min to avoid the
+        # ~40-60 s cold start during an active editing session — WITHOUT paying for a
+        # full render. Confirms the pipe is resident so the client can show "warm".
+        @api.post("/warm")
+        def warm(body: dict):
+            self._check_auth(body)
+            return {"warm": True, "model": MODEL_NAME, "pipe_loaded": hasattr(self, "pipe")}
 
         return api
 
