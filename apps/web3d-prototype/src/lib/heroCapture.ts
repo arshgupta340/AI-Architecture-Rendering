@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useStore, type HeroCaptureData, type MultiViewCapture } from "../state/store";
+import { reprojectHeroToViews } from "./reproject";
 
 /**
  * HeroCapture — 4-pass capture of the LIVE WebGL2 / +GI scene for the hero render.
@@ -405,6 +406,18 @@ export function HeroCapture() {
 
     setHeroCaptureFn(fn);
     setHeroCaptureViewsFn(viewsFn);
+
+    // DEV-only debug hook for iterating on the reproject-from-3D pipeline (approach C).
+    if (import.meta.env.DEV) {
+      (window as unknown as { __reproject?: unknown }).__reproject = (
+        heroImageB64: string,
+        heroPose: { pos: [number, number, number]; target: [number, number, number]; fov: number },
+        targetPoses: { pos: [number, number, number]; target: [number, number, number]; fov: number }[],
+        W: number,
+        H: number,
+      ) => reprojectHeroToViews(gl, scene, useStore.getState().meshesBySemantic, heroImageB64, heroPose, targetPoses, W, H);
+    }
+
     return () => {
       setHeroCaptureFn(null);
       setHeroCaptureViewsFn(null);
