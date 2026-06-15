@@ -7,6 +7,25 @@ updated: 2026-06-15
 
 Append-only conversation log. **Newest at top.** One entry per chat session.
 
+## 2026-06-15 — Multi-view hero: shipped per-view set; A/B/C consistency R&D (reproject built, full-360 partial)
+
+**Scope:** Build a multi-view-consistent hero turntable. Shipped the per-view set, then — after the user (rightly) caught that independent FLUX per view is NOT 3D-consistent — ran a measured A/B/C investigation into true consistency.
+
+**Decisions:** [[DECISIONS#web3d-reproject-consistency]] — true multi-view consistency must come from the REAL 3D (reproject the hero's pixels onto the mesh), not per-view diffusion.
+
+**Built + shipped:** **(1)** the **per-view turntable** (`heroCaptureViewsFn` orbits N poses → renders each base-locked, same seed; gallery + Export all + bake-bridge `bakeFromHeroViews`), hardened via an adversarial-review workflow (13 confirmed fixes: object-URL leaks, null-controls bake target, mvBusy race, resolution clamp, resilient error handling). **(2)** UX polish from the prior entry stayed.
+
+**A/B/C investigation (measured, not guessed):**
+- **A — tighten the ControlNet lock:** edge-alignment 74.5% → **93.1%** (consistent across views) — fixes GEOMETRY but NOT lighting/material drift. Quantified with the project's canny∪id-edge metric (cv2).
+- **B — IP-Adapter reference conditioning:** **BLOCKED** — diffusers 0.32.2's `FluxControlNetPipeline` has no `load_ip_adapter` (the FLUX IP-Adapter mixin is on the plain pipeline only). Implemented guarded (`ip_used:false`, base unaffected); testing it needs a risky diffusers bump + the XLabs adapter needs CFG 0.32.2 lacks.
+- **C — reproject-from-3D** (the principled fix): `lib/reproject.ts` projective-texture-maps the hero's pixels onto the real mesh from each target camera (linear-eye-depth shadow-map occlusion + grazing-quality multi-source blend), gaps → `/region_edit` inpaint; chained around the circle. **Core VERIFIED** (single-hero reproject = perfect material/lighting consistency for nearby angles).
+
+**QA caught (my own bugs, via rigorous inspection):** (a) the normal-quality metric blackened the flat ground at grazing (coverage 0.69 vs 0.19 non-black) → quality ranks sources only, coverage = any valid sample; (b) the FloatType-RT rewrite **darkened every reprojection** (sRGB→linear sampled, read back un-encoded) → raw passthrough (NoColorSpace + ColorManagement off), verified luminance ratio 0.99; (c) heroes rendered dark from the "golden-hour" prompt → bright-daylight prompt + moderate lock fixed exposure.
+
+**Outcome:** reproject CORE correct + committed (`bb2b259`, `b2cdaae`); per-view set + polish committed. **The full 360° CHAINED turntable is NOT production-quality yet** — after fixing ground + color + exposure, the building still **dissolves into the ground in the back views** (chained gap-fill doesn't reconstruct the building for angles the hero never saw). Evidence: `spike/outputs/web3d_house/expC_turntable_N12.jpg`.
+
+**Follow-ups (the focused next session):** debug the chained gap-fill building loss in back views (the `/region_edit` mask/fill for disoccluded building regions, or grazing smear); likely needs multi-hero anchors (front+back full renders) rather than a pure forward chain; then a loop-closure pass + UI integration. The single-hero reproject (nearby angles) is the solid usable core today.
+
 ## 2026-06-15 — Hero UX polish (keep-warm, model switch) + FLUX.2 backend (deploy-gated)
 
 **Scope:** After the live FLUX.1 hero was verified (entry below), the user chose two follow-ups: (1) add FLUX.2 as a switchable "experimental" model, (2) polish the hero UX. Built + verified the polish; researched + wrote the FLUX.2 backend (deploy-gated).

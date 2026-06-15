@@ -20,6 +20,20 @@ Each entry follows the same shape so it can be scanned in 15 seconds:
 
 ---
 
+## 2026-06-15 — True multi-view consistency = reproject-from-3D, not per-view diffusion {#web3d-reproject-consistency}
+
+**Decision:** For a *consistent* multi-view hero (turntable / splat-bake feed), render the hero ONCE and **reproject its pixels onto the real 3D mesh** to make other views (`lib/reproject.ts`), filling only disocclusions with diffusion — rather than rendering each angle with an independent FLUX pass.
+
+**Context:** The first multi-view shipped N independent per-view FLUX renders. The user correctly identified that these are NOT 3D-consistent (geometry + lighting + materials drift between angles; entourage moves). A measured A/B/C investigation followed.
+
+**Alternatives considered:** (a) **Per-view independent FLUX + same seed** — REJECTED: same seed gives similar *style* but no 3D consistency (proven visually). (b) **A: tighten the ControlNet lock** — measured 74.5%→93.1% edge-alignment; fixes geometry but NOT lighting/materials. Useful, insufficient alone. (c) **B: IP-Adapter reference** — BLOCKED on diffusers 0.32.2 (no `load_ip_adapter` on the ControlNet pipeline) + needs CFG; a risky bump for a partial fix. (d) **Multi-view/video diffusion model** — highest ceiling, large integration (deferred).
+
+**Reasoning:** The product's core thesis is that *geometry + multi-view consistency are exact and free because it's real 3D* — so consistency should EXPLOIT the 3D, not re-hallucinate it. Reprojection makes materials+lighting identical by construction (it's the hero's own pixels on the geometry). Diffusion is reserved for the small disoccluded gaps. The reproject core is verified (perfect consistency for nearby angles).
+
+**Revisit if:** a multi-view diffusion model proves easier/better; or the full-360 chained reproject can't preserve the building through the chain (then anchor with multiple full heroes, or fall back to per-view + tightened lock for "stylistically-similar" sets). **Open:** the full-360 chained turntable still loses the building in back views — a focused follow-up.
+
+---
+
 ## 2026-06-15 — FLUX.2 is a deploy-gated experimental backend (H200 + VideoX-Fun), FLUX.1 stays the live default {#web3d-flux2-experimental}
 
 **Decision:** Keep **FLUX.1-dev + ControlNet-Union on A100** as the live, default hero backend, and add **FLUX.2-dev as a SEPARATE, deploy-gated app** (`spike/modal_flux2.py`, `arch-rendering-flux2`) the app's Backend panel switches to by URL preset — NOT a flag inside the live `modal_flux.py`.
