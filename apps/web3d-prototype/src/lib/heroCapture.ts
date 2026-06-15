@@ -182,7 +182,7 @@ export function HeroCapture() {
     // the live post-processed frame (verified path — unchanged).
     const captureView = async (
       maxEdgeReq: number,
-      captureOpts?: { forceRender?: boolean },
+      captureOpts?: { forceRender?: boolean; targetOverride?: THREE.Vector3 },
     ): Promise<HeroCaptureData | null> => {
       const persp = camera as THREE.PerspectiveCamera;
       if (!persp.isPerspectiveCamera) return null;
@@ -334,7 +334,13 @@ export function HeroCapture() {
       // ---- 4) CAMERA pose (real OrbitControls target if available). ----
       const pos: [number, number, number] = [persp.position.x, persp.position.y, persp.position.z];
       let target: [number, number, number];
-      if (controls && controls.target) {
+      if (captureOpts?.targetOverride) {
+        // Multi-view: the TRUE orbit centre — correct for the bake pose regardless of
+        // whether OrbitControls is mounted (a null-controls turntable would otherwise
+        // record a forward-ray point, corrupting the splat alignment).
+        const t = captureOpts.targetOverride;
+        target = [t.x, t.y, t.z];
+      } else if (controls && controls.target) {
         target = [controls.target.x, controls.target.y, controls.target.z];
       } else {
         const dir = new THREE.Vector3();
@@ -383,7 +389,7 @@ export function HeroCapture() {
           persp.lookAt(center);
           persp.updateMatrixWorld(true);
           const transform = toRowMajor(persp.matrixWorld);
-          const cap = await captureView(cfg.maxEdge, { forceRender: true });
+          const cap = await captureView(cfg.maxEdge, { forceRender: true, targetOverride: center });
           if (cap) out.push({ capture: cap, transform, label: `view ${i + 1}` });
         }
       } finally {

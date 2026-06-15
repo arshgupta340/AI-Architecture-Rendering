@@ -331,6 +331,15 @@ function Workspace() {
   const [mvResults, setMvResults] = useState<MvResult[]>([]);
   const [mvBusy, setMvBusy] = useState(false);
   const [mvProgress, setMvProgress] = useState<string | null>(null);
+  const [mvSelected, setMvSelected] = useState<number | null>(null);
+  // Every blob URL created for a view — revoked on re-run + on unmount so repeated
+  // multi-view batches don't leak object URLs (the browser keeps them alive otherwise).
+  const mvUrlsRef = useRef<string[]>([]);
+  const revokeMvUrls = () => {
+    mvUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
+    mvUrlsRef.current = [];
+  };
+  useEffect(() => revokeMvUrls, []); // revoke any remaining on Workspace unmount (modal close)
 
   const noteRenderMs = (ms: number | undefined) => {
     if (typeof ms === "number") {
@@ -411,7 +420,7 @@ function Workspace() {
 
   // Run the BASE layer (full geometry-locked render).
   const generateBase = async () => {
-    if (busyRef.current || !guardCalls()) return;
+    if (busyRef.current || mvBusy || !guardCalls()) return;
     setError(null);
     let base = layers.find((l) => l.kind === "base");
     if (!base) {
@@ -455,7 +464,7 @@ function Workspace() {
 
   // Run / re-roll a REGION layer (independent edit of the BASE, masked).
   const runRegion = async (layer: HeroLayer) => {
-    if (busyRef.current || !guardCalls()) return;
+    if (busyRef.current || mvBusy || !guardCalls()) return;
     const base = layers.find((l) => l.kind === "base" && l.resultUrl);
     if (!base?.resultUrl) {
       setError("Generate the base render first.");
@@ -538,10 +547,15 @@ function Workspace() {
     }
     setError(null);
     setMvBusy(true);
+    revokeMvUrls(); // free the previous batch's blob URLs before starting a new one
     setMvResults([]);
+    setMvSelected(null);
+    setPreview(`data:image/png;base64,${capture.beauty}`); // avoid a dangling revoked URL in the preview
     setMvProgress("Capturing orbit views…");
     try {
-      const mvMaxEdge = Math.max(capture.width, capture.height); // match the base capture dims
+      // Cap multi-view at 1024 (vs the base's 1536): it's N renders, so favour speed + cost —
+      // still plenty for a turntable or a bake. ≈ $0.02 × N, ~15-25s each (warm).
+      const mvMaxEdge = Math.min(1024, Math.max(capture.width, capture.height));
       const caps = await viewsFn({ maxEdge: mvMaxEdge, count: viewCount });
       if (!caps || !caps.length) {
         setMvProgress("Orbit capture failed.");
@@ -558,6 +572,7 @@ function Workspace() {
         status: "pending",
       }));
       setMvResults([...results]);
+      let consecutiveFails = 0;
       for (let i = 0; i < caps.length; i++) {
         setMvProgress(`Rendering view ${i + 1}/${caps.length} on the GPU…`);
         const cap = caps[i].capture;
@@ -581,17 +596,38 @@ function Workspace() {
             width: cap.width,
             height: cap.height,
           });
-          results[i] = { ...results[i], preview: URL.createObjectURL(b64ToBlob(r.image)), imageB64: r.image, status: "done" };
+          const url = URL.createObjectURL(b64ToBlob(r.image));
+          mvUrlsRef.current.push(url);
+          results[i] = { ...results[i], preview: url, imageB64: r.image, status: "done" };
           noteRenderMs(r.ms);
+          consecutiveFails = 0;
         } catch (e) {
+          const msg = String(e instanceof Error ? e.message : e);
           results[i] = { ...results[i], status: "error" };
-          setError(String(e instanceof Error ? e.message : e));
+          setMvResults([...results]);
+          if (/Auth failed/i.test(msg)) {
+            setError(`${msg} — stopped the batch.`);
+            break; // auth is persistent — no point continuing
+          }
+          consecutiveFails++;
+          if (consecutiveFails >= 2) {
+            setError(`View ${i + 1} failed (${msg}). Two in a row — backend likely down; stopped.`);
+            break;
+          }
+          // A single failure (typically a cold-start blip on the FIRST view) shouldn't kill
+          // the batch — the container is booting now, so the remaining views usually succeed.
+          setError(`View ${i + 1} failed (${msg}); continuing with the rest.`);
+          continue;
         }
         setMvResults([...results]);
       }
       const done = results.filter((r) => r.status === "done");
       setMvProgress(`Done — ${done.length}/${caps.length} views rendered (same seed ${baseSeed}).`);
-      if (done[0]?.preview) setPreview(done[0].preview);
+      const firstDone = results.findIndex((r) => r.status === "done");
+      if (firstDone >= 0 && results[firstDone].preview) {
+        setPreview(results[firstDone].preview!);
+        setMvSelected(firstDone);
+      }
     } catch (e) {
       setError(String(e instanceof Error ? e.message : e));
     } finally {
@@ -708,8 +744,13 @@ function Workspace() {
               {mvResults.map((v, i) => (
                 <div
                   key={i}
-                  style={galleryTile(v.preview === preview)}
-                  onClick={() => v.preview && setPreview(v.preview)}
+                  style={galleryTile(mvSelected === i)}
+                  onClick={() => {
+                    if (v.preview) {
+                      setPreview(v.preview);
+                      setMvSelected(i);
+                    }
+                  }}
                   title={`${v.label} · ${v.status}`}
                 >
                   {v.preview ? <img src={v.preview} style={galleryThumb} alt={v.label} /> : <div style={galleryThumbEmpty} />}
@@ -749,7 +790,7 @@ function Workspace() {
                 🎲
               </span>
             </div>
-            <button onClick={generateBase} disabled={busyRef.current} style={{ ...primaryBtn, width: "100%", marginTop: 10 }}>
+            <button onClick={generateBase} disabled={busyRef.current || mvBusy} style={{ ...primaryBtn, width: "100%", marginTop: 10, opacity: busyRef.current || mvBusy ? 0.5 : 1 }}>
               {hasBase ? "↻ Regenerate base" : "✦ Generate base render"}
             </button>
           </Section>
@@ -758,7 +799,7 @@ function Workspace() {
             <div style={{ opacity: 0.6, fontSize: 11, lineHeight: 1.5, marginBottom: 8 }}>
               Orbit N angles around the building, each rendered with the <b>same seed + prompt</b> — a
               consistent multi-view set. Every frame keeps its camera pose, so the set can also bake a
-              photoreal 3DGS.
+              photoreal 3DGS. Tip: enable <b>🔥 Keep warm</b> first so the first view skips the cold start.
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
               <span style={smallLabel}>Views</span>
@@ -866,8 +907,8 @@ function Workspace() {
               <ScaleSliders layer={active} onChange={(patch) => updateHeroLayer(active.id, patch)} />
               <button
                 onClick={() => runRegion(active)}
-                disabled={busyRef.current || !hasBase}
-                style={{ ...primaryBtn, width: "100%", marginTop: 8 }}
+                disabled={busyRef.current || mvBusy || !hasBase}
+                style={{ ...primaryBtn, width: "100%", marginTop: 8, opacity: busyRef.current || mvBusy || !hasBase ? 0.5 : 1 }}
               >
                 {active.resultUrl ? "↻ Re-run region" : "✦ Run region"}
               </button>
