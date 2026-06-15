@@ -121,7 +121,7 @@ export function SplatPanel() {
       ) : (
         <div style={{ marginBottom: 10 }}>
           <div style={smallLabel}>Bake endpoint (Modal splat_bake)</div>
-          <input value={bakeUrl} onChange={(e) => setSplatBakeUrl(e.target.value)} placeholder="…splatbake-bake.modal.run" style={{ ...input, width: "100%", marginBottom: 6 }} />
+          <input value={bakeUrl} onChange={(e) => setSplatBakeUrl(e.target.value)} placeholder="…splatbake-web.modal.run" style={{ ...input, width: "100%", marginBottom: 6 }} />
           <button onClick={doBake} disabled={baking} style={{ ...primaryBtn, width: "100%", opacity: baking ? 0.6 : 1 }}>
             {baking ? "Baking…" : "✦ Bake this scene → splat"}
           </button>

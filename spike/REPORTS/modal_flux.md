@@ -23,19 +23,32 @@ separate apps (deploying them never rebuilds the frozen `spike/modal_app.py`).
 ## Deploy the FLUX hero backend
 ```
 modal run    spike/modal_flux.py::warm_weights   # one-time: prefetch ~24 GB FLUX + ControlNet to the Volume
-modal deploy spike/modal_flux.py                 # publish both endpoints
-modal run    spike/modal_flux.py                 # OPTIONAL local smoke (needs spike/outputs/web3d_house/{beauty,depth,instance_ids}.png) → outputs/hero_smoke.png
+modal deploy spike/modal_flux.py                 # publish the web endpoint
 ```
-`modal deploy` prints two URLs, e.g.:
-- `https://<workspace>--arch-rendering-flux-heroflux-hero-render.modal.run`
-- `https://<workspace>--arch-rendering-flux-heroflux-region-edit.modal.run`
+The backend is ONE ASGI app (FastAPI + CORS) with two routes. `modal deploy` prints:
+- `https://<workspace>--arch-rendering-flux-heroflux-web.modal.run`
 
-In the app: click **✦ Hero render** (WebGL2 / + GI mode) → the setup card → paste both URLs
-+ your `HERO_SHARED_SECRET`.
+In the app: click **✦ Hero render** (WebGL2 / + GI mode) → the setup card → paste:
+- Base render URL: `…heroflux-web.modal.run/hero_render`
+- Region edit URL: `…heroflux-web.modal.run/region_edit`
+- Secret: your `HERO_SHARED_SECRET`
 
 - GPU: `A100-80GB` BF16 (one-line `GPU` const; swap to `H100` for ~2× speed or `A10G` for cost).
-- Cost: ~$0.01–0.02 / render warm; idle = $0 (`min_containers=0`, `scaledown_window=300`).
-  First call after idle cold-starts (~30–90 s: container + load the cached weights).
+- VERIFIED LIVE: 1024×688 @ 28 steps ≈ **13 s** warm (cold start ~40 s: container + load cached weights);
+  geometry-locked photoreal output (every window/trim/roof preserved). Cost ~$0.01–0.02/render; idle = $0.
+
+### Gotchas hit while bringing it up (so you don't re-learn them)
+- **Windows console**: prefix every `modal` command with `PYTHONUTF8=1` (Modal's ✓ progress glyphs crash cp1252).
+- **After a CODE change, the warm container keeps serving the OLD code.** Run
+  `modal app stop arch-rendering-flux -y` before `modal deploy`, else the next request still hits stale code.
+- **diffusers 0.32.2 multi-control**: a bare list of 2 control images on a single `FluxControlNetModel`
+  batches them (latent-shape error). FIX (in `load()`): wrap the Union in `FluxMultiControlNetModel([cn, cn])`.
+- **Control images must be 3-channel RGB** (`prep_*` return 1-ch 'L' → `.convert("RGB")`).
+- **`negative_prompt`/`true_cfg_scale`** don't exist on 0.32.2's `FluxControlNetPipeline` — added only if the
+  installed diffusers supports them (the code inspects the signature). Bump diffusers later to enable them.
+- **CORS**: Modal's `@modal.fastapi_endpoint` CORS-es only the OPTIONS preflight, not the response → the browser
+  POST fails with "Failed to fetch". FIX: a real FastAPI app + `CORSMiddleware` via `@modal.asgi_app()` (done).
+- FastAPI must be in the image (`fastapi[standard]`) for Modal 1.4+; deps are pinned to a known-good FLUX combo.
 
 ### hero_render contract  (POST, JSON; images are BARE base64 PNG)
 ```
@@ -62,7 +75,7 @@ Same seed + controls as the base, masked to `region_ids` (untouched pixels = bas
 ```
 modal deploy spike/modal_splat.py     # publish the bake endpoint
 ```
-Paste the `…splatbake-bake.modal.run` URL into the Splat panel → **Bake our scene**.
+Paste the `…splatbake-web.modal.run/bake` URL into the Splat panel → **Bake our scene**.
 - GPU `A100-80GB`; ~15–25 min / ~42 views @ 20k iters; ~$0.30–0.50.
 - **Build risk to verify on first deploy:** the image compiles `gsplat` CUDA kernels
   (CUDA-devel base). If the build is flaky, pin a prebuilt `gsplat` wheel for the

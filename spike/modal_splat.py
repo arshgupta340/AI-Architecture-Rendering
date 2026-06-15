@@ -16,7 +16,7 @@ returns a `job_id`; the client polls the same endpoint with `{job_id}` until the
 
 Deploy runbook (see spike/REPORTS/modal_flux.md §splat):
     modal deploy spike/modal_splat.py          # publish the bake endpoint
-  Then paste the `…splatbake-bake.modal.run` URL into the app's Splat panel.
+  Then paste the `…splatbake-web.modal.run/bake` URL into the app's Splat panel.
 
 NOTE: the IMAGE BUILD (CUDA devel + nerfstudio + gsplat JIT) is the part to verify on
 your first `modal deploy` — gsplat compiles CUDA kernels. If the build is flaky, pin
@@ -41,6 +41,7 @@ splat_image = (
     .pip_install("torch==2.1.2", "torchvision==0.16.2", index_url="https://download.pytorch.org/whl/cu121")
     .pip_install("ninja")
     .pip_install("nerfstudio==1.1.5")  # pulls a matching gsplat; splatfacto lives here
+    .pip_install("fastapi[standard]")  # Modal 1.4+ requires FastAPI for @modal.fastapi_endpoint
     .env({"TORCH_CUDA_ARCH_LIST": "8.0;9.0"})  # A100=8.0, H100=9.0
 )
 
@@ -127,47 +128,56 @@ def _check_auth(body: dict):
 
 
 # --------------------------------------------------------------------------- #
-# bake — the HTTP endpoint. Start (transforms present) → spawn + return job_id.
-#        Poll  (job_id present)    → check the spawned call; return ply when done.
+# web — ONE ASGI app (FastAPI + CORSMiddleware) serving POST /bake. A real FastAPI
+#       app is needed because the browser POSTs cross-origin: Modal's per-endpoint
+#       decorator only CORS-es the OPTIONS preflight, not the response, so the fetch
+#       fails. POST /bake: start (transforms present) → spawn + {job_id}; poll
+#       ({job_id} only) → {job_id} (training) | {ply_b64} (done).
 # --------------------------------------------------------------------------- #
 @app.function(secrets=[secret], timeout=120)
-@modal.fastapi_endpoint(method="POST")
-def bake(body: dict):
-    """Start a bake or poll one.
+@modal.asgi_app()
+def web():
+    from fastapi import FastAPI, HTTPException, Request
+    from fastapi.middleware.cors import CORSMiddleware
+    from fastapi.responses import JSONResponse
 
-    Start:  { secret, transforms: <nerfstudio json>, images: [{name, b64(jpeg)}], iterations? }
-            → { job_id }
-    Poll:   { secret, job_id }
-            → { job_id }  (still training)  |  { ply_b64 }  (done)  |  { error }
-    """
-    from fastapi import HTTPException
+    api = FastAPI()
+    api.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-    _check_auth(body)
+    @api.exception_handler(Exception)
+    async def _err(_r: Request, exc: Exception):
+        import traceback
 
-    # Poll path.
-    if body.get("job_id") and not body.get("transforms"):
-        call = modal.functions.FunctionCall.from_id(body["job_id"])
-        try:
-            ply_b64 = call.get(timeout=0)
-            return {"ply_b64": ply_b64}
-        except TimeoutError:
-            return {"job_id": body["job_id"]}
-        except Exception as e:  # noqa: BLE001 — surface training failures to the client
-            raise HTTPException(status_code=500, detail=f"training failed: {e}")
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={"detail": f"{type(exc).__name__}: {exc}"})
 
-    # Start path.
-    transforms = body.get("transforms")
-    images = body.get("images")
-    if not transforms or not images:
-        raise HTTPException(status_code=400, detail="need transforms + images to start a bake")
-    call = train.spawn(transforms, images, int(body.get("iterations", 20000)))
-    return {"job_id": call.object_id}
+    @api.post("/bake")
+    def bake(body: dict):
+        _check_auth(body)
+        # Poll path.
+        if body.get("job_id") and not body.get("transforms"):
+            call = modal.functions.FunctionCall.from_id(body["job_id"])
+            try:
+                return {"ply_b64": call.get(timeout=0)}
+            except TimeoutError:
+                return {"job_id": body["job_id"]}
+            except Exception as e:  # noqa: BLE001 — surface training failures to the client
+                raise HTTPException(status_code=500, detail=f"training failed: {e}")
+        # Start path.
+        transforms = body.get("transforms")
+        images = body.get("images")
+        if not transforms or not images:
+            raise HTTPException(status_code=400, detail="need transforms + images to start a bake")
+        call = train.spawn(transforms, images, int(body.get("iterations", 20000)))
+        return {"job_id": call.object_id}
+
+    return api
 
 
 @app.local_entrypoint()
 def info():
     """`modal run spike/modal_splat.py` — prints the deploy hint (no GPU spend)."""
     print("Deploy with:  modal deploy spike/modal_splat.py")
-    print("Then paste the  …splatbake-bake.modal.run  URL into the app's Splat panel (source: Bake).")
+    print("Then paste the  …splatbake-web.modal.run/bake  URL into the app's Splat panel (source: Bake).")
     print(f"GPU = {GPU};  training ~15-25 min for ~42 views @ 20k iters.")
     print("Build risk: gsplat CUDA kernels compile in the image — watch the first deploy.")

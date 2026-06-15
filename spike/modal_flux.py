@@ -113,16 +113,20 @@ flux_image = (
         extra_index_url="https://download.pytorch.org/whl/cu124",
     )
     .pip_install(
-        "diffusers>=0.32",
-        "transformers",
-        "accelerate",
-        "safetensors",
-        "sentencepiece",
-        "protobuf",
-        "Pillow",
-        "numpy",
-        "opencv-python-headless",
-        "huggingface_hub",
+        # Pinned to a known-good FLUX-ControlNet combo (unpinned pulled diffusers 0.38 /
+        # transformers 5.x / hf_hub 1.x — too new, risks breaking the FLUX text encoders).
+        "diffusers==0.32.2",
+        "transformers==4.49.0",
+        "accelerate==1.1.1",
+        "huggingface_hub==0.26.5",
+        "safetensors>=0.4.5",
+        "sentencepiece>=0.2",
+        "protobuf>=4",
+        "Pillow>=10",
+        "numpy<2",
+        "opencv-python-headless>=4.9",
+        # Modal 1.4+ no longer auto-installs FastAPI for @modal.fastapi_endpoint.
+        "fastapi[standard]",
     )
 )
 
@@ -302,13 +306,17 @@ class HeroFlux:
     def load(self):
         """Build the FLUX + Union ControlNet pipeline once per container.
 
-        A single FluxControlNetModel (the Union checkpoint) drives BOTH canny and
-        depth; it is passed to FluxControlNetPipeline as the `controlnet`.
+        The Union checkpoint drives BOTH canny + depth. To pass TWO control images on
+        diffusers 0.32.2 we wrap the single Union model in a FluxMultiControlNetModel
+        referenced TWICE ([cn, cn]) — passing a bare list of 2 control images to a
+        single FluxControlNetModel makes 0.32.2 batch them (latent-shape mismatch:
+        "shape [...] invalid for input of size 2x"). The multi-wrapper tells the
+        pipeline there are 2 distinct conditions (mode 0 = canny, mode 2 = depth).
         """
         import os
 
         import torch
-        from diffusers import FluxControlNetModel, FluxControlNetPipeline
+        from diffusers import FluxControlNetModel, FluxControlNetPipeline, FluxMultiControlNetModel
 
         # Point HF + diffusers at the Volume cache so we reuse warm_weights' download.
         HF_CACHE.mkdir(parents=True, exist_ok=True)
@@ -318,9 +326,10 @@ class HeroFlux:
 
         dtype = torch.bfloat16
         print(f"[HeroFlux] loading ControlNet-Union {UNION_REPO} ...")
-        controlnet = FluxControlNetModel.from_pretrained(
+        union = FluxControlNetModel.from_pretrained(
             UNION_REPO, torch_dtype=dtype, cache_dir=str(HF_CACHE), token=token
         )
+        controlnet = FluxMultiControlNetModel([union, union])  # [canny-mode, depth-mode]
         print(f"[HeroFlux] loading FLUX pipeline {FLUX_REPO} ...")
         self.pipe = FluxControlNetPipeline.from_pretrained(
             FLUX_REPO,
@@ -350,16 +359,18 @@ class HeroFlux:
         depth_end: float,
         true_cfg_scale: float = DEFAULT_TRUE_CFG,
     ):
-        """The verified diffusers call: one FluxControlNetModel, two controls via
-        list args (canny=mode 0, depth=mode 2). `true_cfg_scale` > 1 enables the
-        negative prompt (real CFG); == 1 ignores it (FLUX distilled guidance only)."""
+        """One FluxControlNetModel, two controls via list args (canny=mode 0,
+        depth=mode 2). `negative_prompt` + `true_cfg_scale` only exist on newer
+        FluxControlNetPipeline (>0.32.2) — added ONLY if the installed diffusers
+        supports them, so the negative prompt activates after a diffusers bump without
+        crashing the pinned version (0.32.2 raises TypeError otherwise)."""
+        import inspect
+
         import torch
 
-        img = self.pipe(
+        kwargs = dict(
             prompt=prompt,
             prompt_2=prompt,
-            negative_prompt=negative_prompt,
-            true_cfg_scale=float(true_cfg_scale),
             control_image=[canny_pil, depth_pil],
             control_mode=[CANNY_MODE, DEPTH_MODE],          # canny=0, depth=2
             controlnet_conditioning_scale=[canny_scale, depth_scale],
@@ -367,6 +378,14 @@ class HeroFlux:
             control_guidance_end=[canny_end, depth_end],
             width=width,
             height=height,
+        )
+        _sig = inspect.signature(self.pipe.__call__).parameters
+        if true_cfg_scale and true_cfg_scale > 1 and "true_cfg_scale" in _sig and "negative_prompt" in _sig:
+            kwargs["negative_prompt"] = negative_prompt
+            kwargs["true_cfg_scale"] = float(true_cfg_scale)
+
+        img = self.pipe(
+            **kwargs,
             num_inference_steps=steps,
             guidance_scale=guidance_scale,
             generator=torch.Generator("cuda").manual_seed(int(seed)),
@@ -400,7 +419,9 @@ class HeroFlux:
             canny_pil = canny_pil.resize((width, height), _Image.NEAREST)
         if depth_pil.size != (width, height):
             depth_pil = depth_pil.resize((width, height), _Image.BILINEAR)
-        return canny_pil, depth_pil
+        # FLUX ControlNet expects 3-channel RGB control images (prep_* produce 1-ch 'L'
+        # → "expected input to have 3 channels, but got 1" otherwise).
+        return canny_pil.convert("RGB"), depth_pil.convert("RGB")
 
     @staticmethod
     def _dims(body: dict, fallback_img) -> tuple[int, int]:
@@ -427,37 +448,56 @@ class HeroFlux:
             raise HTTPException(status_code=401, detail="bad secret")
 
     # ----------------------------------------------------------------------- #
-    # Endpoint 1 — hero_render: base render of a fresh capture.
+    # Web — ONE ASGI app (FastAPI + CORSMiddleware) serving both routes.
+    #
+    # Why not two @modal.fastapi_endpoint methods: Modal's per-endpoint decorator
+    # CORS-es the OPTIONS preflight but NOT the actual function response, so a browser
+    # cross-origin POST gets a response with no Access-Control-Allow-Origin and the
+    # fetch fails ("Failed to fetch"). A real FastAPI app + CORSMiddleware adds CORS to
+    # EVERY response (incl. 401/500), which is what the browser needs.
+    #
+    # Routes (secret in the JSON body):
+    #   POST /hero_render  { secret, beauty, depth, ids_rgb, canny?, prompt?,
+    #     negative_prompt?, width?, height?, seed?, steps?, guidance_scale?,
+    #     true_cfg_scale?, canny_scale?, canny_end?, depth_scale?, depth_end? }
+    #       -> { image: <b64 png>, seed, ms }    (depth is LINEAR, NEAR=white FAR=black;
+    #          ids_rgb packs id=r|g<<8; canny is computed server-side if omitted)
+    #   POST /region_edit  { ...hero_render fields, base, region_ids:[int], mask? }
+    #       -> { image: <b64 full frame>, mask, seed, ms }   (region composited over
+    #          `base` with the SAME seed/controls → byte-stable outside the mask)
     # ----------------------------------------------------------------------- #
-    @modal.fastapi_endpoint(method="POST")
-    def hero_render(self, body: dict):
-        """POST a capture's buffers + render params -> a photoreal base render.
+    @modal.asgi_app()
+    def web(self):
+        from fastapi import FastAPI, Request
+        from fastapi.middleware.cors import CORSMiddleware
+        from fastapi.responses import JSONResponse
 
-        Request JSON (all images are BARE base64 PNG, no `data:` prefix):
-          {
-            "secret":          str,         # shared-secret auth (REQUIRED)
-            "beauty":          <b64 png>,   # shaded viewport screenshot
-            "depth":           <b64 png>,   # LINEAR depth, NEAR=white FAR=black
-            "ids_rgb":         <b64 png>,   # instance ids as RGB (id = r | g<<8)
-            "canny":           <b64 png>?,  # optional precomputed canny; else server-computed
-            "prompt":          str?,        # default WARM_PROMPT
-            "negative_prompt": str?,        # default DEFAULT_NEGATIVE
-            "width":           int?,        # default beauty width  (rounded to /16)
-            "height":          int?,        # default beauty height (rounded to /16)
-            "seed":            int?,        # default 0
-            "steps":           int?,        # default 32
-            "guidance_scale":  float?,      # default 3.5
-            "true_cfg_scale":  float?,      # default 1.0 (>1 enables the negative prompt)
-            "canny_scale":     float?,      # default 0.8
-            "canny_end":       float?,      # default 0.85
-            "depth_scale":     float?,      # default 0.5
-            "depth_end":       float?       # default 0.7
-          }
+        api = FastAPI()
+        api.add_middleware(
+            CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
+        )
 
-        Response JSON: {"image": <b64 png>, "seed": int, "ms": int}
-        """
-        self._check_auth(body)
-        return self._hero_core(body)
+        # Return a CORS'd JSON error for ANY unhandled exception — otherwise an
+        # unhandled 500 bypasses CORSMiddleware and the browser sees only an opaque
+        # "Failed to fetch" instead of the real error message.
+        @api.exception_handler(Exception)
+        async def _all_errors(_req: Request, exc: Exception):
+            import traceback
+
+            traceback.print_exc()
+            return JSONResponse(status_code=500, content={"detail": f"{type(exc).__name__}: {exc}"})
+
+        @api.post("/hero_render")
+        def hero_render(body: dict):
+            self._check_auth(body)
+            return self._hero_core(body)
+
+        @api.post("/region_edit")
+        def region_edit(body: dict):
+            self._check_auth(body)
+            return self._region_core(body)
+
+        return api
 
     @modal.method()
     def render_remote(self, body: dict) -> dict:
@@ -493,35 +533,12 @@ class HeroFlux:
         return {"image": _b64(_png_bytes(img)), "seed": seed, "ms": ms}
 
     # ----------------------------------------------------------------------- #
-    # Endpoint 2 — region_edit: re-clad ONE region, byte-stable elsewhere.
+    # region_edit core — served by the POST /region_edit route in web(). v1 strategy:
+    # run a FULL dual-controlnet pass (SAME seed + controls as the base, so geometry +
+    # global lighting match), then composite ONLY the masked region over `base` so
+    # untouched pixels == base (byte-stable). A true FluxControlNetInpaintPipeline is a
+    # v2 upgrade. Body adds { base, region_ids:[int], mask? } to the hero_render fields.
     # ----------------------------------------------------------------------- #
-    @modal.fastapi_endpoint(method="POST")
-    def region_edit(self, body: dict):
-        """POST a base frame + a region selection + a region prompt -> the base
-        frame with ONLY that region re-rendered (untouched pixels == base, so the
-        result is byte-stable outside the mask).
-
-        v1 strategy: run a FULL dual-controlnet pass with the SAME seed and the
-        SAME controls as the base render (so geometry + global lighting match),
-        then composite ONLY the masked region over `base`. A true
-        FluxControlNetInpaintPipeline (which only denoises inside the mask) is a
-        v2 upgrade — it would be cheaper and avoid any global drift, but needs the
-        inpaint pipeline class + a mask-aware call.
-
-        Request JSON adds to the hero_render body (incl. `secret`):
-          {
-            ...all hero_render fields...,
-            "base":       <b64 png>,        # the frame to edit into (required)
-            "region_ids": [int, ...],       # instance ids to re-clad (required)
-            "mask":       <b64 png>?        # optional explicit mask; else built from ids
-          }
-        `prompt` should describe the NEW material for the region.
-
-        Response JSON: {"image": <b64 png full frame>, "mask": <b64 png>, "seed": int, "ms": int}
-        """
-        self._check_auth(body)
-        return self._region_core(body)
-
     def _region_core(self, body: dict) -> dict:
         t0 = time.monotonic()
 
