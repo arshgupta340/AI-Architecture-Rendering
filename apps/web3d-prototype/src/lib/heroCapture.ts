@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { useStore, type HeroCaptureData } from "../state/store";
+import { useStore, type HeroCaptureData, type MultiViewCapture } from "../state/store";
 
 /**
  * HeroCapture — 4-pass capture of the LIVE WebGL2 / +GI scene for the hero render.
@@ -137,6 +137,35 @@ function buildingDepthRange(
   return { near: Math.max(0.1, d - sphere.radius * 1.05), far: d + sphere.radius * 1.05 };
 }
 
+/** World-space bounding sphere of all painted meshes — orbit framing for multi-view. */
+function buildingSphere(meshesBySemantic: Map<string, THREE.Mesh[]>): THREE.Sphere {
+  const box = new THREE.Box3();
+  const tmp = new THREE.Box3();
+  meshesBySemantic.forEach((meshes) =>
+    meshes.forEach((m) => {
+      if (!m.geometry) return;
+      if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
+      if (m.geometry.boundingBox) box.union(tmp.copy(m.geometry.boundingBox).applyMatrix4(m.matrixWorld));
+    }),
+  );
+  const sphere = new THREE.Sphere();
+  if (box.isEmpty()) sphere.set(new THREE.Vector3(), 100);
+  else box.getBoundingSphere(sphere);
+  return sphere;
+}
+
+/** three.js matrixWorld (column-major) → row-major nested 4×4 (nerfstudio/OpenGL c2w),
+ *  matching lib/splatBake.ts so multi-view hero renders are drop-in bake inputs. */
+function toRowMajor(m: THREE.Matrix4): number[][] {
+  const e = m.elements;
+  return [
+    [e[0], e[4], e[8], e[12]],
+    [e[1], e[5], e[9], e[13]],
+    [e[2], e[6], e[10], e[14]],
+    [e[3], e[7], e[11], e[15]],
+  ];
+}
+
 export function HeroCapture() {
   const gl = useThree((s) => s.gl);
   const scene = useThree((s) => s.scene);
@@ -144,9 +173,17 @@ export function HeroCapture() {
   const controls = useThree((s) => s.controls) as { target?: THREE.Vector3 } | null;
   const invalidate = useThree((s) => s.invalidate);
   const setHeroCaptureFn = useStore((s) => s.setHeroCaptureFn);
+  const setHeroCaptureViewsFn = useStore((s) => s.setHeroCaptureViewsFn);
 
   useEffect(() => {
-    const fn = async (cfg: { maxEdge: number }): Promise<HeroCaptureData | null> => {
+    // Capture the CURRENT camera state into a HeroCaptureData bundle. `forceRender`
+    // (multi-view) does a raw scene render to the canvas first, since the camera was
+    // just moved and the on-screen frame is stale; single-view leaves it false to read
+    // the live post-processed frame (verified path — unchanged).
+    const captureView = async (
+      maxEdgeReq: number,
+      captureOpts?: { forceRender?: boolean },
+    ): Promise<HeroCaptureData | null> => {
       const persp = camera as THREE.PerspectiveCamera;
       if (!persp.isPerspectiveCamera) return null;
 
@@ -154,11 +191,21 @@ export function HeroCapture() {
       const ch = gl.domElement.height;
       if (cw < 2 || ch < 2) return null;
       // Cap the long edge to maxEdge, then round both dims to /16 (FLUX VAE).
-      const maxEdge = Math.max(16, cfg.maxEdge | 0);
+      const maxEdge = Math.max(16, maxEdgeReq | 0);
       const longEdge = Math.max(cw, ch);
       const s = longEdge > maxEdge ? maxEdge / longEdge : 1;
       const W = round16(cw * s);
       const H = round16(ch * s);
+
+      // Multi-view: the camera just moved — draw the new pose to the canvas so the
+      // beauty toBlob below captures THIS view (raw lit scene, no screen-space post;
+      // the geometry lock is canny ∪ id-edges, which the id pass produces exactly).
+      if (captureOpts?.forceRender) {
+        const pt = gl.getRenderTarget();
+        gl.setRenderTarget(null);
+        gl.render(scene, persp);
+        gl.setRenderTarget(pt);
+      }
 
       // ---- 1) BEAUTY — read the on-screen composited frame FIRST, downscale to (W,H). ----
       let beautyBlob = await new Promise<Blob | null>((res) =>
@@ -301,9 +348,62 @@ export function HeroCapture() {
       return { width: W, height: H, beauty, depth, idsRgb, regions, camera: { pos, target, fov: persp.fov } };
     };
 
+    // Single view (current camera) — the NavBar "Hero render" entry point.
+    const fn = (cfg: { maxEdge: number }) => captureView(cfg.maxEdge);
+
+    // Multi-view: orbit a turntable of `count` poses around the building, starting at
+    // the CURRENT azimuth and PRESERVING the current distance + elevation (so the set
+    // matches the user's framing), capturing each. Each view also records its 4×4
+    // camera-to-world (row-major) so the photoreal renders can feed the splat bake.
+    // Camera + controls.target are fully restored in finally.
+    const viewsFn = async (cfg: { maxEdge: number; count: number }): Promise<MultiViewCapture[] | null> => {
+      const persp = camera as THREE.PerspectiveCamera;
+      if (!persp.isPerspectiveCamera) return null;
+      const count = Math.max(1, Math.min(48, cfg.count | 0));
+      const sphere = buildingSphere(useStore.getState().meshesBySemantic);
+      const center = sphere.center.clone();
+
+      const prevPos = persp.position.clone();
+      const prevQuat = persp.quaternion.clone();
+      const prevTarget = controls?.target?.clone() ?? null;
+
+      const offset = prevPos.clone().sub(center);
+      const dist = Math.max(1e-3, offset.length());
+      const el = Math.asin(THREE.MathUtils.clamp(offset.y / dist, -1, 1));
+      const az0 = Math.atan2(offset.z, offset.x);
+      const horiz = Math.cos(el) * dist;
+      const yWorld = center.y + dist * Math.sin(el);
+
+      const out: MultiViewCapture[] = [];
+      try {
+        for (let i = 0; i < count; i++) {
+          const az = az0 + (i / count) * Math.PI * 2;
+          persp.position.set(center.x + horiz * Math.cos(az), yWorld, center.z + horiz * Math.sin(az));
+          if (controls?.target) controls.target.copy(center);
+          persp.lookAt(center);
+          persp.updateMatrixWorld(true);
+          const transform = toRowMajor(persp.matrixWorld);
+          const cap = await captureView(cfg.maxEdge, { forceRender: true });
+          if (cap) out.push({ capture: cap, transform, label: `view ${i + 1}` });
+        }
+      } finally {
+        persp.position.copy(prevPos);
+        persp.quaternion.copy(prevQuat);
+        if (controls?.target && prevTarget) controls.target.copy(prevTarget);
+        persp.updateProjectionMatrix();
+        persp.updateMatrixWorld(true);
+        invalidate();
+      }
+      return out.length ? out : null;
+    };
+
     setHeroCaptureFn(fn);
-    return () => setHeroCaptureFn(null);
-  }, [gl, scene, camera, controls, invalidate, setHeroCaptureFn]);
+    setHeroCaptureViewsFn(viewsFn);
+    return () => {
+      setHeroCaptureFn(null);
+      setHeroCaptureViewsFn(null);
+    };
+  }, [gl, scene, camera, controls, invalidate, setHeroCaptureFn, setHeroCaptureViewsFn]);
 
   return null;
 }

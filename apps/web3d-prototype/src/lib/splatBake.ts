@@ -175,6 +175,20 @@ export async function bakeSceneToSplat(
     frames,
   };
 
+  return submitBakeJob(transforms, images, opts);
+}
+
+type BakeJobOpts = { bakeUrl: string; secret: string; iterations?: number; onProgress?: (m: string) => void };
+
+/** POST a nerfstudio dataset to the Modal splat_bake endpoint, poll the async job, and
+ *  return the trained .ply (object URL or remote URL). Shared by the scene-bake and the
+ *  multi-view hero bake. */
+async function submitBakeJob(
+  transforms: object,
+  images: { name: string; b64: string }[],
+  opts: BakeJobOpts,
+): Promise<string | null> {
+  const log = opts.onProgress ?? (() => {});
   log(`Uploading ${images.length} views + poses to the trainer…`);
   const res = await fetch(opts.bakeUrl, {
     method: "POST",
@@ -215,4 +229,34 @@ export async function bakeSceneToSplat(
     return data.ply_url;
   }
   throw new Error("Trainer returned no .ply (timed out or bad response).");
+}
+
+export type HeroViewForBake = {
+  imageB64: string; // bare b64 PNG — the photoreal geometry-locked hero render
+  transform: number[][]; // 4×4 camera-to-world, row-major (from heroCaptureViewsFn)
+  width: number;
+  height: number;
+  fov: number; // degrees
+};
+
+/**
+ * Bake a 3DGS from photoreal multi-view HERO renders — FLUX materials ALREADY baked into
+ * the images. Same nerfstudio contract as bakeSceneToSplat, but the frames are the
+ * geometry-locked hero renders and the poses come from heroCaptureViewsFn (which records
+ * each camera-to-world with the SAME toRowMajor convention used here). All views MUST
+ * share W/H/FOV (one shared camera model). Wants MANY views (~24-42) for a usable splat.
+ */
+export async function bakeFromHeroViews(views: HeroViewForBake[], opts: BakeJobOpts): Promise<string | null> {
+  if (!views.length) throw new Error("No views to bake.");
+  const { width: W, height: H, fov } = views[0];
+  if (views.some((v) => v.width !== W || v.height !== H || v.fov !== fov))
+    throw new Error("All views must share resolution + FOV to bake (re-capture at one setting).");
+  const f = H / 2 / Math.tan(THREE.MathUtils.degToRad(fov) / 2);
+  const frames = views.map((v, i) => ({
+    file_path: `images/r_${String(i).padStart(3, "0")}.png`,
+    transform_matrix: v.transform,
+  }));
+  const images = views.map((v, i) => ({ name: `r_${String(i).padStart(3, "0")}.png`, b64: v.imageB64 }));
+  const transforms = { camera_model: "OPENCV", fl_x: f, fl_y: f, cx: W / 2, cy: H / 2, w: W, h: H, frames };
+  return submitBakeJob(transforms, images, opts);
 }

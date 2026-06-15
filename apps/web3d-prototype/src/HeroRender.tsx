@@ -1,6 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useStore, type HeroLayer, type HeroCaptureData, DEFAULT_HERO_SCALES } from "./state/store";
 import { SWATCHES } from "./lib/swatches";
+import { bakeFromHeroViews } from "./lib/splatBake";
+import { downloadBlob } from "./lib/exportImage";
+
+/** One multi-view turntable frame: the photoreal render + its bake-ready pose. */
+type MvResult = {
+  label: string;
+  preview: string | null; // object URL (or beauty data URL while pending) for display
+  imageB64: string | null; // bare b64 PNG of the hero render — for the splat bake
+  transform: number[][]; // 4×4 c2w row-major
+  width: number;
+  height: number;
+  fov: number;
+  status: "pending" | "done" | "error";
+};
 
 /**
  * HeroRender — the depth+canny-locked diffusion "hero" modal.
@@ -311,6 +325,13 @@ function Workspace() {
   const [warmState, setWarmState] = useState<"idle" | "pinging" | "warm" | "err">("idle");
   const [backendModel, setBackendModel] = useState<string | null>(null);
   const [lastMs, setLastMs] = useState<number | null>(null);
+
+  // ---- multi-view turntable state ----
+  const [viewCount, setViewCount] = useState(6);
+  const [mvResults, setMvResults] = useState<MvResult[]>([]);
+  const [mvBusy, setMvBusy] = useState(false);
+  const [mvProgress, setMvProgress] = useState<string | null>(null);
+
   const noteRenderMs = (ms: number | undefined) => {
     if (typeof ms === "number") {
       setLastMs(ms);
@@ -501,6 +522,129 @@ function Workspace() {
     a.remove();
   };
 
+  // ---- multi-view turntable: orbit N poses, render each base-locked with the SAME seed
+  //      + prompt → a consistent multi-angle set of the same building. Each view keeps
+  //      its bake-ready pose, so the set can also train a photoreal 3DGS. ----
+  const renderMultiView = async () => {
+    if (busyRef.current || mvBusy) return;
+    const viewsFn = useStore.getState().heroCaptureViewsFn;
+    if (!viewsFn) {
+      setError("Multi-view capture needs a WebGL2 / + GI render mode.");
+      return;
+    }
+    if (heroCalls + viewCount > MAX_HERO_CALLS) {
+      setError(`Multi-view needs ${viewCount} renders; only ${MAX_HERO_CALLS - heroCalls} left this session.`);
+      return;
+    }
+    setError(null);
+    setMvBusy(true);
+    setMvResults([]);
+    setMvProgress("Capturing orbit views…");
+    try {
+      const mvMaxEdge = Math.max(capture.width, capture.height); // match the base capture dims
+      const caps = await viewsFn({ maxEdge: mvMaxEdge, count: viewCount });
+      if (!caps || !caps.length) {
+        setMvProgress("Orbit capture failed.");
+        return;
+      }
+      const results: MvResult[] = caps.map((c) => ({
+        label: c.label,
+        preview: `data:image/png;base64,${c.capture.beauty}`,
+        imageB64: null,
+        transform: c.transform,
+        width: c.capture.width,
+        height: c.capture.height,
+        fov: c.capture.camera.fov,
+        status: "pending",
+      }));
+      setMvResults([...results]);
+      for (let i = 0; i < caps.length; i++) {
+        setMvProgress(`Rendering view ${i + 1}/${caps.length} on the GPU…`);
+        const cap = caps[i].capture;
+        try {
+          heroCalls++;
+          const r = await postHero(endpoint.baseUrl, {
+            secret: endpoint.secret,
+            prompt,
+            negative_prompt: negative,
+            seed: baseSeed, // SAME seed across views → consistent materials/style
+            steps: 32,
+            guidance_scale: 3.5,
+            true_cfg_scale: negative.trim() ? 4.0 : 1.0,
+            canny_scale: DEFAULT_HERO_SCALES.canny,
+            canny_end: DEFAULT_HERO_SCALES.cannyEnd,
+            depth_scale: DEFAULT_HERO_SCALES.depth,
+            depth_end: DEFAULT_HERO_SCALES.depthEnd,
+            beauty: cap.beauty,
+            depth: cap.depth,
+            ids_rgb: cap.idsRgb,
+            width: cap.width,
+            height: cap.height,
+          });
+          results[i] = { ...results[i], preview: URL.createObjectURL(b64ToBlob(r.image)), imageB64: r.image, status: "done" };
+          noteRenderMs(r.ms);
+        } catch (e) {
+          results[i] = { ...results[i], status: "error" };
+          setError(String(e instanceof Error ? e.message : e));
+        }
+        setMvResults([...results]);
+      }
+      const done = results.filter((r) => r.status === "done");
+      setMvProgress(`Done — ${done.length}/${caps.length} views rendered (same seed ${baseSeed}).`);
+      if (done[0]?.preview) setPreview(done[0].preview);
+    } catch (e) {
+      setError(String(e instanceof Error ? e.message : e));
+    } finally {
+      setMvBusy(false);
+    }
+  };
+
+  const downloadView = async (v: MvResult) => {
+    if (!v.preview) return;
+    const blob = await (await fetch(v.preview)).blob();
+    downloadBlob(blob, `hero_${v.label.replace(/\s+/g, "")}_${new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-")}.png`);
+  };
+
+  const downloadAllViews = async () => {
+    for (const v of mvResults) if (v.status === "done") await downloadView(v);
+  };
+
+  // Synergy: bake a photoreal 3DGS from the rendered views (FLUX materials baked in).
+  const bakeMultiView = async () => {
+    const done = mvResults.filter((r) => r.status === "done" && r.imageB64);
+    if (done.length < 3) {
+      setError("Render at least a few views first (a usable splat wants ~24+).");
+      return;
+    }
+    const bakeUrl = useStore.getState().splatBakeUrl;
+    if (!bakeUrl.trim()) {
+      setError("Set the splat-bake endpoint in the 🌐 Splat panel first (deploy spike/modal_splat.py).");
+      return;
+    }
+    setError(null);
+    setMvBusy(true);
+    try {
+      setMvProgress("Baking a photoreal 3DGS from the views…");
+      const ply = await bakeFromHeroViews(
+        done.map((r) => ({ imageB64: r.imageB64!, transform: r.transform, width: r.width, height: r.height, fov: r.fov })),
+        { bakeUrl: bakeUrl.trim(), secret: endpoint.secret, onProgress: setMvProgress },
+      );
+      if (ply) {
+        const s = useStore.getState();
+        s.setSplatUrl(ply);
+        s.setSplatSource("file");
+        s.setSplatEnabled(true);
+        setMvProgress("Photoreal splat trained + loaded into the scene.");
+      } else {
+        setMvProgress("Bake returned no splat.");
+      }
+    } catch (e) {
+      setError(String(e instanceof Error ? e.message : e));
+    } finally {
+      setMvBusy(false);
+    }
+  };
+
   const active = layers.find((l) => l.id === activeId) ?? null;
   const hasBase = layers.some((l) => l.kind === "base" && l.resultUrl);
 
@@ -553,6 +697,27 @@ function Workspace() {
               </div>
             </div>
           )}
+          {mvBusy && !busyRef.current && (
+            <div style={busyOverlay}>
+              <div style={{ fontSize: 13 }}>{mvProgress ?? "Rendering views…"}</div>
+              <div style={{ fontSize: 11, opacity: 0.6, marginTop: 4 }}>multi-view turntable</div>
+            </div>
+          )}
+          {mvResults.length > 0 && (
+            <div style={galleryStrip}>
+              {mvResults.map((v, i) => (
+                <div
+                  key={i}
+                  style={galleryTile(v.preview === preview)}
+                  onClick={() => v.preview && setPreview(v.preview)}
+                  title={`${v.label} · ${v.status}`}
+                >
+                  {v.preview ? <img src={v.preview} style={galleryThumb} alt={v.label} /> : <div style={galleryThumbEmpty} />}
+                  <span style={galleryBadge(v.status)}>{v.status === "pending" ? "…" : v.status === "error" ? "✕" : i + 1}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* controls */}
@@ -587,6 +752,45 @@ function Workspace() {
             <button onClick={generateBase} disabled={busyRef.current} style={{ ...primaryBtn, width: "100%", marginTop: 10 }}>
               {hasBase ? "↻ Regenerate base" : "✦ Generate base render"}
             </button>
+          </Section>
+
+          <Section title="Multi-view (turntable)">
+            <div style={{ opacity: 0.6, fontSize: 11, lineHeight: 1.5, marginBottom: 8 }}>
+              Orbit N angles around the building, each rendered with the <b>same seed + prompt</b> — a
+              consistent multi-view set. Every frame keeps its camera pose, so the set can also bake a
+              photoreal 3DGS.
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+              <span style={smallLabel}>Views</span>
+              {[4, 6, 8, 12, 24].map((n) => (
+                <span key={n} style={countChip(viewCount === n)} onClick={() => !mvBusy && setViewCount(n)}>
+                  {n}
+                </span>
+              ))}
+            </div>
+            <button
+              onClick={renderMultiView}
+              disabled={mvBusy || busyRef.current}
+              style={{ ...primaryBtn, width: "100%", opacity: mvBusy || busyRef.current ? 0.5 : 1 }}
+              title={`Render ${viewCount} consistent angles (≈ $0.02 × ${viewCount}, ~15-25s each; first view may cold-start)`}
+            >
+              {mvBusy ? "Rendering views…" : `✦ Render ${viewCount} views`}
+            </button>
+            {mvProgress && <div style={mvProgressBox}>{mvProgress}</div>}
+            {mvResults.some((r) => r.status === "done") && (
+              <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                <span style={miniBtn} onClick={downloadAllViews}>
+                  ⬇ Export all
+                </span>
+                <span
+                  style={miniBtn}
+                  onClick={bakeMultiView}
+                  title="Train a photoreal 3DGS from these views (needs the splat-bake endpoint deployed; ~24+ views recommended)"
+                >
+                  ✦ Bake → splat
+                </span>
+              </div>
+            )}
           </Section>
 
           <Section title="Regions (Photoshop layers)">
@@ -851,6 +1055,35 @@ const previewImg: React.CSSProperties = { maxWidth: "100%", maxHeight: "100%", o
 const busyOverlay: React.CSSProperties = { position: "absolute", inset: 18, display: "grid", placeItems: "center", background: "rgba(11,12,14,0.55)", backdropFilter: "blur(2px)", textAlign: "center", borderRadius: 6 };
 const panel: React.CSSProperties = { width: 320, flex: "0 0 320px", padding: "8px 16px 24px", overflowY: "auto", background: "rgba(18,20,23,0.96)", borderLeft: "1px solid rgba(255,255,255,0.08)" };
 const errorBox: React.CSSProperties = { marginTop: 10, padding: "8px 10px", borderRadius: 6, fontSize: 11.5, lineHeight: 1.4, background: "rgba(255,80,80,0.12)", border: "1px solid rgba(255,80,80,0.4)", color: "#ffb3b3" };
+const countChip = (active: boolean): React.CSSProperties => ({
+  padding: "3px 9px",
+  borderRadius: 5,
+  cursor: "pointer",
+  fontSize: 11.5,
+  userSelect: "none",
+  color: active ? "#fff" : "#9aa4b2",
+  background: active ? "rgba(255,138,77,0.22)" : "rgba(255,255,255,0.05)",
+  border: `1px solid ${active ? "rgba(255,138,77,0.6)" : "rgba(255,255,255,0.12)"}`,
+});
+const mvProgressBox: React.CSSProperties = { marginTop: 8, padding: "6px 9px", borderRadius: 6, fontSize: 11, lineHeight: 1.4, background: "rgba(255,138,77,0.1)", border: "1px solid rgba(255,138,77,0.3)", color: "#ffcf99" };
+const galleryStrip: React.CSSProperties = { position: "absolute", left: 18, right: 18, bottom: 12, display: "flex", gap: 6, overflowX: "auto", padding: 8, borderRadius: 8, background: "rgba(11,12,14,0.78)", backdropFilter: "blur(6px)", border: "1px solid rgba(255,255,255,0.08)" };
+const galleryTile = (active: boolean): React.CSSProperties => ({ position: "relative", flex: "0 0 auto", width: 96, height: 64, borderRadius: 5, overflow: "hidden", cursor: "pointer", border: `2px solid ${active ? "#ffb27a" : "rgba(255,255,255,0.12)"}`, background: "#000" });
+const galleryThumb: React.CSSProperties = { width: "100%", height: "100%", objectFit: "cover", display: "block" };
+const galleryThumbEmpty: React.CSSProperties = { width: "100%", height: "100%", background: "repeating-linear-gradient(45deg,#1a1c1f,#1a1c1f 6px,#222 6px,#222 12px)" };
+const galleryBadge = (status: MvResult["status"]): React.CSSProperties => ({
+  position: "absolute",
+  top: 3,
+  left: 3,
+  minWidth: 14,
+  height: 14,
+  padding: "0 3px",
+  borderRadius: 7,
+  fontSize: 9.5,
+  lineHeight: "14px",
+  textAlign: "center",
+  color: "#fff",
+  background: status === "error" ? "rgba(220,70,70,0.9)" : status === "pending" ? "rgba(120,120,120,0.9)" : "rgba(255,138,77,0.9)",
+});
 const textarea: React.CSSProperties = { width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 6, color: "#e8e6e3", fontSize: 12, padding: "6px 8px", resize: "vertical", fontFamily: "inherit", marginBottom: 4 };
 const input: React.CSSProperties = { background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 5, color: "#fff", fontSize: 12, padding: "6px 8px" };
 const smallLabel: React.CSSProperties = { fontSize: 10, opacity: 0.5, textTransform: "uppercase", letterSpacing: "0.04em", marginTop: 6, marginBottom: 3 };

@@ -106,6 +106,15 @@ export type HeroCaptureData = {
   camera: { pos: [number, number, number]; target: [number, number, number]; fov: number };
 };
 
+/** One orbit view captured by `heroCaptureViewsFn`: the capture bundle for that pose
+ *  PLUS the 4×4 camera-to-world (row-major, nerfstudio/OpenGL convention) so the
+ *  photoreal renders can ALSO feed the splat bake (lib/splatBake.ts `bakeFromHeroViews`). */
+export type MultiViewCapture = {
+  capture: HeroCaptureData;
+  transform: number[][]; // 4×4 c2w, row-major — bake-ready (matches splatBake's toRowMajor)
+  label: string; // "view 1" … (azimuth-ordered turntable)
+};
+
 export type HeroScales = { canny: number; cannyEnd: number; depth: number; depthEnd: number };
 /** The proven e2b recipe (98.5% edge alignment): canny-dominant lock. */
 export const DEFAULT_HERO_SCALES: HeroScales = { canny: 0.8, cannyEnd: 0.85, depth: 0.5, depthEnd: 0.7 };
@@ -191,6 +200,11 @@ type Store = {
   /** 4-pass hero capture fn registered by the ACTIVE WebGL2 Stage. Returns the
    *  capture bundle or null (e.g. WebGPU mode). Runtime-only. */
   heroCaptureFn: ((cfg: { maxEdge: number }) => Promise<HeroCaptureData | null>) | null;
+  /** Multi-view capture fn (orbit N poses → one capture bundle + bake-ready pose each).
+   *  Registered by the same WebGL2 Stage as heroCaptureFn. Runtime-only. */
+  heroCaptureViewsFn:
+    | ((cfg: { maxEdge: number; count: number }) => Promise<MultiViewCapture[] | null>)
+    | null;
 
   // ---- persisted ----
   layers: Layer[];
@@ -278,6 +292,9 @@ type Store = {
   patchHero: (patch: Partial<HeroState>) => void;
   setHeroEndpoint: (patch: Partial<HeroEndpoint>) => void;
   setHeroCaptureFn: (fn: ((cfg: { maxEdge: number }) => Promise<HeroCaptureData | null>) | null) => void;
+  setHeroCaptureViewsFn: (
+    fn: ((cfg: { maxEdge: number; count: number }) => Promise<MultiViewCapture[] | null>) | null,
+  ) => void;
   addHeroLayer: (layer: HeroLayer) => void;
   updateHeroLayer: (id: string, patch: Partial<HeroLayer>) => void;
   removeHeroLayer: (id: string) => void;
@@ -326,6 +343,7 @@ export const useStore = create<Store>()(
       splatBakeUrl: "",
       hero: { ...DEFAULT_HERO },
       heroCaptureFn: null,
+      heroCaptureViewsFn: null,
       heroEndpoint: { ...DEFAULT_HERO_ENDPOINT },
 
       setModel: (bySem) =>
@@ -394,6 +412,7 @@ export const useStore = create<Store>()(
       patchHero: (patch) => set({ hero: { ...get().hero, ...patch } }),
       setHeroEndpoint: (patch) => set({ heroEndpoint: { ...get().heroEndpoint, ...patch } }),
       setHeroCaptureFn: (fn) => set({ heroCaptureFn: fn }),
+      setHeroCaptureViewsFn: (fn) => set({ heroCaptureViewsFn: fn }),
       addHeroLayer: (layer) =>
         set({ hero: { ...get().hero, layers: [...get().hero.layers, layer], activeLayerId: layer.id } }),
       updateHeroLayer: (id, patch) =>
