@@ -7,6 +7,20 @@ updated: 2026-06-15
 
 Append-only conversation log. **Newest at top.** One entry per chat session.
 
+## 2026-06-15 — Hero UX polish (keep-warm, model switch) + FLUX.2 backend (deploy-gated)
+
+**Scope:** After the live FLUX.1 hero was verified (entry below), the user chose two follow-ups: (1) add FLUX.2 as a switchable "experimental" model, (2) polish the hero UX. Built + verified the polish; researched + wrote the FLUX.2 backend (deploy-gated).
+
+**Decisions:** [[DECISIONS#web3d-flux2-experimental]] — FLUX.1 stays the live default; FLUX.2 is a SEPARATE, deploy-gated app (H200 + VideoX-Fun), not a flag.
+
+**Tried / built:** **(polish)** a cheap `/warm` route on the FLUX.1 backend + a header **🔥 Keep warm** toggle that pings it every 240 s so an editing session skips the ~40–60 s cold start; a last-render **⚡ timing badge**; a warm/cold-aware busy overlay; a **backend-model badge** (reads the model id from `/warm`); and a **FLUX.1/FLUX.2 preset switch** in the Backend setup card that rewrites the endpoint host between the two Modal apps. **(FLUX.2)** researched the real constraints (EXA): FLUX.2-dev is **32B + Mistral-24B → BF16 needs an H200**, and its only canny/depth ControlNet (`alibaba-pai/FLUX.2-dev-Fun-Controlnet-Union`) runs through **VideoX-Fun, not diffusers**; wrote `spike/modal_flux2.py` (H200, same CORS `/hero_render`+`/region_edit`+`/warm` contract, canny∪id-edge lock, **native inpaint** region edits) with the VideoX-Fun loader block marked for first-deploy validation, plus `spike/REPORTS/flux2_feasibility.md`.
+
+**QA caught:** the model badge stayed "FLUX.1" after switching to FLUX.2 when the base-URL field was blank — `model` was derived from `base` only; fixed to `modelOfUrl(base || region)`. Verified in preview: selector highlights + hint swap + URL host rewrite all correct.
+
+**Outcome (verified):** `tsc` + `npm run build` green; redeployed `modal_flux.py` (additive `/warm`, render paths byte-identical → no regression); the **keep-warm toggle settled to "🔥 Warm" in ~18 s live**, badge read `flux1-dev-union`. Commits `cbb6df9` (polish + FLUX.2), `c2ef5d4` (prior live-verify docs). Container toggled back off → scale-to-zero.
+
+**Follow-ups:** **multi-view-consistent hero** (orbit/saved-view capture → same-seed renders → a strip that feeds the splat bake) and **region_edit v2 true inpaint on FLUX.1** are the remaining hero polish — both deferred (need live multi-render verification / a new pipeline I couldn't GPU-test without more spend), documented not shipped half-done. FLUX.2 live deploy is user-gated (~70 GB download + H200 spend).
+
 ## 2026-06-15 — Hero FLUX backend DEPLOYED + live-verified through the real app UI
 
 **Scope:** Continuation of the build session below. Took the (mock-QA'd) hero pipeline live: deployed `spike/modal_flux.py` to a real Modal A100-80GB, guided the user through HF token + `HERO_SHARED_SECRET` setup, brought the backend up, and verified **both endpoints end-to-end by clicking the actual app buttons** (not just `eval`).

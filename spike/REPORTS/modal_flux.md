@@ -71,6 +71,21 @@ In the app: click **✦ Hero render** (WebGL2 / + GI mode) → the setup card �
 ```
 Same seed + controls as the base, masked to `region_ids` (untouched pixels = base → byte-stable).
 
+### /warm  (cheap keep-alive — no render)
+```
+{ secret } → { warm: true, model: "flux1-dev-union", pipe_loaded: bool }
+```
+Hitting any route resets the 300 s scaledown timer; `/warm` does it WITHOUT a render. The
+app's header **🔥 Keep warm** toggle pings this every 240 s so an active editing session
+never pays the ~40–60 s cold start. (First ping still cold-boots the container to load the
+pipe — ~18 s observed live — then it stays warm.)
+
+## FLUX.2 — the experimental sibling backend
+`spike/modal_flux2.py` (app `arch-rendering-flux2`) serves the SAME contract on **FLUX.2-dev +
+alibaba-pai Fun-Controlnet-Union (H200, via VideoX-Fun)** — switchable in the app's Backend
+card by URL preset. Deploy-gated (32B model, ~70 GB download, VideoX-Fun loader to validate on
+first deploy). FLUX.1 stays the default. Full feasibility + deploy steps: `spike/REPORTS/flux2_feasibility.md`.
+
 ## Deploy the splat-bake backend
 ```
 modal deploy spike/modal_splat.py     # publish the bake endpoint

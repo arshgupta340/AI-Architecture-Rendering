@@ -20,6 +20,20 @@ Each entry follows the same shape so it can be scanned in 15 seconds:
 
 ---
 
+## 2026-06-15 — FLUX.2 is a deploy-gated experimental backend (H200 + VideoX-Fun), FLUX.1 stays the live default {#web3d-flux2-experimental}
+
+**Decision:** Keep **FLUX.1-dev + ControlNet-Union on A100** as the live, default hero backend, and add **FLUX.2-dev as a SEPARATE, deploy-gated app** (`spike/modal_flux2.py`, `arch-rendering-flux2`) the app's Backend panel switches to by URL preset — NOT a flag inside the live `modal_flux.py`.
+
+**Context:** User asked to add FLUX.2 as a switchable "experimental/high-quality" model after FLUX.1 went live. Research (EXA) surfaced hard constraints they couldn't have known up front.
+
+**Alternatives considered:** (a) **FLUX.2 as a flag in modal_flux.py on the same A100** — REJECTED: FLUX.2-dev is **32B + a Mistral-Small-3.2-24B text encoder**, BF16 needs **~64–110 GB ("requires an H200")**; it does not fit the A100-80GB cleanly, and mixing it into the live app risks the verified FLUX.1 path. (b) **FLUX.2 via diffusers `FluxControlNetPipeline`** — REJECTED: FLUX.2's only canny/depth ControlNet is `alibaba-pai/FLUX.2-dev-Fun-Controlnet-Union`, which runs through the **VideoX-Fun** framework, not diffusers. (c) **A100-80GB + float8 quantization** — viable fallback (one const, `GPU_MEMORY_MODE="model_cpu_offload_and_qfloat8"`), but H200 BF16 is the clean default.
+
+**Reasoning:** A separate app means deploying/iterating FLUX.2 never rebuilds or destabilizes the live FLUX.1 backend (same pattern as `modal_splat.py`). Same CORS `/hero_render`+`/region_edit`+`/warm` contract → the only switch cost is a URL preset. FLUX.2 buys a newer model + **native inpaint** region edits; it costs ~2–4× and a ~70 GB download, so it's opt-in. Full analysis: `spike/REPORTS/flux2_feasibility.md`.
+
+**Revisit if:** a diffusers-native FLUX.2 ControlNet ships (fold it in like FLUX.1); FLUX.2 quality clearly beats FLUX.1 on geometry-locked architectural frames in an A/B (promote it to default); the VideoX-Fun loader proves too unstable (pin a commit or wait for diffusers support).
+
+---
+
 ## 2026-06-15 — Hero render = self-hosted FLUX.1-dev+ControlNet on Modal (A100, skip Ideogram); splat env = Spark loader + render-to-3DGS bake {#web3d-hero-splat}
 
 **Decision:** Build the diffusion hero + Gaussian-splat env for real (reversing the [[#web3d-clientready-composition]] scaffold-only deferral, now that the user authorized GPU + Marble spend). **(1) Hero render:** capture the WebGL2 viewport's beauty + a LINEAR near=white depth + a per-semantic byte-exact id buffer, and run **FLUX.1-dev + Shakker-Labs ControlNet-Union-Pro-2.0 (canny∪id-edges + depth), SELF-HOSTED on Modal** (`spike/modal_flux.py`, **A100-80GB BF16**, a one-line GPU const), exposed as direct browser-callable HTTPS endpoints (secret in the JSON body). A Photoshop layer model: a base geometry-locked layer + independent re-rollable region layers (server returns a masked region; the client mask-composites → untouched pixels byte-stable). **(2) Splat env:** a WebGL2-only `@sparkjsdev/spark` loader (lazy/code-split) composites a splat around the editable building, fed by a drop-in Marble/CC0 file OR a **Modal scene-bake** (`spike/modal_splat.py` — orbit N posed views → nerfstudio splatfacto → .ply; no COLMAP because three.js -Z == OpenGL).
