@@ -115,6 +115,11 @@ export type MultiViewCapture = {
   label: string; // "view 1" … (azimuth-ordered turntable)
 };
 
+// Reproject (approach C) — shapes mirror lib/reproject.ts (structural typing).
+export type ReprojectPose = { pos: [number, number, number]; target: [number, number, number]; fov: number };
+export type ReprojectSource = { imageB64: string; pose: ReprojectPose };
+export type ReprojectedTargetView = { reproj: string; gapMask: string; coverage: number; width: number; height: number };
+
 export type HeroScales = { canny: number; cannyEnd: number; depth: number; depthEnd: number };
 /** The proven e2b recipe (98.5% edge alignment): canny-dominant lock. */
 export const DEFAULT_HERO_SCALES: HeroScales = { canny: 0.8, cannyEnd: 0.85, depth: 0.5, depthEnd: 0.7 };
@@ -204,6 +209,11 @@ type Store = {
    *  Registered by the same WebGL2 Stage as heroCaptureFn. Runtime-only. */
   heroCaptureViewsFn:
     | ((cfg: { maxEdge: number; count: number }) => Promise<MultiViewCapture[] | null>)
+    | null;
+  /** Reproject already-rendered source views onto a target pose (approach C — true
+   *  multi-view consistency). Registered by the WebGL2 Stage. Runtime-only. */
+  reprojectFn:
+    | ((sources: ReprojectSource[], targetPose: ReprojectPose, w: number, h: number) => Promise<ReprojectedTargetView | null>)
     | null;
 
   // ---- persisted ----
@@ -295,6 +305,9 @@ type Store = {
   setHeroCaptureViewsFn: (
     fn: ((cfg: { maxEdge: number; count: number }) => Promise<MultiViewCapture[] | null>) | null,
   ) => void;
+  setReprojectFn: (
+    fn: ((sources: ReprojectSource[], targetPose: ReprojectPose, w: number, h: number) => Promise<ReprojectedTargetView | null>) | null,
+  ) => void;
   addHeroLayer: (layer: HeroLayer) => void;
   updateHeroLayer: (id: string, patch: Partial<HeroLayer>) => void;
   removeHeroLayer: (id: string) => void;
@@ -344,6 +357,7 @@ export const useStore = create<Store>()(
       hero: { ...DEFAULT_HERO },
       heroCaptureFn: null,
       heroCaptureViewsFn: null,
+      reprojectFn: null,
       heroEndpoint: { ...DEFAULT_HERO_ENDPOINT },
 
       setModel: (bySem) =>
@@ -413,6 +427,7 @@ export const useStore = create<Store>()(
       setHeroEndpoint: (patch) => set({ heroEndpoint: { ...get().heroEndpoint, ...patch } }),
       setHeroCaptureFn: (fn) => set({ heroCaptureFn: fn }),
       setHeroCaptureViewsFn: (fn) => set({ heroCaptureViewsFn: fn }),
+      setReprojectFn: (fn) => set({ reprojectFn: fn }),
       addHeroLayer: (layer) =>
         set({ hero: { ...get().hero, layers: [...get().hero.layers, layer], activeLayerId: layer.id } }),
       updateHeroLayer: (id, patch) =>

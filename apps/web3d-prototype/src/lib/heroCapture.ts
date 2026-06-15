@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useStore, type HeroCaptureData, type MultiViewCapture } from "../state/store";
-import { reprojectHeroToViews } from "./reproject";
+import { reprojectHeroToViews, reprojectSourcesToTarget } from "./reproject";
 
 /**
  * HeroCapture — 4-pass capture of the LIVE WebGL2 / +GI scene for the hero render.
@@ -175,6 +175,7 @@ export function HeroCapture() {
   const invalidate = useThree((s) => s.invalidate);
   const setHeroCaptureFn = useStore((s) => s.setHeroCaptureFn);
   const setHeroCaptureViewsFn = useStore((s) => s.setHeroCaptureViewsFn);
+  const setReprojectFn = useStore((s) => s.setReprojectFn);
 
   useEffect(() => {
     // Capture the CURRENT camera state into a HeroCaptureData bundle. `forceRender`
@@ -406,6 +407,10 @@ export function HeroCapture() {
 
     setHeroCaptureFn(fn);
     setHeroCaptureViewsFn(viewsFn);
+    // Reproject (approach C): blend already-rendered source views onto a target pose.
+    setReprojectFn((sources, targetPose, w, h) =>
+      reprojectSourcesToTarget(gl, scene, useStore.getState().meshesBySemantic, sources, targetPose, w, h),
+    );
 
     // DEV-only debug hook for iterating on the reproject-from-3D pipeline (approach C).
     if (import.meta.env.DEV) {
@@ -421,8 +426,9 @@ export function HeroCapture() {
     return () => {
       setHeroCaptureFn(null);
       setHeroCaptureViewsFn(null);
+      setReprojectFn(null);
     };
-  }, [gl, scene, camera, controls, invalidate, setHeroCaptureFn, setHeroCaptureViewsFn]);
+  }, [gl, scene, camera, controls, invalidate, setHeroCaptureFn, setHeroCaptureViewsFn, setReprojectFn]);
 
   return null;
 }

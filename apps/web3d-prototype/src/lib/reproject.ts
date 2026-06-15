@@ -3,34 +3,39 @@ import * as THREE from "three";
 /**
  * Reproject-from-3D — the consistency engine for the multi-view hero (approach "C").
  *
- * Problem: rendering each orbit angle with an INDEPENDENT FLUX pass gives inconsistent
- * lighting/materials (proven: experiments A + B). Fix: render the hero ONCE, then use the
- * REAL 3D geometry (which is exactly consistent from every angle) to carry the hero's
- * photoreal pixels to the other views — so materials + lighting are identical BY
- * CONSTRUCTION. Only the regions the hero camera couldn't see (disocclusions) are gaps,
- * which a light FLUX inpaint fills (via the existing /region_edit endpoint, mask = gaps).
+ * Rendering each angle with an INDEPENDENT FLUX pass gives inconsistent lighting/materials
+ * (proven: experiments A + B). Fix: use the REAL 3D geometry (exactly consistent from every
+ * angle) to carry already-rendered photoreal pixels onto new views — so materials + lighting
+ * are identical BY CONSTRUCTION. Only regions no source camera saw (disocclusions) or that are
+ * badly stretched (grazing) are gaps, which a light FLUX inpaint fills (via /region_edit).
  *
- * Technique: projective texture mapping with shadow-map occlusion.
- *   1. Render a LINEAR eye-depth map of the building FROM the hero camera (heroDepthRT).
- *   2. Render the building FROM each target camera with a projective shader: each fragment
- *      projects its world position into the hero camera, and IF it is the surface the hero
- *      actually saw (its eye-distance-from-hero matches heroDepthRT within a bias) it samples
- *      the hero image; otherwise it is a gap (alpha = 0).
- *   3. Read back → reprojected RGB + a gap mask (white = gap to inpaint).
+ * For a full 360° turntable we CHAIN: render view 0 as a full hero, then build each next view
+ * by reprojecting its already-rendered NEIGHBOURS (quality-weighted: prefer the source whose
+ * camera most squarely faces each surface) and inpainting the rest. Appearance propagates
+ * smoothly around the circle.
  *
- * Everything here is engine-side (free, exact). The output feeds /region_edit for the gaps.
+ * Technique: projective texture mapping with linear-eye-depth shadow-map occlusion + a
+ * per-fragment quality = max(0, dot(worldNormal, dirToSourceCamera)). Quality 0 = occluded /
+ * outside the source frame / behind / edge-on. Multi-source = keep the highest-quality sample.
  */
 
 export type ReprojPose = { pos: [number, number, number]; target: [number, number, number]; fov: number };
+export type ReprojSource = { imageB64: string; pose: ReprojPose };
 export type ReprojectedView = {
-  reproj: string; // bare b64 PNG — hero pixels reprojected to this view (gaps = black)
-  gapMask: string; // bare b64 PNG (L) — WHITE where the hero couldn't see (to inpaint)
-  coverage: number; // fraction of building pixels covered by the hero (0..1)
+  reproj: string; // bare b64 PNG — sources' pixels reprojected to this view (gaps = black)
+  gapMask: string; // bare b64 PNG (L) — WHITE where no source covered well (to inpaint)
+  coverage: number; // fraction of building pixels covered (quality >= threshold)
   width: number;
   height: number;
 };
 
 const round16 = (n: number) => Math.max(16, Math.floor(n / 16) * 16);
+// A pixel is "covered" if ANY source projected onto it validly (passed occlusion + frustum).
+// The grazing-angle quality (dot(normal,dirToSource)) is ONLY used to pick the BEST source
+// per pixel when several cover it — NOT to decide gaps (a flat ground at a grazing angle
+// reprojects fine; penalising it as a gap wrongly blackens the ground). Valid samples write a
+// tiny epsilon quality so they always beat the 0 background. True gaps = disocclusion/frustum.
+const QUALITY_GAP = 0.001;
 
 function makePerspective(pose: ReprojPose, aspect: number, near: number, far: number): THREE.PerspectiveCamera {
   const cam = new THREE.PerspectiveCamera(pose.fov, aspect, near, far);
@@ -42,64 +47,58 @@ function makePerspective(pose: ReprojPose, aspect: number, near: number, far: nu
   return cam;
 }
 
-// Linear eye-depth (distance from the rendering camera), written to a float target's .r.
-const HERO_DEPTH_MATERIAL = new THREE.ShaderMaterial({
-  vertexShader: /* glsl */ `
-    varying float vEye;
-    void main() {
-      vec4 mv = modelViewMatrix * vec4(position, 1.0);
-      vEye = -mv.z;
-      gl_Position = projectionMatrix * mv;
-    }`,
-  fragmentShader: /* glsl */ `
-    varying float vEye;
-    void main() { gl_FragColor = vec4(vEye, 0.0, 0.0, 1.0); }`,
+// Linear eye-depth (distance from the rendering camera) → a float target's .r.
+const EYE_DEPTH_MATERIAL = new THREE.ShaderMaterial({
+  vertexShader: `varying float vEye; void main(){ vec4 mv=modelViewMatrix*vec4(position,1.0); vEye=-mv.z; gl_Position=projectionMatrix*mv; }`,
+  fragmentShader: `varying float vEye; void main(){ gl_FragColor=vec4(vEye,0.0,0.0,1.0); }`,
   side: THREE.DoubleSide,
 });
 
-// Projective material: sample the hero image where this fragment was visible to the hero.
-function makeProjectiveMaterial(heroTex: THREE.Texture, heroDepthTex: THREE.Texture): THREE.ShaderMaterial {
+// Projective material: sample the SOURCE image where this fragment was visible to the source
+// camera; alpha = quality (grazing-aware). Output to a FLOAT target so we can blend precisely.
+function makeProjectiveMaterial(srcTex: THREE.Texture, srcDepthTex: THREE.Texture): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
     uniforms: {
-      uHeroTex: { value: heroTex },
-      uHeroDepth: { value: heroDepthTex },
-      uHeroView: { value: new THREE.Matrix4() }, // hero matrixWorldInverse
-      uHeroProj: { value: new THREE.Matrix4() }, // hero projectionMatrix
-      uBias: { value: 0.5 }, // eye-distance tolerance (world units); tuned per scene scale
+      uSrcTex: { value: srcTex },
+      uSrcDepth: { value: srcDepthTex },
+      uSrcView: { value: new THREE.Matrix4() },
+      uSrcProj: { value: new THREE.Matrix4() },
+      uSrcPos: { value: new THREE.Vector3() },
+      uBias: { value: 0.5 },
     },
     vertexShader: /* glsl */ `
       varying vec3 vWorld;
+      varying vec3 vNormal;
       void main() {
         vec4 wp = modelMatrix * vec4(position, 1.0);
         vWorld = wp.xyz;
+        vNormal = normalize(mat3(modelMatrix) * normal);
         gl_Position = projectionMatrix * viewMatrix * wp;
       }`,
     fragmentShader: /* glsl */ `
       precision highp float;
-      uniform sampler2D uHeroTex;
-      uniform sampler2D uHeroDepth;
-      uniform mat4 uHeroView;
-      uniform mat4 uHeroProj;
-      uniform float uBias;
-      varying vec3 vWorld;
+      uniform sampler2D uSrcTex; uniform sampler2D uSrcDepth;
+      uniform mat4 uSrcView; uniform mat4 uSrcProj; uniform vec3 uSrcPos; uniform float uBias;
+      varying vec3 vWorld; varying vec3 vNormal;
       void main() {
-        vec4 heroEye = uHeroView * vec4(vWorld, 1.0);
-        vec4 heroClip = uHeroProj * heroEye;
-        if (heroClip.w <= 0.0) { gl_FragColor = vec4(0.0); return; }     // behind hero
-        vec3 ndc = heroClip.xyz / heroClip.w;
+        vec4 srcEye = uSrcView * vec4(vWorld, 1.0);
+        vec4 srcClip = uSrcProj * srcEye;
+        if (srcClip.w <= 0.0) { gl_FragColor = vec4(0.0); return; }
+        vec3 ndc = srcClip.xyz / srcClip.w;
         vec2 uv = ndc.xy * 0.5 + 0.5;
-        if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) { gl_FragColor = vec4(0.0); return; } // outside hero frame
-        float fragEye = -heroEye.z;                                     // this fragment's distance from hero
-        float storedEye = texture2D(uHeroDepth, uv).r;                  // closest surface the hero saw there
-        if (fragEye > storedEye + uBias) { gl_FragColor = vec4(0.0); return; } // occluded behind something
-        vec3 col = texture2D(uHeroTex, vec2(uv.x, 1.0 - uv.y)).rgb;     // hero PNG is top-left origin
-        gl_FragColor = vec4(col, 1.0);                                  // alpha 1 = valid (hero pixel)
+        if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) { gl_FragColor = vec4(0.0); return; }
+        float fragEye = -srcEye.z;
+        float storedEye = texture2D(uSrcDepth, uv).r;
+        if (fragEye > storedEye + uBias) { gl_FragColor = vec4(0.0); return; }   // occluded
+        vec3 dirToSrc = normalize(uSrcPos - vWorld);
+        float q = max(0.0, dot(normalize(vNormal), dirToSrc));                   // grazing quality (source ranking)
+        vec3 col = texture2D(uSrcTex, vec2(uv.x, 1.0 - uv.y)).rgb;               // PNG top-left origin
+        gl_FragColor = vec4(col, 0.05 + 0.95 * q);                              // valid sample always > background 0
       }`,
     side: THREE.DoubleSide,
   });
 }
 
-/** Building bounding sphere (for camera near/far + bias scale). */
 function buildingSphere(meshesBySemantic: Map<string, THREE.Mesh[]>): THREE.Sphere {
   const box = new THREE.Box3();
   const tmp = new THREE.Box3();
@@ -115,44 +114,134 @@ function buildingSphere(meshesBySemantic: Map<string, THREE.Mesh[]>): THREE.Sphe
   return s;
 }
 
-async function rtToPngB64(gl: THREE.WebGLRenderer, rt: THREE.WebGLRenderTarget, w: number, h: number, alphaToMask: boolean): Promise<{ rgb: string; mask: string; coverage: number }> {
-  const buf = new Uint8Array(w * h * 4);
-  gl.readRenderTargetPixels(rt, 0, 0, w, h, buf);
-  const rgb = new Uint8ClampedArray(w * h * 4);
-  const mask = new Uint8ClampedArray(w * h * 4);
-  const rb = w * 4;
-  let valid = 0;
-  for (let y = 0; y < h; y++) {
-    const src = (h - 1 - y) * rb; // GL bottom-up → top-down
-    const dst = y * rb;
-    for (let x = 0; x < w; x++) {
-      const s = src + x * 4;
-      const d = dst + x * 4;
-      const a = buf[s + 3];
-      rgb[d] = buf[s]; rgb[d + 1] = buf[s + 1]; rgb[d + 2] = buf[s + 2]; rgb[d + 3] = 255;
-      // gap mask: WHITE where NOT covered (alpha 0). Only meaningful over the building;
-      // background stays 0 (we don't inpaint sky).
-      const gap = a < 128 ? 255 : 0;
-      mask[d] = gap; mask[d + 1] = gap; mask[d + 2] = gap; mask[d + 3] = 255;
-      if (a >= 128) valid++;
-    }
-  }
-  const toB64 = async (arr: Uint8ClampedArray) => {
-    const c = typeof OffscreenCanvas !== "undefined" ? new OffscreenCanvas(w, h) : Object.assign(document.createElement("canvas"), { width: w, height: h });
-    const ctx = (c as HTMLCanvasElement).getContext("2d")!;
-    ctx.putImageData(new ImageData(new Uint8ClampedArray(arr), w, h), 0, 0);
-    const blob = c instanceof OffscreenCanvas ? await c.convertToBlob({ type: "image/png" }) : await new Promise<Blob>((res) => (c as HTMLCanvasElement).toBlob((b) => res(b!), "image/png"));
-    const dataUrl = await new Promise<string>((res) => { const fr = new FileReader(); fr.onload = () => res(fr.result as string); fr.readAsDataURL(blob); });
-    return dataUrl.slice(dataUrl.indexOf(",") + 1);
-  };
-  return { rgb: await toB64(rgb), mask: await toB64(mask), coverage: valid / (w * h) };
+function texFromB64(b64: string): Promise<THREE.Texture> {
+  return new Promise((res, rej) =>
+    new THREE.TextureLoader().load(
+      `data:image/png;base64,${b64}`,
+      (t) => { t.colorSpace = THREE.SRGBColorSpace; t.needsUpdate = true; res(t); },
+      undefined,
+      () => rej(new Error("texture load failed")),
+    ),
+  );
+}
+
+async function pngB64(arr: Uint8ClampedArray, w: number, h: number): Promise<string> {
+  const c = typeof OffscreenCanvas !== "undefined" ? new OffscreenCanvas(w, h) : Object.assign(document.createElement("canvas"), { width: w, height: h });
+  const ctx = (c as HTMLCanvasElement).getContext("2d")!;
+  ctx.putImageData(new ImageData(new Uint8ClampedArray(arr), w, h), 0, 0);
+  const blob = c instanceof OffscreenCanvas ? await c.convertToBlob({ type: "image/png" }) : await new Promise<Blob>((r) => (c as HTMLCanvasElement).toBlob((b) => r(b!), "image/png"));
+  const url = await new Promise<string>((r) => { const fr = new FileReader(); fr.onload = () => r(fr.result as string); fr.readAsDataURL(blob); });
+  return url.slice(url.indexOf(",") + 1);
 }
 
 /**
- * Reproject a hero render (taken from heroPose) onto the building, as seen from each
- * targetPose. Returns one ReprojectedView per target (hero pixels + gap mask + coverage).
- * Only the building meshes (meshesBySemantic) are reprojected; everything else is hidden.
+ * Reproject one or more SOURCE renders (each from its own pose) onto `targetPose`, keeping the
+ * highest-quality sample per pixel. Returns the blended reprojection + a gap mask (white where
+ * no source covered well) + coverage. Engine-side, exact. The output feeds /region_edit for gaps.
  */
+export async function reprojectSourcesToTarget(
+  gl: THREE.WebGLRenderer,
+  scene: THREE.Scene,
+  meshesBySemantic: Map<string, THREE.Mesh[]>,
+  sources: ReprojSource[],
+  targetPose: ReprojPose,
+  W: number,
+  H: number,
+): Promise<ReprojectedView> {
+  const w = round16(W), h = round16(H);
+  const sphere = buildingSphere(meshesBySemantic);
+  const near = Math.max(0.05, sphere.radius * 0.05);
+  const far = sphere.radius * 20 + 10;
+  const aspect = w / h;
+  const bias = Math.max(0.1, sphere.radius * 0.02);
+
+  // hide non-building renderables
+  const building = new Set<THREE.Object3D>();
+  meshesBySemantic.forEach((ms) => ms.forEach((m) => building.add(m)));
+  const keep = new Set<THREE.Object3D>();
+  building.forEach((m) => { let n: THREE.Object3D | null = m; while (n) { keep.add(n); n = n.parent; } });
+
+  const prevTarget = gl.getRenderTarget();
+  const prevOverride = scene.overrideMaterial;
+  const prevClear = new THREE.Color(); gl.getClearColor(prevClear);
+  const prevAlpha = gl.getClearAlpha();
+  const prevAutoClear = gl.autoClear;
+  const hidden: THREE.Object3D[] = [];
+
+  const depthRT = new THREE.WebGLRenderTarget(w, h, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat, type: THREE.FloatType, depthBuffer: true });
+  const outRT = new THREE.WebGLRenderTarget(w, h, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat, type: THREE.FloatType, depthBuffer: true });
+  const targetCam = makePerspective(targetPose, aspect, near, far);
+  const best = new Float32Array(w * h * 4); // rgb (0..1) + best quality in .a
+  const textures: THREE.Texture[] = [];
+
+  try {
+    scene.traverse((o) => {
+      const r = (o as THREE.Mesh).isMesh || (o as THREE.InstancedMesh).isInstancedMesh || (o as THREE.Points).isPoints || (o as THREE.Line).isLine || (o as THREE.Sprite).isSprite;
+      if (r && o.visible && !keep.has(o)) { hidden.push(o); o.visible = false; }
+    });
+    gl.autoClear = true;
+    const fbuf = new Float32Array(w * h * 4);
+
+    for (const src of sources) {
+      const tex = await texFromB64(src.imageB64);
+      textures.push(tex);
+      const srcCam = makePerspective(src.pose, aspect, near, far);
+      // source eye-depth
+      scene.overrideMaterial = EYE_DEPTH_MATERIAL;
+      gl.setRenderTarget(depthRT); gl.setClearColor(0x000000, 1); gl.clear(true, true, true);
+      gl.render(scene, srcCam);
+      // projective pass from the TARGET camera
+      const pm = makeProjectiveMaterial(tex, depthRT.texture);
+      pm.uniforms.uSrcView.value.copy(srcCam.matrixWorldInverse);
+      pm.uniforms.uSrcProj.value.copy(srcCam.projectionMatrix);
+      pm.uniforms.uSrcPos.value.copy(srcCam.position);
+      pm.uniforms.uBias.value = bias;
+      scene.overrideMaterial = pm;
+      gl.setRenderTarget(outRT); gl.setClearColor(0x000000, 0); gl.clear(true, true, true);
+      gl.render(scene, targetCam);
+      gl.readRenderTargetPixels(outRT, 0, 0, w, h, fbuf);
+      pm.dispose();
+      // keep the highest-quality sample per pixel
+      for (let i = 0; i < w * h; i++) {
+        const a = fbuf[i * 4 + 3];
+        if (a > best[i * 4 + 3]) {
+          best[i * 4] = fbuf[i * 4]; best[i * 4 + 1] = fbuf[i * 4 + 1]; best[i * 4 + 2] = fbuf[i * 4 + 2]; best[i * 4 + 3] = a;
+        }
+      }
+    }
+  } finally {
+    for (const o of hidden) o.visible = true;
+    scene.overrideMaterial = prevOverride;
+    gl.setRenderTarget(prevTarget);
+    gl.setClearColor(prevClear, prevAlpha);
+    gl.autoClear = prevAutoClear;
+    depthRT.dispose(); outRT.dispose();
+    textures.forEach((t) => t.dispose());
+  }
+
+  // float buffer (GL bottom-up) → top-down 8-bit RGB + gap mask
+  const rgb = new Uint8ClampedArray(w * h * 4);
+  const mask = new Uint8ClampedArray(w * h * 4);
+  let covered = 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const si = ((h - 1 - y) * w + x) * 4;
+      const di = (y * w + x) * 4;
+      const q = best[si + 3];
+      const ok = q >= QUALITY_GAP;
+      rgb[di] = ok ? Math.round(best[si] * 255) : 0;
+      rgb[di + 1] = ok ? Math.round(best[si + 1] * 255) : 0;
+      rgb[di + 2] = ok ? Math.round(best[si + 2] * 255) : 0;
+      rgb[di + 3] = 255;
+      const gap = ok ? 0 : 255;
+      mask[di] = gap; mask[di + 1] = gap; mask[di + 2] = gap; mask[di + 3] = 255;
+      if (ok) covered++;
+    }
+  }
+  return { reproj: await pngB64(rgb, w, h), gapMask: await pngB64(mask, w, h), coverage: covered / (w * h), width: w, height: h };
+}
+
+/** Convenience: reproject ONE hero to many targets (used by the DEV debug hook). */
 export async function reprojectHeroToViews(
   gl: THREE.WebGLRenderer,
   scene: THREE.Scene,
@@ -163,92 +252,9 @@ export async function reprojectHeroToViews(
   W: number,
   H: number,
 ): Promise<ReprojectedView[]> {
-  const w = round16(W), h = round16(H);
-  const sphere = buildingSphere(meshesBySemantic);
-  const near = Math.max(0.05, sphere.radius * 0.05);
-  const far = sphere.radius * 20 + 10;
-  const aspect = w / h;
-
-  // hero image → texture
-  const heroTex = await new Promise<THREE.Texture>((res, rej) => {
-    new THREE.TextureLoader().load(
-      `data:image/png;base64,${heroImageB64}`,
-      (t) => { t.colorSpace = THREE.SRGBColorSpace; t.needsUpdate = true; res(t); },
-      undefined,
-      () => rej(new Error("hero texture load failed")),
-    );
-  });
-
-  const heroCam = makePerspective(heroPose, aspect, near, far);
-
-  // 1) hero eye-depth (float RT)
-  const heroDepthRT = new THREE.WebGLRenderTarget(w, h, {
-    minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter,
-    format: THREE.RGBAFormat, type: THREE.FloatType, depthBuffer: true,
-  });
-  const projMat = makeProjectiveMaterial(heroTex, heroDepthRT.texture);
-  projMat.uniforms.uBias.value = Math.max(0.1, sphere.radius * 0.02);
-
-  // hide all non-building renderables (sky/entourage) for both depth + projective passes
-  const building = new Set<THREE.Object3D>();
-  meshesBySemantic.forEach((ms) => ms.forEach((m) => building.add(m)));
-  const keep = new Set<THREE.Object3D>();
-  building.forEach((m) => { let n: THREE.Object3D | null = m; while (n) { keep.add(n); n = n.parent; } });
-
-  // snapshot renderer state
-  const prevTarget = gl.getRenderTarget();
-  const prevOverride = scene.overrideMaterial;
-  const prevClear = new THREE.Color(); gl.getClearColor(prevClear);
-  const prevAlpha = gl.getClearAlpha();
-  const prevAutoClear = gl.autoClear;
-  const hidden: THREE.Object3D[] = [];
-
   const out: ReprojectedView[] = [];
-  try {
-    scene.traverse((o) => {
-      const r = (o as THREE.Mesh).isMesh || (o as THREE.InstancedMesh).isInstancedMesh || (o as THREE.Points).isPoints || (o as THREE.Line).isLine || (o as THREE.Sprite).isSprite;
-      if (r && o.visible && !keep.has(o)) { hidden.push(o); o.visible = false; }
-    });
-    gl.autoClear = true;
-
-    // hero depth pass
-    scene.overrideMaterial = HERO_DEPTH_MATERIAL;
-    gl.setRenderTarget(heroDepthRT);
-    gl.setClearColor(0x000000, 1);
-    gl.clear(true, true, true);
-    gl.render(scene, heroCam);
-
-    // projective pass per target
-    projMat.uniforms.uHeroView.value.copy(heroCam.matrixWorldInverse);
-    projMat.uniforms.uHeroProj.value.copy(heroCam.projectionMatrix);
-    scene.overrideMaterial = projMat;
-
-    const outRT = new THREE.WebGLRenderTarget(w, h, {
-      minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter,
-      format: THREE.RGBAFormat, type: THREE.UnsignedByteType, colorSpace: THREE.SRGBColorSpace, depthBuffer: true,
-    });
-    try {
-      for (const tp of targetPoses) {
-        const tcam = makePerspective(tp, aspect, near, far);
-        gl.setRenderTarget(outRT);
-        gl.setClearColor(0x000000, 0); // transparent → gaps where nothing renders
-        gl.clear(true, true, true);
-        gl.render(scene, tcam);
-        const { rgb, mask, coverage } = await rtToPngB64(gl, outRT, w, h, true);
-        out.push({ reproj: rgb, gapMask: mask, coverage, width: w, height: h });
-      }
-    } finally {
-      outRT.dispose();
-    }
-  } finally {
-    for (const o of hidden) o.visible = true;
-    scene.overrideMaterial = prevOverride;
-    gl.setRenderTarget(prevTarget);
-    gl.setClearColor(prevClear, prevAlpha);
-    gl.autoClear = prevAutoClear;
-    heroDepthRT.dispose();
-    heroTex.dispose();
-    projMat.dispose();
+  for (const tp of targetPoses) {
+    out.push(await reprojectSourcesToTarget(gl, scene, meshesBySemantic, [{ imageB64: heroImageB64, pose: heroPose }], tp, W, H));
   }
   return out;
 }
