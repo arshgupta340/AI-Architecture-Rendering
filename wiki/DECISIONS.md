@@ -20,6 +20,20 @@ Each entry follows the same shape so it can be scanned in 15 seconds:
 
 ---
 
+## 2026-06-15 — Hero render = self-hosted FLUX.1-dev+ControlNet on Modal (A100, skip Ideogram); splat env = Spark loader + render-to-3DGS bake {#web3d-hero-splat}
+
+**Decision:** Build the diffusion hero + Gaussian-splat env for real (reversing the [[#web3d-clientready-composition]] scaffold-only deferral, now that the user authorized GPU + Marble spend). **(1) Hero render:** capture the WebGL2 viewport's beauty + a LINEAR near=white depth + a per-semantic byte-exact id buffer, and run **FLUX.1-dev + Shakker-Labs ControlNet-Union-Pro-2.0 (canny∪id-edges + depth), SELF-HOSTED on Modal** (`spike/modal_flux.py`, **A100-80GB BF16**, a one-line GPU const), exposed as direct browser-callable HTTPS endpoints (secret in the JSON body). A Photoshop layer model: a base geometry-locked layer + independent re-rollable region layers (server returns a masked region; the client mask-composites → untouched pixels byte-stable). **(2) Splat env:** a WebGL2-only `@sparkjsdev/spark` loader (lazy/code-split) composites a splat around the editable building, fed by a drop-in Marble/CC0 file OR a **Modal scene-bake** (`spike/modal_splat.py` — orbit N posed views → nerfstudio splatfacto → .ply; no COLMAP because three.js -Z == OpenGL).
+
+**Context:** Forked thread; user asked specifically to (a) execute the splat env, (b) wire the 2D diffusion onto Export as an in-app hero modal with depth/canny + layer management + cross-generation consistency, (c) host FLUX/Ideogram on our Modal. Plan approved in plan-mode.
+
+**Alternatives considered:** (a) **Ideogram 4.0** (user suggested) — REJECTED for the lock path: even though it's open-weight, it has **no ControlNet**, so it can't preserve geometry; FLUX.1-dev+ControlNet is the only viable lock model. (b) **fal.ai** (the proven research path) — rejected in favor of self-host (user owns the model/seed/cost; ~$0.01–0.02 vs $0.04–0.13/img). (c) **FLUX.2-dev** — its only depth/canny ControlNet is a local 80GB-VRAM checkpoint; FLUX.1-dev Union is the pragmatic hosted choice. (d) **mesh2splat** (raw mesh→splat) — rejected: adds no realism (just re-encodes the mesh); photorealism needs training on photoreal renders. (e) per-MESH ids in the capture — rejected: 6543 materials + noisy seams; per-SEMANTIC (12) gives exactly the architectural canny edges.
+
+**Reasoning:** Geometry truth comes from the render's OWN depth+canny (the project's 98.5%-edge-alignment prior art), not an estimator — so the diffusion can't hallucinate. Consistency = fixed seed + identical controls + region-scoped masks. Self-hosting on Modal makes it $0-idle (scale-to-zero) and cheap per render. The splat bake reuses the SAME Modal GPU and our exact poses (no SfM).
+
+**Revisit if:** a hosted FLUX.2 depth/canny ControlNet ships (upgrade the lock model); a production three.js WebGPU splat renderer appears (un-forks splats from WebGL2); the gsplat-on-Modal build proves too flaky (swap splatfacto for a prebuilt-wheel gsplat or Brush).
+
+---
+
 ## 2026-06-14 — Unified physically-grounded lighting: one sun + slight ambient, no fake fills; same model in all 3 modes {#web3d-unified-lighting}
 
 **Decision:** Lighting is a SINGLE key light (the sun) + a slight, sun-altitude/time/cloud-dependent diffuse ambient, computed once in `SolarSky.computeSky` and shared identically by WebGL2, +GI, and WebGPU. All fake fill lights were **removed** — the +GI per-window LTC emitters + sky-fill (`AreaLights.tsx`) and the WebGPU front-fill RectAreaLights (`WebGPUAreaLights.tsx`) are **deleted**. Render modes now differ ONLY in technique (N8AO vs SSGI vs reflective ground), never in light sources.

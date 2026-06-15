@@ -7,6 +7,18 @@ updated: 2026-06-14
 
 Append-only conversation log. **Newest at top.** One entry per chat session.
 
+## 2026-06-15 — Hero diffusion render (FLUX on Modal) + Gaussian-splat env — built + deep QA
+
+**Scope:** Build the three forked-thread asks to *production* quality (user explicitly raised the QA bar — "no longer an MVP"): (1) a Gaussian-splat environment, (2) a depth+canny-locked diffusion "hero render" off the Export flow with a Photoshop layer system, (3) self-host FLUX on our Modal GPU. Plan approved via plan-mode ([[DECISIONS#web3d-hero-splat]]). The 4 parallel build agents hit a session rate-limit mid-run (2 of 4 files landed); I took direct ownership, finished the rest, and did a real QA/QC pass.
+
+**Decisions:** [[DECISIONS#web3d-hero-splat]] — self-host FLUX.1-dev+ControlNet on Modal (not fal); GPU = **A100-80GB BF16** (one-line const); **skip Ideogram** (no ControlNet → can't geometry-lock); splat = Spark loader fed by drop-in Marble/CC0 **or** a Modal scene-bake (render-to-3DGS, no COLMAP since three -Z == OpenGL).
+
+**Tried / QA caught (the load-bearing part):** Reviewed the agent-written `modal_flux.py` + `heroCapture.ts` as an engineer, not a checkbox — found + fixed **real bugs**: (a) Modal auth was broken (FastAPI `Header` never injected) → moved the secret to the request body; (b) the smoke test ran locally (no GPU) → proper `@modal.method().remote()`; (c) `negative_prompt` silently ignored → added `true_cfg_scale`; (d) FLUX /16 dim constraint unenforced; (e) canny resized bilinear (blurs the lock) → NEAREST; (f) **depth was wrong** (MeshDepthMaterial = non-linear, far=white) → rewrote as a LINEAR eye-space shader, NEAR=white (verified the FLUX/MiDaS convention via primary sources); (g) **the id buffer was corrupted** — sky/entourage bled into it (only the 12 semantic meshes were painted) → hide all non-painted renderables + one id PER SEMANTIC (cleaner canny edges, 12 not 6543 materials) + ColorManagement-safe byte-exact encoding.
+
+**Outcome (verified in-browser against a GPU-free mock that runs the real conditioning):** depth near=white linear gradient ✓; ids byte-exact (b=0, all valid) ✓; **canny ∪ id-edges trace every window/mullion/trim/roof** (the geometry lock, visualized) ✓; full hero modal flow base→region-mask→layers→composite→visibility→save ✓ (region green tint lands ONLY on walls — byte-stable elsewhere); scene fully restored post-capture ✓; **Spark renders a real `.spz` composited with the building** ✓; zero console errors; `tsc` + `npm run build` green. Commits `4032595` (Phase-0 scaffold) → `f398ae3` (impl + QA).
+
+**Follow-ups (deploy-gated, untested-here):** the live FLUX inference (`modal deploy spike/modal_flux.py` + HF token + `HERO_SHARED_SECRET` — runbook in `spike/REPORTS/modal_flux.md`) and the splat training (`modal_splat.py`; gsplat CUDA build is the first-deploy risk). Also: region_edit v2 = true `FluxControlNetInpaintPipeline`; WebGPU hero capture (async readback); a real Marble env splat to replace the butterfly test asset; multi-view-consistent hero → feed the scene-bake for a photoreal walkthrough.
+
 ## 2026-06-14 — Client-ready render push: materials@scale + real entourage + atmosphere + export (ultracode, 10 agents)
 
 **Scope:** Take the minimal 3-mode web3d base to a **client-ready, sendable render**. Two ultracode Workflow phases: (1) a 7-agent research sweep (6 tracks + synthesis, EXA + deep_researcher), (2) a 3-agent parallel build on disjoint files, then a hand-integrated output layer + full preview verification.

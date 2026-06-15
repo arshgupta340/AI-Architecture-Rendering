@@ -1,6 +1,6 @@
 ---
 type: state
-updated: 2026-06-14
+updated: 2026-06-15
 ---
 
 # Current State
@@ -9,7 +9,7 @@ updated: 2026-06-14
 
 ## Direction
 
-**Web-native 3D-consistent rendering tool** (engine-first). Export real geometry + semantic element IDs from Rhino → glTF, render live in **three.js / React-Three-Fiber**, configure materials / sun / entourage / render-quality / atmosphere directly in 3D, then **export a client-ready still**. Geometry fidelity + multi-view consistency are *exact and free* (it's real 3D) — exactly what the old 2D diffusion path bled on. Spark: [[research/arcway-teardown]]; rationale: [[DECISIONS#web3d-pivot]]. The 2D FLUX.2 + semantic-masking pipeline (`apps/canvas-prototype/`) is the future **"diffusion hero"** add-in (scaffold-only — [[DECISIONS#web3d-clientready-composition]]).
+**Web-native 3D-consistent rendering tool** (engine-first). Export real geometry + semantic element IDs from Rhino → glTF, render live in **three.js / React-Three-Fiber**, configure materials / sun / entourage / render-quality / atmosphere directly in 3D, then **export a client-ready still**. Geometry fidelity + multi-view consistency are *exact and free* (it's real 3D) — exactly what the old 2D diffusion path bled on. Spark: [[research/arcway-teardown]]; rationale: [[DECISIONS#web3d-pivot]]. The **diffusion "hero render"** (depth+canny-locked FLUX, self-hosted on Modal) + a **Gaussian-splat environment** are now BUILT in-app ([[DECISIONS#web3d-hero-splat]]) — the geometry-truthful last-10% photoreal layer on top of the real-time engine.
 
 ## The web3d app — `apps/web3d-prototype/`  (Vite + React + R3F + three **r0.184**, $0 / client-side)
 
@@ -30,6 +30,8 @@ Run: `npm install --prefix apps/web3d-prototype` then `npm --prefix apps/web3d-p
   - **WebGPU** (`stages/StageWebGPU` + `WebGPUPost` + `WebGPUAreaLights`): `WebGPURenderer` + TSL **SSGI**/GTAO/TRAA/Bloom + **vignette grade** + LTC area lights + **node-safe HDRI IBL** + **real VSM cast shadows**. The realism ceiling.
 - **Path tracer — FIXED (NEW):** `PathTracer.tsx` now traces an **isolated `ptScene`** (dequantized `house_pt.glb` + mirrored live-swatch materials + physical glass + HDRI `scene.environment` + a `.color` guard) instead of the live scene — kills the old `MaterialsTexture.updateFrom` `.color.r` crash. Verified rendering the building with the architect's chosen materials + HDRI GI at 46 spp (WebGL2 / + GI modes).
 - **Cinematic (UE5) toggle** (`Cinematic.tsx`): embeds a SimplyStream UE5 WebGPU build (user supplies the build). **Lumen reference:** Twinmotion 2025.1 (RTX 4070) — `UE_LUMEN_RUNBOOK.md`.
+- **Hero render — diffusion, geometry-locked (NEW, built + QA'd):** NavBar **✦ Hero render** (WebGL2/+GI) captures the viewport's beauty + a LINEAR near=white depth + a per-semantic byte-exact id buffer (`lib/heroCapture.ts`) and opens a full Photoshop modal (`HeroRender.tsx`) — base geometry-locked layer + independent re-rollable region layers (masked, byte-stable elsewhere), prompt/seed/scale controls. Backend = **self-hosted FLUX.1-dev + ControlNet-Union (canny∪id-edges + depth) on Modal A100-80GB** (`spike/modal_flux.py`, `hero_render` + `region_edit` HTTPS endpoints). Verified end-to-end against a GPU-free mock (`spike/mock_hero_server.py`): canny ∪ id-edges trace every window/mullion/trim; the full flow + masking + compositing work. Live FLUX inference is deploy-gated (`spike/REPORTS/modal_flux.md`). [[DECISIONS#web3d-hero-splat]]
+- **Gaussian-splat environment (NEW, built):** `SplatContext.tsx` (`@sparkjsdev/spark`, lazy/code-split, WebGL2-only) composites a splat backdrop around the building + a shadow-catcher; `SplatPanel.tsx` (source toggle + alignment sliders). Fed by a drop-in Marble/CC0 `.spz`/`.ply` (verified rendering a real `.spz` with the building) OR a **Modal scene-bake** (`lib/splatBake.ts` + `spike/modal_splat.py` — render-to-3DGS via splatfacto, deploy-gated).
 
 ### Known-broken / deferred
 - **WebGPU console noise:** 6 benign `THREE.NodeBuilder: ShaderMaterial not compatible` warnings = the 6-face equirect→cube **PMREM of the HDRI `scene.environment`** (three internals). Render is correct; pre-existing, not a regression.
@@ -46,13 +48,13 @@ Lumen reference = **Twinmotion** (runbook). Ceiling analysis: [[research/web3d-r
 
 ## NEXT — remaining client-ready polish (follow-ups)
 
-The $0 realtime client-ready path is **built + verified**. Remaining (lower priority):
-1. **KTX2 encode** — run `scripts/encode_ktx2.mjs` on a machine with the KhronosGroup `ktx` CLI (+ `npm i -D sharp`), then enable the KTX2 load path behind `setKTX2Renderer` + call it from each stage.
-2. **Real cutout people** — source genuinely-CC0 PNGs (OpenGameArt CC0 / tonytextures), commit to `public/entourage/people/`, extend `entourageAssets.ts` (a license call).
-3. **Entourage scale check** — trees read slightly small; verify the `baseHeightFt`/`glbHeightUnits` normalization.
-4. **T4 diffusion hero** — build the $0 depth+canny+id-edge capture (`lib/captureHero.ts`), gate the paid FLUX call behind auth + a backend shim (reuse `apps/canvas-prototype` + `spike/run_e2b_registration.py`).
-5. **T3 splat context** — `SplatContext.tsx` via Spark in the webgl2gi stage (needs a generated/captured splat).
-6. **Atmosphere ceiling** — optional takram physically-based sky/clouds (ECEF rebasing into feet); WebGPU clouds.
+The $0 realtime path + the **hero render** + the **splat env** are **built + QA'd**. Remaining (mostly deploy-gated / polish):
+1. **DEPLOY the hero backend** — `modal deploy spike/modal_flux.py` (needs an `HF_TOKEN` + `HERO_SHARED_SECRET` on the `arch-spike` secret; FLUX.1-dev license accepted) → paste the two URLs into the Hero setup card. Runbook: `spike/REPORTS/modal_flux.md`. This is the only thing between the (verified) pipeline and live photoreal renders.
+2. **DEPLOY the splat-bake** — `modal deploy spike/modal_splat.py` (verify the gsplat CUDA build on first deploy) → paste the URL into the Splat panel. Generate a real Marble env `.spz` to replace the butterfly test asset.
+3. **Hero v2** — true `FluxControlNetInpaintPipeline` for `region_edit` (vs the full-pass+composite); WebGPU hero capture (async readback); multi-view-consistent hero → feed the scene-bake for a photoreal walkthrough.
+4. **KTX2 encode** — run `scripts/encode_ktx2.mjs` on a machine with the KhronosGroup `ktx` CLI (+ `npm i -D sharp`), then enable the KTX2 load path behind `setKTX2Renderer`.
+5. **Real cutout people** — source genuinely-CC0 PNGs; **entourage scale check** (trees read slightly small).
+6. **Atmosphere ceiling** — optional takram physically-based sky/clouds; WebGPU clouds.
 
 ## Pipeline (Rhino → web), all `$0`
 ```
@@ -64,7 +66,7 @@ PBR swatches: apps/web3d-prototype/scripts/fetch_materials.py (ambientCG CC0 ×2
 [[research/arcway-teardown]] · [[research/web3d-engine-choice]] · [[research/web3d-rhino-gltf]] · [[research/web3d-realism]] · [[research/web3d-clientready]] · [[research/web3d-entourage]] · [[research/web3d-sky-sun]] · [[research/web3d-geo-context]] · [[research/web3d-ue-browser]] · [[research/web3d-webgpu]]
 
 ## Cost ledger
-web3d arc = **$0 API** (local geometry + client render; CC0 assets from ambientCG / Poly Haven / Quaternius). Geo-context bills the user's own Google PAYG once keyed. Prior diffusion spend ≈ $2.22 / $50 (unchanged). This session: **$0** (research via EXA on the user's quota; all build assets CC0).
+The **real-time engine stays $0** (local geometry + client render; CC0 assets). The **hero render + splat bake are opt-in paid** (user-authorized): self-hosted Modal FLUX ≈ **$0.01–0.02/render** on A100 (idle = $0, scale-to-zero); splat bake ≈ **$0.30–0.50/scene**; optional World Labs Marble **$20/mo**. Geo-context bills the user's own Google PAYG. This session: **$0 spent** (built + QA'd against a GPU-free mock; nothing deployed — live FLUX/splat are deploy-gated on the user's account). Prior diffusion spend ≈ $2.22.
 
 ## Handoff
 Fresh-chat continuation prompt + the next-step plan: [[../docs/HANDOFF-web3d.md]]. Build bible: [[research/web3d-clientready]].
