@@ -64,6 +64,19 @@ UNION_REPO = "Shakker-Labs/FLUX.1-dev-ControlNet-Union-Pro-2.0"
 # FLUX.2 path is a SEPARATE app (spike/modal_flux2.py, H200 + VideoX-Fun) reachable at
 # its own URL — the app's Backend panel switches between the two by URL preset.
 MODEL_NAME = "flux1-dev-union"
+# Experiment B: an IP-Adapter so multi-view renders can inherit the HERO view's
+# materials/lighting (a "reference image" condition) on top of the geometry lock. XLabs
+# FLUX IP-Adapter + CLIP-L encoder.
+#   ⚠️ CONFIRMED INERT on the PINNED diffusers 0.32.2: `FluxControlNetPipeline` has no
+#   `load_ip_adapter` (the FLUX IP-Adapter mixin was added to the PLAIN FluxPipeline first;
+#   the ControlNet variant got it in a later release). So this path stays GUARDED + inert
+#   (has_ip=False → geometry-only) until diffusers is bumped to a version where the
+#   ControlNet pipeline includes the IP-Adapter mixin — a bump that must re-verify the
+#   multi-controlnet base. Also note: the XLabs adapter is documented to need real CFG,
+#   which 0.32.2's ControlNet pipeline also lacks. See spike/REPORTS/modal_flux.md.
+IP_ADAPTER_REPO = "XLabs-AI/flux-ip-adapter"
+IP_ADAPTER_WEIGHT = "ip_adapter.safetensors"
+IP_IMAGE_ENCODER = "openai/clip-vit-large-patch14"
 
 # Warm, specific default prompt — recovers terracotta siding + golden-hour light
 # while the canny lock holds geometry (ported from run_e2b_registration.WARM_PROMPT).
@@ -285,7 +298,7 @@ def warm_weights():
         print("[warm_weights] WARNING: HF_TOKEN not set — FLUX.1-dev is gated and "
               "the download will 401. Add HF_TOKEN to the `arch-spike` secret.")
 
-    for repo in (FLUX_REPO, UNION_REPO):
+    for repo in (FLUX_REPO, UNION_REPO, IP_ADAPTER_REPO, IP_IMAGE_ENCODER):
         print(f"[warm_weights] snapshot_download {repo} ...")
         snapshot_download(repo_id=repo, cache_dir=str(HF_CACHE), token=token)
         print(f"[warm_weights]   done: {repo}")
@@ -344,6 +357,24 @@ class HeroFlux:
         ).to("cuda")
         print("[HeroFlux] pipeline ready on cuda")
 
+        # Experiment B (GUARDED): load the XLabs FLUX IP-Adapter so a reference image can
+        # carry materials/lighting across views. If anything here fails (version, weights,
+        # the ControlNet pipeline not wiring ip_adapter_image on 0.32.2), we log it and the
+        # base geometry-locked render is COMPLETELY unaffected.
+        self.has_ip = False
+        try:
+            self.pipe.load_ip_adapter(
+                IP_ADAPTER_REPO,
+                weight_name=IP_ADAPTER_WEIGHT,
+                image_encoder_pretrained_model_name_or_path=IP_IMAGE_ENCODER,
+            )
+            import inspect
+
+            self.has_ip = "ip_adapter_image" in inspect.signature(self.pipe.__call__).parameters
+            print(f"[HeroFlux] IP-Adapter loaded; ControlNet pipe accepts ip_adapter_image={self.has_ip}")
+        except Exception as e:  # noqa: BLE001 — IP-Adapter is opt-in; never fatal
+            print(f"[HeroFlux] IP-Adapter unavailable ({type(e).__name__}: {e}) — base render unaffected")
+
     # ---- shared core: one dual-controlnet pass -> PIL image -------------------
     def _run_pipe(
         self,
@@ -362,6 +393,8 @@ class HeroFlux:
         depth_scale: float,
         depth_end: float,
         true_cfg_scale: float = DEFAULT_TRUE_CFG,
+        ref_pil=None,            # Experiment B: reference image (the hero view) for the IP-Adapter
+        ip_scale: float = 0.0,   # 0 = off (geometry-only); ~0.6 = balanced material carry-over
     ):
         """One FluxControlNetModel, two controls via list args (canny=mode 0,
         depth=mode 2). `negative_prompt` + `true_cfg_scale` only exist on newer
@@ -387,6 +420,14 @@ class HeroFlux:
         if true_cfg_scale and true_cfg_scale > 1 and "true_cfg_scale" in _sig and "negative_prompt" in _sig:
             kwargs["negative_prompt"] = negative_prompt
             kwargs["true_cfg_scale"] = float(true_cfg_scale)
+
+        # Experiment B: condition on the hero reference image via the IP-Adapter (only if it
+        # loaded AND this pipeline build accepts ip_adapter_image AND a ref + scale are given).
+        if ref_pil is not None and ip_scale and getattr(self, "has_ip", False) and "ip_adapter_image" in _sig:
+            self.pipe.set_ip_adapter_scale(float(ip_scale))
+            kwargs["ip_adapter_image"] = ref_pil
+        elif getattr(self, "has_ip", False):
+            self.pipe.set_ip_adapter_scale(0.0)  # ensure the adapter is inert when not used
 
         img = self.pipe(
             **kwargs,
@@ -525,6 +566,9 @@ class HeroFlux:
         canny_pil, depth_pil = self._conditioning(body, width, height)
 
         seed = int(body.get("seed", DEFAULT_SEED))
+        # Experiment B: an optional reference image (the hero view) + IP-Adapter scale.
+        ref_pil = _pil(body["ref_image"]).convert("RGB") if body.get("ref_image") else None
+        ip_scale = float(body.get("ip_scale", 0.0))
         img = self._run_pipe(
             canny_pil=canny_pil,
             depth_pil=depth_pil,
@@ -540,10 +584,12 @@ class HeroFlux:
             canny_end=float(body.get("canny_end", DEFAULT_CANNY_END)),
             depth_scale=float(body.get("depth_scale", DEFAULT_DEPTH_SCALE)),
             depth_end=float(body.get("depth_end", DEFAULT_DEPTH_END)),
+            ref_pil=ref_pil,
+            ip_scale=ip_scale,
         )
         ms = int((time.monotonic() - t0) * 1000)
-        print(f"[hero_render] {width}x{height} seed={seed} in {ms} ms")
-        return {"image": _b64(_png_bytes(img)), "seed": seed, "ms": ms}
+        print(f"[hero_render] {width}x{height} seed={seed} ip={ip_scale if ref_pil else 0} in {ms} ms")
+        return {"image": _b64(_png_bytes(img)), "seed": seed, "ms": ms, "ip_used": bool(ref_pil and ip_scale and getattr(self, 'has_ip', False))}
 
     # ----------------------------------------------------------------------- #
     # region_edit core — served by the POST /region_edit route in web(). v1 strategy:

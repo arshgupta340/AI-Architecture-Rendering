@@ -86,6 +86,23 @@ alibaba-pai Fun-Controlnet-Union (H200, via VideoX-Fun)** — switchable in the 
 card by URL preset. Deploy-gated (32B model, ~70 GB download, VideoX-Fun loader to validate on
 first deploy). FLUX.1 stays the default. Full feasibility + deploy steps: `spike/REPORTS/flux2_feasibility.md`.
 
+## Experiment B (IP-Adapter) — attempted, BLOCKED on the pinned stack
+Goal: let multi-view renders inherit the hero view's materials/lighting via an XLabs FLUX
+IP-Adapter (reference image) on top of the canny+depth geometry lock. Implemented GUARDED
+in `HeroFlux.load()` + `_run_pipe` (request fields `ref_image`, `ip_scale`).
+**Definitive finding (live):** on the pinned **diffusers 0.32.2**, `FluxControlNetPipeline`
+has **no `load_ip_adapter`** (`AttributeError`) — the FLUX IP-Adapter mixin shipped on the
+plain `FluxPipeline` first; the ControlNet variant only got it in a later release. So the
+adapter loads-fail-safe and every render falls back to geometry-only (`ip_used:false`); the
+base render is unaffected (the guard). To actually run B you must bump diffusers to a version
+whose ControlNet pipeline includes the IP-Adapter mixin **and** re-verify the multi-controlnet
+base (the 0.32.2 `FluxMultiControlNetModel` batching workaround may change), and the XLabs
+adapter additionally needs real CFG that 0.32.2's ControlNet pipeline lacks. **Recommendation:
+prefer the reproject-from-3D approach (true geometry+material consistency) over an IP-Adapter
+bump.** Edge-alignment data: tightening the lock (canny 1.0 / depth 0.85) raised geometry
+adherence 74.5% → 93.1% (consistent across views), but does NOT fix lighting/material drift —
+which is why reproject (carry the hero's exact pixels onto the real mesh) is the principled fix.
+
 ## Deploy the splat-bake backend
 ```
 modal deploy spike/modal_splat.py     # publish the bake endpoint
