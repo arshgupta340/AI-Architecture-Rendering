@@ -5,19 +5,20 @@ Two self-hosted Modal apps power the web3d hero features:
   geometry-locked **Hero render** (asks 2 + 3).
 - **`spike/modal_splat.py`** — nerfstudio `splatfacto` → **bake our scene → 3DGS** (ask 1).
 
-Both reuse the existing `arch-rendering-weights` Volume + `arch-spike` secret; both are
+Both reuse the existing `arch-rendering-weights` Volume + `arch-flux` secret; both are
 separate apps (deploying them never rebuilds the frozen `spike/modal_app.py`).
 
 ## One-time setup
 1. **Accept the FLUX.1-dev license** at https://huggingface.co/black-forest-labs/FLUX.1-dev,
    create an HF token (read).
-2. **Add two keys to the `arch-spike` Modal secret:**
+2. **Add two keys to the `arch-flux` Modal secret:**
    - `HF_TOKEN` — the HuggingFace token (FLUX.1-dev is gated).
    - `HERO_SHARED_SECRET` — any string; the app sends it in the request body, both
      endpoints 401 on mismatch.
    ```
-   modal secret create arch-spike HF_TOKEN=hf_xxx HERO_SHARED_SECRET=yyy   # or edit the existing
+   modal secret create arch-flux HF_TOKEN=hf_xxx HERO_SHARED_SECRET=yyy
    ```
+   (Dedicated secret so it doesn't clobber `arch-spike`'s GOOGLE_API_KEY.)
 
 ## Deploy the FLUX hero backend
 ```

@@ -12,7 +12,7 @@ Training is long (~15-25 min), so the HTTP endpoint SPAWNs the training function
 returns a `job_id`; the client polls the same endpoint with `{job_id}` until the
 `.ply` is ready. Apache-2.0 stack (nerfstudio + gsplat), commercial-safe.
 
-  Secret keys (on the shared `arch-spike` Modal secret): HERO_SHARED_SECRET (auth).
+  Secret keys (on the shared `arch-flux` Modal secret): HERO_SHARED_SECRET (auth).
 
 Deploy runbook (see spike/REPORTS/modal_flux.md §splat):
     modal deploy spike/modal_splat.py          # publish the bake endpoint
@@ -46,7 +46,7 @@ splat_image = (
 
 app = modal.App("arch-rendering-splatbake", image=splat_image)
 volume = modal.Volume.from_name("arch-rendering-weights", create_if_missing=True)
-secret = modal.Secret.from_name("arch-spike")
+secret = modal.Secret.from_name("arch-flux")  # HERO_SHARED_SECRET (shared with modal_flux)
 
 
 def _unb64(s: str) -> bytes:

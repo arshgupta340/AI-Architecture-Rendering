@@ -31,12 +31,12 @@ the Volume `arch-rendering-weights` and the secret `arch-spike`; it uses a
 SEPARATE app name (`arch-rendering-flux`) and a SEPARATE image, so deploying it
 never rebuilds the frozen app's container.
 
-  IMPORTANT — secret keys the user must add to the `arch-spike` Modal secret:
+  Secret: the dedicated `arch-flux` Modal secret carries:
     HF_TOKEN            FLUX.1-dev is a GATED model on HuggingFace; the warm /
                         runtime download needs a token with access accepted at
                         https://huggingface.co/black-forest-labs/FLUX.1-dev
-    HERO_SHARED_SECRET  shared bearer the web app sends as the `x-hero-secret`
-                        header; both endpoints 401 on mismatch.
+    HERO_SHARED_SECRET  shared secret the web app sends in the request BODY
+                        (`body["secret"]`); both endpoints 401 on mismatch.
 
 Deploy runbook (see spike/REPORTS/modal_flux.md for the full version):
     modal run    spike/modal_flux.py::warm_weights     # one-time weight prefetch
@@ -133,9 +133,10 @@ volume = modal.Volume.from_name("arch-rendering-weights", create_if_missing=True
 WEIGHTS_DIR = Path("/weights")
 HF_CACHE = WEIGHTS_DIR / "hf-cache"
 
-# arch-spike must additionally carry HF_TOKEN (FLUX.1-dev is gated) and
-# HERO_SHARED_SECRET (endpoint auth). GOOGLE_API_KEY (from modal_app) is unused here.
-secret = modal.Secret.from_name("arch-spike")
+# Dedicated secret `arch-flux` carries HF_TOKEN (FLUX.1-dev is gated) +
+# HERO_SHARED_SECRET (endpoint auth). Kept separate from `arch-spike` so it doesn't
+# clobber that secret's GOOGLE_API_KEY (used by the frozen modal_app.py).
+secret = modal.Secret.from_name("arch-flux")
 
 
 # --------------------------------------------------------------------------- #
