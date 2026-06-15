@@ -118,7 +118,10 @@ function texFromB64(b64: string): Promise<THREE.Texture> {
   return new Promise((res, rej) =>
     new THREE.TextureLoader().load(
       `data:image/png;base64,${b64}`,
-      (t) => { t.colorSpace = THREE.SRGBColorSpace; t.needsUpdate = true; res(t); },
+      // RAW passthrough: NoColorSpace so the shader samples the stored sRGB bytes as-is
+      // (no sRGB→linear). The float RT + readback then return the ORIGINAL bytes; encoding
+      // to sRGB on sample + NOT decoding on readback was darkening every reprojection.
+      (t) => { t.colorSpace = THREE.NoColorSpace; t.needsUpdate = true; res(t); },
       undefined,
       () => rej(new Error("texture load failed")),
     ),
@@ -169,7 +172,8 @@ export async function reprojectSourcesToTarget(
   const hidden: THREE.Object3D[] = [];
 
   const depthRT = new THREE.WebGLRenderTarget(w, h, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat, type: THREE.FloatType, depthBuffer: true });
-  const outRT = new THREE.WebGLRenderTarget(w, h, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat, type: THREE.FloatType, depthBuffer: true });
+  const outRT = new THREE.WebGLRenderTarget(w, h, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat, type: THREE.FloatType, colorSpace: THREE.NoColorSpace, depthBuffer: true });
+  const prevCM = THREE.ColorManagement.enabled;
   const targetCam = makePerspective(targetPose, aspect, near, far);
   const best = new Float32Array(w * h * 4); // rgb (0..1) + best quality in .a
   const textures: THREE.Texture[] = [];
@@ -180,6 +184,7 @@ export async function reprojectSourcesToTarget(
       if (r && o.visible && !keep.has(o)) { hidden.push(o); o.visible = false; }
     });
     gl.autoClear = true;
+    THREE.ColorManagement.enabled = false; // raw passthrough — no sRGB encode on the float RT
     const fbuf = new Float32Array(w * h * 4);
 
     for (const src of sources) {
@@ -215,6 +220,7 @@ export async function reprojectSourcesToTarget(
     gl.setRenderTarget(prevTarget);
     gl.setClearColor(prevClear, prevAlpha);
     gl.autoClear = prevAutoClear;
+    THREE.ColorManagement.enabled = prevCM;
     depthRT.dispose(); outRT.dispose();
     textures.forEach((t) => t.dispose());
   }
