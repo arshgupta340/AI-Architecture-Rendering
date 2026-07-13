@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI Architecture Rendering — the story so far</title>
+<style>
+  :root{
+    --bg:#0c0d10; --bg2:#121319; --panel:#161822; --panel2:#1c1f2b;
+    --ink:#f4f2ec; --ink-dim:#b7b6b0; --ink-faint:#84867f;
+    --line:#2a2d3a; --line2:#363a4a;
+    --accent:#e8a13a;      /* travertine gold */
+    --accent2:#6fa8dc;     /* blueprint blue */
+    --good:#7bc47f; --warn:#e0a24a; --kill:#d8695f; --defer:#8a8fa3;
+    --brick:#c1704d;
+    --radius:14px;
+    --maxw:1120px;
+    font-synthesis-weight:none;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:linear-gradient(180deg,#0b0c0f,#0c0d10 40%,#0a0b0e);
+    color:var(--ink);
+    font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+    line-height:1.6; -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent2); text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 24px}
+  .mono{font-family:"Cascadia Code",ui-monospace,"SF Mono",Consolas,monospace}
+  h1,h2,h3{line-height:1.15; margin:0; letter-spacing:-0.02em}
+  .eyebrow{font-size:12px; letter-spacing:.22em; text-transform:uppercase; color:var(--accent); font-weight:700}
+  .lead{color:var(--ink-dim); font-size:18px}
+
+  /* ---------- hero ---------- */
+  header.hero{
+    position:relative; overflow:hidden;
+    border-bottom:1px solid var(--line);
+    background:
+      radial-gradient(900px 380px at 78% -12%, rgba(232,161,58,.16), transparent 60%),
+      radial-gradient(700px 360px at 8% 8%, rgba(111,168,220,.12), transparent 60%);
+  }
+  .hero .wrap{padding:64px 24px 54px}
+  .hero h1{font-size:clamp(34px,5vw,60px); font-weight:800; margin:14px 0 10px}
+  .hero h1 .tag{color:var(--accent)}
+  .hero p.sub{max-width:720px; font-size:clamp(16px,2vw,20px); color:var(--ink-dim)}
+  .northstar{
+    margin-top:26px; padding:16px 20px; border-left:3px solid var(--accent);
+    background:var(--panel); border-radius:0 var(--radius) var(--radius) 0; max-width:760px;
+  }
+  .northstar b{color:var(--ink)}
+  .hero-grid{margin-top:34px; display:grid; grid-template-columns:repeat(4,1fr); gap:14px}
+  .stat{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:16px}
+  .stat .n{font-size:26px; font-weight:800; color:var(--ink)}
+  .stat .l{font-size:12.5px; color:var(--ink-faint); margin-top:2px}
+  @media(max-width:820px){ .hero-grid{grid-template-columns:repeat(2,1fr)} }
+
+  /* ---------- section frame ---------- */
+  section{padding:58px 0; border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:0}
+  .sec-head{margin-bottom:30px; max-width:780px}
+  .sec-head h2{font-size:clamp(24px,3vw,34px); font-weight:800; margin:8px 0 8px}
+  .sec-head p{color:var(--ink-dim); margin:0}
+
+  /* ---------- timeline ---------- */
+  .tl{position:relative; margin-left:8px; padding-left:34px}
+  .tl::before{content:""; position:absolute; left:9px; top:6px; bottom:6px; width:2px;
+    background:linear-gradient(180deg,var(--accent2),var(--accent) 55%,var(--brick))}
+  .tl .node{position:relative; padding:0 0 26px 0}
+  .tl .node::before{content:""; position:absolute; left:-33px; top:4px; width:16px; height:16px;
+    border-radius:50%; background:var(--bg2); border:3px solid var(--accent2)}
+  .tl .node.pivot::before{background:var(--accent); border-color:var(--accent); box-shadow:0 0 0 5px rgba(232,161,58,.18)}
+  .tl .when{font-size:12.5px; color:var(--ink-faint); font-weight:700; letter-spacing:.04em}
+  .tl .what{font-weight:700; color:var(--ink); margin-top:2px}
+  .tl .why{color:var(--ink-dim); font-size:14.5px}
+  .pill{display:inline-block; font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+    color:#1a1204; background:var(--accent); border-radius:999px; padding:2px 9px; margin-left:8px; vertical-align:2px}
+
+  /* ---------- pivot cards ---------- */
+  .pivot-card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    padding:22px 22px 20px; margin-bottom:20px}
+  .pivot-card .idx{font-size:12px; font-weight:800; letter-spacing:.18em; text-transform:uppercase; color:var(--accent)}
+  .pivot-card h3{font-size:20px; font-weight:800; margin:6px 0 4px}
+  .pivot-card .date{font-size:12.5px; color:var(--ink-faint)}
+  .ba{display:grid; grid-template-columns:1fr 40px 1fr; gap:12px; align-items:stretch; margin:16px 0 12px}
+  .ba .box{border-radius:10px; padding:13px 15px; font-size:14px}
+  .ba .from{background:rgba(216,105,95,.08); border:1px solid rgba(216,105,95,.35)}
+  .ba .to{background:rgba(123,196,127,.08); border:1px solid rgba(123,196,127,.35)}
+  .ba .box .k{font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; margin-bottom:5px}
+  .ba .from .k{color:#e59189} .ba .to .k{color:#a7dcaa}
+  .ba .arrow{display:flex; align-items:center; justify-content:center; color:var(--accent); font-size:24px}
+  .because{font-size:14.5px; color:var(--ink-dim)}
+  .because b{color:var(--ink)}
+  .plain{margin-top:10px; font-size:13.5px; color:var(--ink-faint); font-style:italic}
+  @media(max-width:720px){ .ba{grid-template-columns:1fr} .ba .arrow{transform:rotate(90deg)} }
+
+  /* ---------- capability grid ---------- */
+  .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px}
+  @media(max-width:900px){ .grid{grid-template-columns:1fr 1fr} }
+  @media(max-width:600px){ .grid{grid-template-columns:1fr} }
+  .cap{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:18px}
+  .cap .ic{font-size:22px}
+  .cap h4{font-size:16px; font-weight:800; margin:8px 0 6px}
+  .cap p{margin:0; font-size:13.5px; color:var(--ink-dim)}
+  .cap .badge{display:inline-block; margin-top:10px; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px;
+    background:rgba(123,196,127,.12); color:var(--good); border:1px solid rgba(123,196,127,.3)}
+  .cap .badge.live{background:rgba(232,161,58,.12); color:var(--accent); border-color:rgba(232,161,58,.3)}
+
+  /* ---------- decision verdict ---------- */
+  .verdict-lead{background:var(--panel); border:1px solid var(--line2); border-left:3px solid var(--accent);
+    border-radius:0 var(--radius) var(--radius) 0; padding:18px 22px; margin-bottom:26px; font-size:17px}
+  .verdict-lead b{color:var(--accent)}
+  .verdicts{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  @media(max-width:720px){ .verdicts{grid-template-columns:1fr} }
+  .vrow{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px; display:flex; gap:12px; align-items:flex-start}
+  .vrow .dot{flex:none; width:12px; height:12px; border-radius:50%; margin-top:6px}
+  .vrow.ship .dot{background:var(--good)} .vrow.change .dot{background:var(--warn)}
+  .vrow.defer .dot{background:var(--defer)} .vrow.kill .dot{background:var(--kill)}
+  .vrow .vt{font-weight:800; font-size:14.5px}
+  .vrow .vd{font-size:13px; color:var(--ink-dim)}
+  .vrow .vs{font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; margin-left:auto; white-space:nowrap; padding-left:8px}
+  .vrow.ship .vs{color:var(--good)} .vrow.change .vs{color:var(--warn)}
+  .vrow.defer .vs{color:var(--defer)} .vrow.kill .vs{color:var(--kill)}
+
+  /* ---------- roadmap ---------- */
+  .phases{display:grid; grid-template-columns:repeat(3,1fr); gap:16px}
+  @media(max-width:820px){ .phases{grid-template-columns:1fr} }
+  .phase{background:linear-gradient(180deg,var(--panel2),var(--panel)); border:1px solid var(--line2); border-radius:var(--radius); padding:20px}
+  .phase .ph{font-size:12px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:var(--accent2)}
+  .phase h4{font-size:18px; font-weight:800; margin:6px 0 8px}
+  .phase ul{margin:8px 0 0; padding-left:18px; font-size:13.5px; color:var(--ink-dim)}
+  .phase li{margin:5px 0}
+  .phase .wow{margin-top:12px; font-size:13px; color:var(--ink); background:rgba(232,161,58,.09);
+    border:1px solid rgba(232,161,58,.28); border-radius:9px; padding:9px 11px}
+
+  /* ---------- doc index ---------- */
+  .docs{display:grid; grid-template-columns:repeat(2,1fr); gap:12px}
+  @media(max-width:720px){ .docs{grid-template-columns:1fr} }
+  .doc{display:flex; gap:12px; align-items:center; background:var(--panel); border:1px solid var(--line);
+    border-radius:11px; padding:13px 15px}
+  .doc:hover{border-color:var(--line2); background:var(--panel2)}
+  .doc .ic{font-size:19px}
+  .doc .t{font-weight:700; font-size:14.5px}
+  .doc .d{font-size:12.5px; color:var(--ink-faint)}
+  .doc .path{font-size:11px; color:var(--ink-faint)}
+
+  footer{padding:34px 0 60px; color:var(--ink-faint); font-size:13px}
+  .kbd{font-size:11px; color:var(--ink-faint); border:1px solid var(--line2); border-radius:6px; padding:1px 6px}
+  .diagram{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:10px; overflow-x:auto}
+  .note{font-size:13px;color:var(--ink-faint);margin-top:10px}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">AI Architecture Rendering · Project story</div>
+    <h1>From "prompt a building" to <span class="tag">the model is the product</span></h1>
+    <p class="sub">A five-month journey building an AI rendering tool for architects — and the three moments we stopped, admitted the approach was fighting us, and turned.</p>
+
+    <div class="northstar">
+      <b>The north star, unchanged the whole time:</b> an architect clicks a wall, picks a material, and the surface re-renders photo-realistically — <b>without</b> writing prompts, and <b>without</b> the building drifting. AI is invisible plumbing; the architect just directs.
+    </div>
+
+    <div class="hero-grid">
+      <div class="stat"><div class="n">3</div><div class="l">major pivots, each backed by measured evidence</div></div>
+      <div class="stat"><div class="n">$0</div><div class="l">client-side real-time engine cost</div></div>
+      <div class="stat"><div class="n">~$0.015</div><div class="l">per photoreal "hero" render (live on Modal)</div></div>
+      <div class="stat"><div class="n">17</div><div class="l">AI agents that stress-tested the grand idea</div></div>
+    </div>
+  </div>
+</header>
+
+<!-- ================= JOURNEY ================= -->
+<section id="journey">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Part 1</div>
+      <h2>The journey, start to today</h2>
+      <p>Gold dots are the turning points. Everything in between is the work that taught us <em>why</em> we had to turn.</p>
+    </div>
+
+    <div class="tl">
+      <div class="node pivot">
+        <div class="when">FEB 2026</div>
+        <div class="what">Killed the first idea: "type a building, then click it" <span class="pill">Pivot 1</span></div>
+        <div class="why">Generating a building from text and <em>then</em> trying to identify its parts meant two guessing steps stacked on top of each other. We anchored to a real 3D model instead.</div>
+      </div>
+      <div class="node">
+        <div class="when">MAR–APR 2026</div>
+        <div class="what">Settled the inputs & the plumbing</div>
+        <div class="why">Use a <b>shaded screenshot</b> of the architect's 3D model as input; use a vision-AI to <b>tag regions</b> (wall, window, mullion…) so "click a wall" resolves to a real area.</div>
+      </div>
+      <div class="node">
+        <div class="when">MAY 2026</div>
+        <div class="what">Renderer bake-off + overnight scaffolding</div>
+        <div class="why">Rather than bet on one AI renderer, we compared eight on the same input and scored them. Stood up the wiki as the single source of truth so no session loses context.</div>
+      </div>
+      <div class="node pivot">
+        <div class="when">12 JUN 2026</div>
+        <div class="what">Stopped guessing from pixels — took the truth from the model <span class="pill">Pivot 2</span></div>
+        <div class="why">The vision-AI kept missing thin window mullions. But the host software (Rhino) already <em>knows</em> every element exactly. We switched to reading ground truth straight from the model — and deleted two whole AI stages.</div>
+      </div>
+      <div class="node pivot">
+        <div class="when">13 JUN 2026</div>
+        <div class="what">Left 2D image-editing behind for real 3D <span class="pill">Pivot 3</span></div>
+        <div class="why">Keeping a building looking identical from different angles is a permanent uphill fight in 2D. In real 3D it's <b>free</b> — so we rebuilt the product as a live web 3D tool.</div>
+      </div>
+      <div class="node">
+        <div class="when">14–15 JUN 2026</div>
+        <div class="what">Built the "decked-out" render stack</div>
+        <div class="why">Materials, sun, entourage, three quality tiers, a photoreal "hero" render (live on GPU), and a Gaussian-splat environment backdrop — all in the browser.</div>
+      </div>
+      <div class="node pivot">
+        <div class="when">3 JUL 2026</div>
+        <div class="what">Grand idea → focused, defensible product <span class="pill">Latest turn</span></div>
+        <div class="why">A 17-agent research fleet stress-tested the big vision (AI video, editable splat worlds, a copilot). The honest verdict shaped a shippable plan: <b>the mesh is the product.</b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= THE PIVOTS ================= -->
+<section id="pivots">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Part 2</div>
+      <h2>How we decided to pivot</h2>
+      <p>Every turn followed the same rule: <b>cheapest information first, and let measured evidence — not opinion — force the change.</b> Here's each one in plain language.</p>
+    </div>
+
+    <!-- Pivot 1 -->
+    <div class="pivot-card">
+      <div class="idx">Pivot 1 · the compounding-error trap</div>
+      <h3>Stop generating buildings from scratch</h3>
+      <div class="date">February 2026 · <a href="/wiki/DECISIONS.md">DECISIONS → dropped-text-to-image</a></div>
+      <div class="ba">
+        <div class="box from"><div class="k">Before</div>Type a prompt → AI invents a building → user clicks parts in that image to identify them.</div>
+        <div class="arrow">→</div>
+        <div class="box to"><div class="k">After</div>Start from the architect's real 3D model screenshot → AI only has to re-skin the geometry it's given.</div>
+      </div>
+      <div class="because"><b>Why:</b> two AI guessing-steps in a row compounded errors — the model invented geometry that the next step then couldn't reliably identify. Architects already have a 3D model, so anchoring to it removes a whole class of failure.</div>
+      <div class="plain">In plain terms: don't ask the AI to <em>imagine</em> the building and then <em>re-read</em> its own imagination. Give it the real thing and let it do one job.</div>
+    </div>
+
+    <!-- Pivot 2 -->
+    <div class="pivot-card">
+      <div class="idx">Pivot 2 · pay for data you already own?</div>
+      <h3>Take the ground truth from the model, not from pixels</h3>
+      <div class="date">12 June 2026 · <a href="/wiki/DECISIONS.md">DECISIONS → plugin-first-pivot</a> &nbsp;·&nbsp; <a href="/docs/plans/research/host-integration.md">host-integration research</a></div>
+      <div class="ba">
+        <div class="box from"><div class="k">Before</div>Show the render to a vision-AI and hope it labels every wall, window, and mullion correctly.</div>
+        <div class="arrow">→</div>
+        <div class="box to"><div class="k">After</div>Ask Rhino directly — it hands over exact per-element IDs and true depth for free.</div>
+      </div>
+      <div class="because"><b>Why:</b> measured, the vision-AI scored ~0.4 accuracy and found <b>zero</b> mullions on a mullion-grid façade. Meanwhile the host software knows every element precisely. We were paying an accuracy tax on data we could just <em>ask for</em>.</div>
+      <div class="plain">In plain terms: why squint at a photo of a spreadsheet when you can open the spreadsheet?</div>
+    </div>
+
+    <!-- Pivot 3 -->
+    <div class="pivot-card">
+      <div class="idx">Pivot 3 · consistency should be free</div>
+      <h3>Move from 2D image-editing to real-time 3D</h3>
+      <div class="date">13 June 2026 · <a href="/wiki/DECISIONS.md">DECISIONS → web3d-pivot</a> &nbsp;·&nbsp; <a href="/wiki/research/arcway-teardown.md">competitor teardown</a></div>
+      <div class="ba">
+        <div class="box from"><div class="k">Before</div>Edit a flat 2D render with AI — and fight to keep the building identical across every camera angle.</div>
+        <div class="arrow">→</div>
+        <div class="box to"><div class="k">After</div>Load the real geometry into a live 3D engine in the browser — angles, swaps, and sun are exact by construction.</div>
+      </div>
+      <div class="because"><b>Why:</b> multi-view consistency was the 2D pipeline's deepest wound. In real 3D it disappears: the geometry <em>is</em> the same object from every angle. We already had clean geometry + element IDs from Pivot 2 — so the hard part was already solved.</div>
+      <div class="plain">In plain terms: instead of hand-drawing the same building five times and hoping they match, build it once and walk around it.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= WHAT EXISTS ================= -->
+<section id="built">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Part 3</div>
+      <h2>What's built and working today</h2>
+      <p>The engine-first web tool is real, runs client-side for $0, and the photoreal layer is live on a scale-to-zero GPU. <a href="/wiki/STATE.md">Full state →</a></p>
+    </div>
+
+    <div class="grid">
+      <div class="cap"><div class="ic">🧱</div><h4>Click-a-wall material swap</h4><p>29 real CC0 PBR materials with correct real-world scale; every swap is a re-editable layer, not baked pixels.</p><span class="badge">Built</span></div>
+      <div class="cap"><div class="ic">☀️</div><h4>Real sun & sky</h4><p>Physically-based solar position (suncalc) + golden-hour HDRIs; one consistent light model across all render modes.</p><span class="badge">Built</span></div>
+      <div class="cap"><div class="ic">🌳</div><h4>Entourage</h4><p>Instanced CC0 trees & bushes with click-to-place and scatter-paint; real-world height controls.</p><span class="badge">Built</span></div>
+      <div class="cap"><div class="ic">🎚️</div><h4>Three quality tiers</h4><p>WebGL2 → WebGL2+GI → WebGPU (SSGI/GTAO/TRAA) — the in-browser realism ceiling, plus a path tracer.</p><span class="badge">Built</span></div>
+      <div class="cap"><div class="ic">✦</div><h4>Photoreal "hero" render</h4><p>Geometry-locked FLUX + ControlNet on Modal — re-skins the exact viewport, re-editable per region. ~$0.015, ~15s warm.</p><span class="badge live">Live on GPU</span></div>
+      <div class="cap"><div class="ic">🌆</div><h4>Splat environment backdrop</h4><p>Gaussian-splat surroundings composited around the real building with a shadow-catcher.</p><span class="badge">Built</span></div>
+      <div class="cap"><div class="ic">🗺️</div><h4>Real site context</h4><p>Google Photorealistic 3D Tiles, georeferenced to the model's location.</p><span class="badge">Built</span></div>
+      <div class="cap"><div class="ic">🖼️</div><h4>Client-ready export</h4><p>High-res 2× supersampled stills, aspect crops, presentation mode, cinematic grade.</p><span class="badge">Built</span></div>
+      <div class="cap"><div class="ic">🔁</div><h4>Multi-view consistency (core)</h4><p>Reproject the hero's pixels onto the real mesh for nearby angles — verified; full-360 is active R&D.</p><span class="badge">Partial</span></div>
+    </div>
+
+    <div style="margin-top:26px" class="diagram">
+      <svg viewBox="0 0 1080 168" width="100%" role="img" aria-label="Pipeline: Rhino model to client-ready render">
+        <defs>
+          <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0,0 L9,4.5 L0,9 z" fill="#6fa8dc"/>
+          </marker>
+          <style>
+            .bx{fill:#1c1f2b; stroke:#363a4a; rx:10}
+            .t1{fill:#f4f2ec; font:700 14px 'Segoe UI',sans-serif}
+            .t2{fill:#84867f; font:500 11.5px 'Segoe UI',sans-serif}
+            .ln{stroke:#6fa8dc; stroke-width:2; marker-end:url(#ah)}
+            .gpu{fill:#211a0d; stroke:#e8a13a}
+          </style>
+        </defs>
+        <rect class="bx" x="8"   y="52" width="150" height="64"/>
+        <text class="t1" x="83" y="80" text-anchor="middle">Rhino model</text>
+        <text class="t2" x="83" y="99" text-anchor="middle">source of truth</text>
+
+        <rect class="bx" x="196" y="52" width="168" height="64"/>
+        <text class="t1" x="280" y="80" text-anchor="middle">Engine buffers</text>
+        <text class="t2" x="280" y="99" text-anchor="middle">depth · edges · IDs</text>
+
+        <rect class="bx gpu" x="402" y="52" width="168" height="64"/>
+        <text class="t1" x="486" y="80" text-anchor="middle">Hero render</text>
+        <text class="t2" x="486" y="99" text-anchor="middle">FLUX+ControlNet · GPU</text>
+
+        <rect class="bx" x="608" y="52" width="168" height="64"/>
+        <text class="t1" x="692" y="80" text-anchor="middle">Region layers</text>
+        <text class="t2" x="692" y="99" text-anchor="middle">masked · re-editable</text>
+
+        <rect class="bx" x="814" y="52" width="168" height="64"/>
+        <text class="t1" x="898" y="80" text-anchor="middle">Turntable / export</text>
+        <text class="t2" x="898" y="99" text-anchor="middle">client-ready still</text>
+
+        <line class="ln" x1="158" y1="84" x2="192" y2="84"/>
+        <line class="ln" x1="364" y1="84" x2="398" y2="84"/>
+        <line class="ln" x1="570" y1="84" x2="604" y2="84"/>
+        <line class="ln" x1="776" y1="84" x2="810" y2="84"/>
+
+        <text class="t2" x="8" y="24" style="fill:#e8a13a; font-weight:700; letter-spacing:.12em">THE PIPELINE — ONE STOCHASTIC HOP, EVERYTHING ELSE DETERMINISTIC</text>
+        <text class="t2" x="486" y="142" text-anchor="middle">↑ the only "AI guess" step — and it's locked to the real geometry</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ================= THE BIG DECISION ================= -->
+<section id="decision">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Part 4</div>
+      <h2>The latest turn: stress-testing the grand idea</h2>
+      <p>The big vision was: AI-generated entourage → cinematic video fly-throughs → an editable Gaussian-splat world → an embedded AI copilot → and integration with Enscape / V-Ray / Lumion. We sent a fleet of 17 AI agents to research and attack every piece.</p>
+    </div>
+
+    <div class="verdict-lead">
+      The unanimous finding: <b>every pillar is a real tech demo, but only one is a defensible product.</b> The mesh is the product — everything generated has to be a re-derivable render <em>of</em> the mesh, never the thing you edit.
+    </div>
+
+    <div class="verdicts">
+      <div class="vrow ship"><div class="dot"></div><div><div class="vt">Model-locked re-rendering</div><div class="vd">Real element IDs → geometry-locked photoreal render, re-editable per region. ~90% already built.</div></div><div class="vs">Ship now</div></div>
+      <div class="vrow change"><div class="dot"></div><div><div class="vt">"Fly-through" as a still turntable</div><div class="vd">6–12 locked hero angles you click through — 80% of the wow, none of the drift.</div></div><div class="vs">Ship, changed</div></div>
+      <div class="vrow change"><div class="dot"></div><div><div class="vt">Splat backdrop</div><div class="vd">Static, honestly labeled "illustrative — not survey." Real 3D stays in the mesh.</div></div><div class="vs">Ship, changed</div></div>
+      <div class="vrow defer"><div class="dot"></div><div><div class="vt">AI video fly-through</div><div class="vd">Every model warps the building across camera motion; geometry-true video has no hosted API yet.</div></div><div class="vs">Defer</div></div>
+      <div class="vrow kill"><div class="dot"></div><div><div class="vt">Editable splat world</div><div class="vd">Research-stage; splats bake lighting & fail on glass/thin members — i.e. most of architecture.</div></div><div class="vs">Kill as a pillar</div></div>
+      <div class="vrow kill"><div class="dot"></div><div><div class="vt">Mutating copilot (v1)</div><div class="vd">AI edit-agents are wrong ~1-in-4, and there's no undo bus yet for them to plug into.</div></div><div class="vs">Read-only first</div></div>
+    </div>
+
+    <p class="note">The one competitor fact that settled it: Chaos now bundles <b>Veras</b> (running the same class of image model our hero uses) <b>free</b> into every Enscape / V-Ray tier — used by 85 of the top 100 firms. There is no model-layer moat. The only durable edge is <b>geometry-truth from the actual model</b> that survives the industry's #1 pain: <em>"move the window 2&nbsp;ft" arriving after the renders are done.</em></p>
+
+    <p style="margin-top:14px">
+      Full write-up → <a href="/docs/plans/PRD-v1-mesh-first.md"><b>PRD v1 "mesh-first"</b></a> &nbsp;·&nbsp;
+      evidence → <a href="/docs/plans/research/grand-idea-2026-07/README.md">7 research reports + red teams + synthesis</a> &nbsp;·&nbsp;
+      rationale → <a href="/wiki/DECISIONS.md">DECISIONS → mesh-first-prd</a>
+    </p>
+  </div>
+</section>
+
+<!-- ================= ROADMAP ================= -->
+<section id="roadmap">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Part 5</div>
+      <h2>Where it goes next</h2>
+      <p>Ship the one defensible thing first; let the first 100 users tell us which of the shiny extras they'd actually pay for. Each extra sits behind an evidence gate.</p>
+    </div>
+    <div class="phases">
+      <div class="phase">
+        <div class="ph">Phase 0 · this month</div>
+        <h4>The core, productized</h4>
+        <ul>
+          <li>Global command / <b>undo bus</b> — makes "non-destructive" actually true</li>
+          <li>One-button Rhino capture plugin</li>
+          <li>Auth + GPU cost-gating on the hero render</li>
+          <li>Project file that persists every edit as a layer</li>
+        </ul>
+        <div class="wow">Wow: "that wall, in travertine" → re-render → "move the window" → everything re-propagates.</div>
+      </div>
+      <div class="phase">
+        <div class="ph">Phase 1 · this quarter</div>
+        <h4>Multi-angle without the drift</h4>
+        <ul>
+          <li>Still turntable (6–12 locked angles)</li>
+          <li>Labeled static splat backdrop</li>
+          <li>Light-coherent entourage</li>
+          <li>Read-only copilot (scene critique)</li>
+        </ul>
+        <div class="wow">Wow: a click-through turntable of a locked photoreal building seated in real site context.</div>
+      </div>
+      <div class="phase">
+        <div class="ph">Phase 2 · gated</div>
+        <h4>Prove the premium — or don't</h4>
+        <ul>
+          <li>Concept-clip video (only if geometry-true & margin-safe)</li>
+          <li>"Remove that object" splat edit</li>
+          <li>Copilot macros (preview-then-apply)</li>
+          <li>Second host: Revit or SketchUp</li>
+        </ul>
+        <div class="wow">Each ships only when live evidence clears its gate (PRD §6).</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= DOC INDEX ================= -->
+<section id="docs">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Read more</div>
+      <h2>The documents behind this</h2>
+      <p>Everything here is drawn from the project's own source of truth. Click through to the real files.</p>
+    </div>
+    <div class="docs">
+      <a class="doc" href="/docs/plans/PRD-v1-mesh-first.md"><span class="ic">📄</span><span><span class="t">PRD v1 — "mesh-first"</span><br><span class="d">The production plan: scope, pricing, roadmap, risks.</span></span></a>
+      <a class="doc" href="/docs/plans/research/grand-idea-2026-07/README.md"><span class="ic">🔬</span><span><span class="t">Grand-idea research</span><br><span class="d">7 dimension reports + stress-tests + red teams + synthesis.</span></span></a>
+      <a class="doc" href="/wiki/STATE.md"><span class="ic">📍</span><span><span class="t">Current state</span><br><span class="d">What's done, live, and next — the working snapshot.</span></span></a>
+      <a class="doc" href="/wiki/DECISIONS.md"><span class="ic">⚖️</span><span><span class="t">Decision log</span><br><span class="d">Every pivot, what we considered, and why.</span></span></a>
+      <a class="doc" href="/wiki/SESSIONS.md"><span class="ic">📓</span><span><span class="t">Session log</span><br><span class="d">Chronological record of every working session.</span></span></a>
+      <a class="doc" href="/docs/plans/master-plan.md"><span class="ic">🗺️</span><span><span class="t">Master plan</span><br><span class="d">The original full-vision design document.</span></span></a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    AI Architecture Rendering · showcase generated 2026-07-03 · served locally from the repo root.
+    <br>Tip: this page links to Markdown files — your browser shows them as raw text. Open them in the editor for formatting.
+  </div>
+</footer>
+
+</body>
+</html>
