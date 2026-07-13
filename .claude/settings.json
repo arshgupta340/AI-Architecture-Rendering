@@ -1,6 +1,12 @@
 {
   "permissions": {
+    "deny": [
+      "Read(spike/.env)",
+      "Bash(modal *)",
+      "PowerShell(modal *)"
+    ],
     "allow": [
+      "Bash(spike\\.venv\\Scripts\\python.exe *)",
       "Bash(.venv\\\\Scripts\\\\python.exe -m pip list)",
       "Read(//c/Users/arshg/.claude/plans/**)",
       "Bash(git check-ignore *)",

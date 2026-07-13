@@ -13,6 +13,18 @@
       "runtimeArgs": ["apps/canvas-prototype/server.py"],
       "env": { "PORT": "8766" },
       "port": 8766
+    },
+    {
+      "name": "web3d",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "apps/web3d-prototype", "run", "dev"],
+      "port": 5181
+    },
+    {
+      "name": "showcase",
+      "runtimeExecutable": "spike\\.venv\\Scripts\\python.exe",
+      "runtimeArgs": ["-m", "http.server", "5190"],
+      "port": 5190
     }
   ]
 }
