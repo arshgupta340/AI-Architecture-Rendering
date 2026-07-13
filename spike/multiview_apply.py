@@ -29,6 +29,7 @@ and the neutralization is the same trim-calibrated WB + luminance-flatten as v2.
 from __future__ import annotations
 
 import io
+from functools import lru_cache
 from pathlib import Path
 from typing import Callable, Iterable
 
@@ -215,10 +216,72 @@ class View:
         return self.ids_for_semantic("trim")
 
 
+# --------------------------------------------------------------------------- #
+# deterministic material projection — the interactive proxy (no model call)
+# --------------------------------------------------------------------------- #
+# Keep the render's relative light/shadow without letting a near-black (brick) or
+# blown-highlight pixel wreck the recolour.
+PROXY_SHADE_LO, PROXY_SHADE_HI = 0.35, 1.7
+
+
+@lru_cache(maxsize=16)
+def _swatch_array(path_str: str, max_side: int = 512) -> np.ndarray:
+    """Swatch as an RGB float array, downscaled (the travertine asset is 5760x3840
+    / 16 MB) and cached so per-click projection stays cheap."""
+    img = Image.open(path_str).convert("RGB")
+    if max(img.size) > max_side:
+        s = max_side / max(img.size)
+        img = img.resize((round(img.width * s), round(img.height * s)))
+    return np.asarray(img, dtype=np.float32)
+
+
+def project_material(base_png: bytes, ids: np.ndarray, region_ids: Iterable[int],
+                     swatch_path: Path, *, tile_frac: float = 0.28) -> bytes:
+    """Deterministic material projection — the interactive proxy, no model call.
+
+    Tiles the swatch across the frame and modulates it by the region's OWN shading
+    (the base render's luminance, normalised to the region mean), so the surface
+    takes on the swatch's colour + texture while keeping the render's existing
+    light / shadow / AO. Returns a full-frame RGB PNG; the caller composites only the
+    masked region back (`composite.paste_tile`), exactly like the generative edit.
+
+    Why this is the right primitive: it is the base's own pixels recoloured, so it
+    CANNOT hallucinate geometry (the failure mode of whole-image FLUX edits), it is
+    instant (~ms) and free, and it is view-independent — the same swatch projects
+    identically into every view, so cross-view consistency is automatic (no lock).
+
+    `tile_frac` sets the on-screen tile size as a fraction of the region's short side
+    (the future per-material "tile scale" control). Perspective-correct tiling via the
+    depth buffer is a planned refinement; v1 tiles in screen space.
+    """
+    base = np.asarray(Image.open(io.BytesIO(base_png)).convert("RGB"), dtype=np.float32)
+    H, W = base.shape[:2]
+    m = np.isin(ids, list(region_ids))
+    if not m.any():
+        return base_png
+
+    lum = 0.2126 * base[..., 0] + 0.7152 * base[..., 1] + 0.0722 * base[..., 2]
+    shade = np.clip(lum / max(float(lum[m].mean()), 1e-3), PROXY_SHADE_LO, PROXY_SHADE_HI)
+
+    ys, xs = np.where(m)
+    tile_px = max(48, int(tile_frac * min(int(ys.max() - ys.min()) + 1,
+                                          int(xs.max() - xs.min()) + 1)))
+    sw = _swatch_array(str(swatch_path))
+    sw_t = np.asarray(Image.fromarray(sw.astype(np.uint8)).resize((tile_px, tile_px)),
+                      dtype=np.float32)
+    reps = (H // tile_px + 1, W // tile_px + 1, 1)
+    tiled = np.tile(sw_t, reps)[:H, :W]
+
+    mat = np.clip(tiled * shade[..., None], 0, 255).astype(np.uint8)
+    buf = io.BytesIO()
+    Image.fromarray(mat).save(buf, "PNG")
+    return buf.getvalue()
+
+
 def materialize_view(
     view: View, *, swatch_name: str, swatch_path: Path, material_desc: str,
     region_ids: list[int], target: str | None = None,
-    precomputed: bytes | None = None,
+    precomputed: bytes | None = None, generative: bool = False,
     on_cost: Callable[[float, str], None] | None = None,
 ) -> dict:
     """Materialize ONE view: clad its `region_ids` in a swatch and composite the
@@ -229,9 +292,11 @@ def materialize_view(
     /api/apply_material path and the multi-view anchor cannot diverge.
 
       * builds the union mask via `mask_png_from_ids`,
-      * uses `precomputed` bytes as the edit when given (the no-spend travertine
-        path) and bills nothing; otherwise runs `flux2_edit([base, swatch], anchor_prompt)`
-        and fires `on_cost(COST_EDIT, label)` for the one billable call,
+      * `generative=False` (default): the edit is a deterministic `project_material`
+        projection — instant, $0, cannot hallucinate geometry; no `on_cost` fires.
+      * `generative=True`: the FLUX.2 Edit beauty pass — `flux2_edit([base, swatch],
+        anchor_prompt)`, firing `on_cost(COST_EDIT, label)` for the one billable call.
+      * `precomputed` bytes, if given, are used as the edit verbatim and bill nothing.
       * composites with `composite.paste_tile`.
 
     `target` is the surface phrase woven into `anchor_prompt`; when omitted it is
@@ -251,7 +316,12 @@ def materialize_view(
     if precomputed is not None:
         edit = precomputed
         spent = 0.0
+    elif not generative:
+        # interactive proxy: deterministic projection — instant, $0, no hallucination
+        edit = project_material(view.base_png, view.ids, region_ids, swatch_path)
+        spent = 0.0
     else:
+        # final beauty pass: one billable FLUX.2 Edit call
         if on_cost:
             on_cost(COST_EDIT, f"{swatch_name}->{target} ({view.id})")
         edit = flux2_edit([_uri(view.base_png), _swatch_uri(swatch_path)],
@@ -266,7 +336,7 @@ def apply_to_views(
     *, anchor: View, others: list[View], swatch_name: str, swatch_path: Path,
     material_desc: str, region_semantic: str | None = None,
     anchor_region_ids: list[int] | None = None,
-    anchor_precomputed: bytes | None = None,
+    anchor_precomputed: bytes | None = None, generative: bool = False,
     on_cost: Callable[[float, str], None] | None = None,
 ) -> dict:
     """Run the winning lock across the anchor + all other views.
@@ -282,7 +352,7 @@ def apply_to_views(
     a live FLUX call (the no-spend travertine path). `on_cost(cost, label)` fires per
     billable call so the caller can budget-guard.
     """
-    strategy = lock_strategy(swatch_name)
+    strategy = lock_strategy(swatch_name) if generative else "proxy"
     target = region_semantic or "wall"
 
     def cost(c: float, label: str):
@@ -306,41 +376,50 @@ def apply_to_views(
     anchor_mat = materialize_view(
         anchor, swatch_name=swatch_name, swatch_path=swatch_path,
         material_desc=material_desc, region_ids=a_ids, target=target,
-        precomputed=anchor_precomputed,
+        precomputed=anchor_precomputed, generative=generative,
         on_cost=(lambda c, _l: cost(c, f"anchor {swatch_name}->{target} ({anchor.id})")))
     anchor_final = anchor_mat["final_png"]
 
-    # ---- 2. build the lock reference from the anchor ----
-    if strategy == "neutral":
-        illum = trim_illuminant(anchor.base_png, anchor.ids, anchor.ids_for_trim())
-        reference = neutralize_wall(anchor_final, anchor.ids, a_ids, illum)
-    else:
-        reference = anchor_final
-    ref_uri = _uri(reference)
+    # ---- 2. build the lock reference (generative beauty pass only; the proxy is
+    # view-independent, so it needs no cross-view reference) ----
+    reference = None
+    if generative:
+        if strategy == "neutral":
+            illum = trim_illuminant(anchor.base_png, anchor.ids, anchor.ids_for_trim())
+            reference = neutralize_wall(anchor_final, anchor.ids, a_ids, illum)
+        else:
+            reference = anchor_final
+        ref_uri = _uri(reference)
 
-    # ---- 3. lock each other view ----
+    # ---- 3. each other view ----
     view_results = []
-    total = (0.0 if anchor_precomputed is not None else COST_EDIT)
+    total = anchor_mat["cost"]
     for v in others:
         v_ids = ids_for(v)
         if not v_ids:
             view_results.append({"view_id": v.id, "final_png": v.base_png,
                                  "region_ids": [], "cost": 0.0, "skipped": True})
             continue
-        v_mask = mask_png_from_ids(v.ids, v_ids)
-        cost(COST_EDIT, f"lock {swatch_name}->{target} ({v.id}, {strategy})")
-        edit = flux2_edit([_uri(v.base_png), _swatch_uri(swatch_path), ref_uri],
-                          lock_prompt(material_desc, target, strategy))
-        v_final = composite.paste_tile(v.base_png, v_mask, edit)
+        if not generative:
+            # proxy: same deterministic projection as the anchor -> automatic consistency
+            vm = materialize_view(v, swatch_name=swatch_name, swatch_path=swatch_path,
+                                  material_desc=material_desc, region_ids=v_ids,
+                                  target=target, generative=False)
+            v_final, v_cost = vm["final_png"], 0.0
+        else:
+            v_mask = mask_png_from_ids(v.ids, v_ids)
+            cost(COST_EDIT, f"lock {swatch_name}->{target} ({v.id}, {strategy})")
+            edit = flux2_edit([_uri(v.base_png), _swatch_uri(swatch_path), ref_uri],
+                              lock_prompt(material_desc, target, strategy))
+            v_final, v_cost = composite.paste_tile(v.base_png, v_mask, edit), COST_EDIT
         view_results.append({"view_id": v.id, "final_png": v_final,
-                            "region_ids": v_ids, "cost": COST_EDIT, "skipped": False})
-        total += COST_EDIT
+                            "region_ids": v_ids, "cost": v_cost, "skipped": False})
+        total += v_cost
 
     return {
         "strategy": strategy,
         "anchor": {"view_id": anchor.id, "final_png": anchor_final,
-                   "region_ids": a_ids,
-                   "cost": 0.0 if anchor_precomputed is not None else COST_EDIT,
+                   "region_ids": a_ids, "cost": anchor_mat["cost"],
                    "reference_png": reference},
         "views": view_results,
         "cost": round(total, 2),

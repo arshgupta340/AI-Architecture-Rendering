@@ -96,7 +96,8 @@ def test_apply_to_views_neutral_order_and_reference(anchor_view, front_view, swa
         res = apply_to_views(
             anchor=anchor_view, others=[front_view], swatch_name="red_brick",
             swatch_path=swatch_path, material_desc="red clay brick",
-            region_semantic="wall", on_cost=lambda c, l: costs.append((c, l)))
+            region_semantic="wall", generative=True,
+            on_cost=lambda c, l: costs.append((c, l)))
 
     # red_brick -> neutral strategy
     assert res["strategy"] == "neutral"
@@ -129,7 +130,7 @@ def test_apply_to_views_raw_passes_anchor_frame(anchor_view, front_view, swatch_
         res = apply_to_views(
             anchor=anchor_view, others=[front_view], swatch_name="travertine",
             swatch_path=swatch_path, material_desc="honed travertine",
-            region_semantic="wall")
+            region_semantic="wall", generative=True)
 
     assert res["strategy"] == "raw"
     # raw lock feeds the materialized anchor frame itself as the reference
@@ -154,7 +155,7 @@ def test_precomputed_anchor_skips_anchor_call(anchor_view, front_view, swatch_pa
         res = apply_to_views(
             anchor=anchor_view, others=[front_view], swatch_name="travertine",
             swatch_path=swatch_path, material_desc="honed travertine",
-            region_semantic="wall", anchor_precomputed=precomp)
+            region_semantic="wall", anchor_precomputed=precomp, generative=True)
 
     assert n_calls == 1                       # only the single lock call
     assert res["anchor"]["cost"] == 0.0       # anchor was free
@@ -176,7 +177,7 @@ def test_view_without_semantic_is_skipped(anchor_view, swatch_path):
         res = apply_to_views(
             anchor=anchor_view, others=[no_wall], swatch_name="red_brick",
             swatch_path=swatch_path, material_desc="red clay brick",
-            region_semantic="wall")
+            region_semantic="wall", generative=True)
 
     side = next(v for v in res["views"] if v["view_id"] == "side")
     assert side["skipped"] is True
@@ -211,7 +212,7 @@ def test_materialize_view_live_bills_once_and_composites(anchor_view, swatch_pat
     with patch.object(multiview_apply, "flux2_edit", side_effect=fake_edit):
         mat = multiview_apply.materialize_view(
             anchor_view, swatch_name="red_brick", swatch_path=swatch_path,
-            material_desc="red clay brick", region_ids=[1],
+            material_desc="red clay brick", region_ids=[1], generative=True,
             on_cost=lambda c, l: costs.append((c, l)))
 
     assert calls == [2]                                   # base + swatch, no lock ref
@@ -267,8 +268,51 @@ def test_apply_to_views_anchor_uses_materialize_view(anchor_view, front_view, sw
         res = multiview_apply.apply_to_views(
             anchor=anchor_view, others=[front_view], swatch_name="travertine",
             swatch_path=swatch_path, material_desc="honed travertine",
-            region_semantic="wall")
+            region_semantic="wall", generative=True)
 
     assert seen["view_id"] == "hero"          # the anchor view was materialized
     assert seen["region_ids"] == [1]          # the wall ids
     assert res["anchor"]["final_png"] == sentinel_final
+
+
+# --------------------------------------------------------------------------- #
+# proxy (default) — deterministic projection: instant, $0, no model call
+# --------------------------------------------------------------------------- #
+def test_project_material_recolours_region_only(anchor_view, swatch_path):
+    """project_material returns a full-frame PNG at base size whose region pixels take
+    the swatch colour (a red-brick swatch over the wall -> reddish wall)."""
+    out = multiview_apply.project_material(
+        anchor_view.base_png, anchor_view.ids, [1], swatch_path)
+    img = Image.open(io.BytesIO(out)).convert("RGB")
+    assert img.size == (16, 16)
+    wall = np.asarray(img)[0:8].reshape(-1, 3).mean(0)   # top half = wall
+    assert wall[0] > wall[2] + 20                         # R clearly > B (brick swatch)
+
+
+def test_materialize_view_proxy_default_is_free_and_makes_no_call(anchor_view, swatch_path):
+    """Default (generative=False) materialize: zero flux2_edit calls, zero cost, a
+    composited frame at base size, and the shared mask returned."""
+    with patch.object(multiview_apply, "flux2_edit",
+                      side_effect=AssertionError("proxy must not call flux2_edit")):
+        mat = multiview_apply.materialize_view(
+            anchor_view, swatch_name="white_stucco", swatch_path=swatch_path,
+            material_desc="white stucco", region_ids=[1])
+    assert mat["cost"] == 0.0
+    assert mat["region_ids"] == [1]
+    assert Image.open(io.BytesIO(mat["final_png"])).size == (16, 16)
+    assert mat["mask_png"] == multiview_apply.mask_png_from_ids(anchor_view.ids, [1])
+
+
+def test_apply_to_views_proxy_default_all_views_free(anchor_view, front_view, swatch_path):
+    """Default apply_to_views projects every view deterministically: strategy 'proxy',
+    no flux2_edit calls, zero cost, both views composited (consistency is automatic)."""
+    with patch.object(multiview_apply, "flux2_edit",
+                      side_effect=AssertionError("proxy must not call flux2_edit")):
+        res = apply_to_views(
+            anchor=anchor_view, others=[front_view], swatch_name="red_brick",
+            swatch_path=swatch_path, material_desc="red clay brick",
+            region_semantic="wall")
+    assert res["strategy"] == "proxy"
+    assert res["cost"] == 0.0 and res["anchor"]["cost"] == 0.0
+    assert res["views"][0]["view_id"] == "front" and res["views"][0]["cost"] == 0.0
+    assert Image.open(io.BytesIO(res["views"][0]["final_png"])).size == (16, 16)
