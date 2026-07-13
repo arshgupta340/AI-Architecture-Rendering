@@ -166,7 +166,18 @@ const DEFAULT_HERO: HeroState = {
   negativePrompt: "blurry, low quality, distorted, warped geometry, extra windows",
   busy: false,
 };
-const DEFAULT_HERO_ENDPOINT: HeroEndpoint = { baseUrl: "", regionUrl: "", secret: "" };
+/**
+ * FLUX.1 — the live, verified hero backend — is configured ONCE via build-time env
+ * vars in `.env.local` (gitignored; same pattern as VITE_GOOGLE_MAPS_API_KEY), so the
+ * Hero render works out of the box: no per-session credential paste. When these are set
+ * the hero modal opens straight into the workspace. FLUX.2 (experimental, deploy-gated)
+ * is still entered manually in the setup card. Leave unset → manual setup for FLUX.1 too.
+ */
+export const DEFAULT_HERO_ENDPOINT: HeroEndpoint = {
+  baseUrl: ((import.meta.env.VITE_HERO_BASE_URL as string | undefined) ?? "").trim(),
+  regionUrl: ((import.meta.env.VITE_HERO_REGION_URL as string | undefined) ?? "").trim(),
+  secret: ((import.meta.env.VITE_HERO_SECRET as string | undefined) ?? "").trim(),
+};
 
 /** Gaussian-splat environment: a Spark-rendered backdrop (WebGL2 stages only),
  *  fed by a drop-in context splat (`source:"file"`) OR a Modal scene-bake
@@ -484,6 +495,24 @@ export const useStore = create<Store>()(
           // reload — tile loading bills per session, so it must be an explicit click.
           geo: { ...s.geo, enabled: false },
         }) as Partial<Store>,
+      // FLUX.1 is the out-of-the-box default: when the persisted endpoint is blank
+      // (fresh browser, or an older build that stored an empty endpoint), fall back to
+      // the env-configured FLUX.1 backend (VITE_HERO_*) so the hero modal opens straight
+      // into the workspace instead of the credentials card. A user-saved endpoint (e.g.
+      // a connected FLUX.2) always wins. Otherwise a shallow merge — zustand's default.
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<Store>;
+        const e = (p.heroEndpoint ?? {}) as Partial<HeroEndpoint>;
+        return {
+          ...current,
+          ...p,
+          heroEndpoint: {
+            baseUrl: e.baseUrl || DEFAULT_HERO_ENDPOINT.baseUrl,
+            regionUrl: e.regionUrl || DEFAULT_HERO_ENDPOINT.regionUrl,
+            secret: e.secret || DEFAULT_HERO_ENDPOINT.secret,
+          },
+        };
+      },
     },
   ),
 );

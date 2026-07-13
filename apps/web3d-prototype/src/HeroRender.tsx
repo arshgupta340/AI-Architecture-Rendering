@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useStore, type HeroLayer, type HeroCaptureData, DEFAULT_HERO_SCALES } from "./state/store";
+import { useStore, type HeroLayer, type HeroCaptureData, DEFAULT_HERO_SCALES, DEFAULT_HERO_ENDPOINT } from "./state/store";
 import { SWATCHES } from "./lib/swatches";
 import { bakeFromHeroViews } from "./lib/splatBake";
 import { downloadBlob } from "./lib/exportImage";
@@ -197,14 +197,32 @@ function SetupCard() {
   const endpoint = useStore((s) => s.heroEndpoint);
   const setHeroEndpoint = useStore((s) => s.setHeroEndpoint);
   const closeHero = useStore((s) => s.closeHero);
-  const [base, setBase] = useState(endpoint.baseUrl);
-  const [region, setRegion] = useState(endpoint.regionUrl);
-  const [secret, setSecret] = useState(endpoint.secret);
-  const model = modelOfUrl(base || region); // detect from either field (base may be blank)
+  const env = DEFAULT_HERO_ENDPOINT; // the FLUX.1 default from `.env.local` (VITE_HERO_*)
+  const hasEnvFlux1 = Boolean(env.baseUrl && env.regionUrl);
+  // Pre-fill from the configured FLUX.1 default when nothing is stored yet, so the FLUX.1
+  // path is one-click (or never shown) and FLUX.2 is the only model that needs fresh creds.
+  const [base, setBase] = useState(endpoint.baseUrl || env.baseUrl);
+  const [region, setRegion] = useState(endpoint.regionUrl || env.regionUrl);
+  const [secret, setSecret] = useState(endpoint.secret || env.secret);
+  const [model, setModel] = useState<"flux1" | "flux2">(
+    modelOfUrl(endpoint.baseUrl || endpoint.regionUrl || env.baseUrl),
+  );
   const pickModel = (to: "flux1" | "flux2") => {
-    setBase((u) => switchModelUrl(u, to));
-    setRegion((u) => switchModelUrl(u, to));
+    setModel(to);
+    if (to === "flux1") {
+      // Restore the configured FLUX.1 default (or derive it from a FLUX.2 URL if that's all we have).
+      setBase((u) => env.baseUrl || switchModelUrl(u, "flux1"));
+      setRegion((u) => env.regionUrl || switchModelUrl(u, "flux1"));
+      setSecret((s) => s || env.secret);
+    } else {
+      // FLUX.2 = the sibling Modal app in the same workspace — derive its URL from the FLUX.1 one.
+      setBase((u) => switchModelUrl(u, "flux2"));
+      setRegion((u) => switchModelUrl(u, "flux2"));
+    }
   };
+  const flux2 = model === "flux2";
+  const pyfile = flux2 ? "modal_flux2" : "modal_flux";
+  const ready = Boolean(base.trim() && region.trim() && secret.trim());
 
   return (
     <div style={overlay}>
@@ -217,23 +235,26 @@ function SetupCard() {
       </div>
       <div style={setupWrap}>
         <div style={card}>
-          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>Connect the FLUX backend</div>
+          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>
+            {flux2 ? "Connect the FLUX.2 backend" : "Connect the FLUX backend"}
+          </div>
           <div style={{ opacity: 0.72, fontSize: 12.5, lineHeight: 1.55, marginBottom: 12 }}>
-            The hero render runs a self-hosted, geometry-locked diffusion backend on your Modal GPU.
-            Deploy it once, then paste the two endpoint URLs + your shared secret here.
+            The hero render runs a self-hosted, geometry-locked diffusion backend on your Modal GPU.{" "}
+            <b>FLUX.1 is the live default</b> — set it once in <code>.env.local</code> and it connects
+            automatically. <b>FLUX.2</b> is experimental, and entered here after you deploy it.
           </div>
 
           <div style={smallLabel}>Backend model</div>
           <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
-            <div style={modelSeg(model === "flux1")} onClick={() => pickModel("flux1")}>
+            <div style={modelSeg(!flux2)} onClick={() => pickModel("flux1")}>
               FLUX.1 · live
             </div>
-            <div style={modelSeg(model === "flux2")} onClick={() => pickModel("flux2")}>
+            <div style={modelSeg(flux2)} onClick={() => pickModel("flux2")}>
               FLUX.2 · experimental
             </div>
           </div>
           <div style={{ opacity: 0.55, fontSize: 11, lineHeight: 1.5, marginBottom: 14 }}>
-            {model === "flux2" ? (
+            {flux2 ? (
               <>
                 <b>FLUX.2-dev + Fun-Controlnet-Union</b> (H200 + VideoX-Fun, native inpaint). Heavier /
                 pricier; <b>deploy-gated</b> — deploy <code>spike/modal_flux2.py</code> first. See{" "}
@@ -247,23 +268,40 @@ function SetupCard() {
             )}
           </div>
 
+          {!flux2 &&
+            (hasEnvFlux1 ? (
+              <div style={envOkBox}>
+                ✓ FLUX.1 is configured in <code>.env.local</code> — it connects automatically when you open
+                the Hero render. Fields are pre-filled below; just press <b>Connect</b>.
+              </div>
+            ) : (
+              <div style={envHintBox}>
+                <b>To make FLUX.1 work out of the box:</b> deploy it once
+                (<code>modal deploy spike/modal_flux.py</code>), then copy the URLs + secret into{" "}
+                <code>apps/web3d-prototype/.env.local</code> as <code>VITE_HERO_BASE_URL</code> /{" "}
+                <code>VITE_HERO_REGION_URL</code> / <code>VITE_HERO_SECRET</code> (see{" "}
+                <code>.env.example</code>) — then this modal never asks again. Or paste them below for a
+                one-off.
+              </div>
+            ))}
+
           <ol style={{ margin: "0 0 16px 0", paddingLeft: 18, fontSize: 12, lineHeight: 1.7, opacity: 0.85 }}>
             <li>
-              Add <code>HF_TOKEN</code> (accept the FLUX.1-dev license on HuggingFace) and{" "}
-              <code>HERO_SHARED_SECRET</code> to the Modal <code>arch-spike</code> secret.
+              Add <code>HF_TOKEN</code> (accept the {flux2 ? "FLUX.2-dev" : "FLUX.1-dev"} license on
+              HuggingFace) and <code>HERO_SHARED_SECRET</code> to the Modal <code>arch-flux</code> secret.
             </li>
             <li>
-              <code>modal run spike/modal_flux.py::warm_weights</code> (one-time weight prefetch).
+              <code>modal run spike/{pyfile}.py::warm_weights</code> (one-time weight prefetch).
             </li>
             <li>
-              <code>modal deploy spike/modal_flux.py</code> → copy the two{" "}
-              <code>*.modal.run</code> endpoint URLs.
+              <code>modal deploy spike/{pyfile}.py</code> → copy the printed <code>…modal.run</code> base URL
+              (<code>/hero_render</code> + <code>/region_edit</code> routes).
             </li>
           </ol>
           {(
             [
-              ["Base render URL (…heroflux-hero-render.modal.run)", base, setBase],
-              ["Region edit URL (…heroflux-region-edit.modal.run)", region, setRegion],
+              ["Base render URL (…heroflux-web.modal.run/hero_render)", base, setBase],
+              ["Region edit URL (…heroflux-web.modal.run/region_edit)", region, setRegion],
               ["Shared secret (HERO_SHARED_SECRET)", secret, setSecret],
             ] as const
           ).map(([ph, val, set], i) => (
@@ -282,8 +320,8 @@ function SetupCard() {
             </span>
             <button
               onClick={() => setHeroEndpoint({ baseUrl: base.trim(), regionUrl: region.trim(), secret: secret.trim() })}
-              disabled={!base.trim() || !region.trim() || !secret.trim()}
-              style={{ ...saveBtn, opacity: base.trim() && region.trim() && secret.trim() ? 1 : 0.4 }}
+              disabled={!ready}
+              style={{ ...saveBtn, opacity: ready ? 1 : 0.4 }}
             >
               Connect
             </button>
@@ -1135,6 +1173,8 @@ const swatchChip: React.CSSProperties = { width: 20, height: 20, borderRadius: 4
 const iconMini: React.CSSProperties = { cursor: "pointer", fontSize: 11, padding: "1px 3px", userSelect: "none" };
 const setupWrap: React.CSSProperties = { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 };
 const card: React.CSSProperties = { maxWidth: 520, width: "100%", background: "rgba(22,24,28,0.96)", border: "1px solid rgba(255,138,77,0.35)", borderRadius: 12, padding: 22 };
+const envOkBox: React.CSSProperties = { marginBottom: 14, padding: "9px 11px", borderRadius: 7, fontSize: 11.5, lineHeight: 1.5, background: "rgba(122,210,138,0.1)", border: "1px solid rgba(122,210,138,0.4)", color: "#bfead0" };
+const envHintBox: React.CSSProperties = { marginBottom: 14, padding: "9px 11px", borderRadius: 7, fontSize: 11.5, lineHeight: 1.5, background: "rgba(255,178,122,0.08)", border: "1px solid rgba(255,178,122,0.3)", color: "#ffcf99" };
 const saveBtn: React.CSSProperties = { padding: "8px 16px", borderRadius: 6, border: "1px solid #ffb27a", background: "rgba(255,138,77,0.25)", color: "#fff", cursor: "pointer", fontSize: 12.5, fontWeight: 600 };
 const linkBtn: React.CSSProperties = { color: "#9db8ff", fontSize: 12, padding: "5px 10px", borderRadius: 6, border: "1px solid rgba(157,184,255,0.3)", cursor: "pointer", userSelect: "none" };
 const exitBtn: React.CSSProperties = { cursor: "pointer", fontSize: 12, padding: "5px 12px", borderRadius: 6, background: "rgba(255,255,255,0.08)", color: "#fff", userSelect: "none" };
