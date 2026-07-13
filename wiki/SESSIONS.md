@@ -7,6 +7,15 @@ updated: 2026-06-15
 
 Append-only conversation log. **Newest at top.** One entry per chat session.
 
+## 2026-07-03 — Grand-idea research fleet (17 agents) → mesh-first PRD v1
+
+**Scope:** User brought the "Model Insight" Lovable lab (engine/splat bake-off) + the grand idea (AI entourage → Seedance/Kling video fly-through → world-model editable splat env → embedded copilot, plus Enscape/V-Ray/Lumion integration) and asked for a multi-agent stress-test + production PRD.
+**Decisions:** [[DECISIONS#mesh-first-prd]] — the mesh is the product; V1 = model-locked non-destructive re-rendering as a Rhino/Food4Rhino plugin; video/editable-splats/mutating-copilot deferred behind evidence gates.
+**Tried:** 17-agent workflow (`wf_f03d1538-42b`): 7 Sonnet 5 EXA researchers (video-flythrough, world-models-splats, entourage, incumbent-integration, competitive-market, copilot-agent, pipeline-economics) → 7 Opus 4.8 adversarial stress-testers → 2 cross-cutting red teams → 1 synthesis architect. All 7 dimensions verdict "viable-with-changes"; red teams + synthesis converged unanimously.
+**Key findings:** Veras (Nano Banana Pro) is now FREE-bundled in every Chaos tier (85/100 top firms) → zero model-layer moat; AI video warps building geometry across camera motion (all hosted models; geometry-true V2V = research, no hosted API); editable/relightable splats = research-stage AND Chaos already shipped splat relighting+clip (V-Ray 7 U3/Vantage 3.3.0); mutating copilots run 42–74% success (Figma data); the app lacks a global undo bus — "non-destructive" is a claim without a mechanism until it exists. The one defensible seam: true 3D-model-native geometry lock (semantic IDs from the mesh, not VLM tags on a screenshot) that survives "move the window 2 ft". Nuit = nearest thesis rival (non-destructive branching, but text/image-first, no model binding — primary watch item).
+**Outcome:** [PRD v1 "mesh-first"](../docs/plans/PRD-v1-mesh-first.md) written (V1 scope = command/undo bus + Rhino capture plugin + productized hero + still turntable + labeled static splat backdrop + light-coherent entourage + read-only copilot; $29–39/mo; Food4Rhino GTM; evidence gates G1–G4 for video/splat-edit/copilot-mutation/gen-entourage). Full evidence: `docs/plans/research/grand-idea-2026-07/` (7 dimension reports + stress-tests + 2 red teams + synthesis).
+**Follow-ups:** founder review of the PRD; week-1 Nuit teardown; rotate the exposed HF token (still open from 2026-06-15); Phase-0 build order = F1 bus → F2 plugin → F3 auth/cost-gating; semantic-ID stability spike (R2.2); nothing committed to git yet (PRD + research files are untracked — commit after review).
+
 ## 2026-06-15 — Multi-view hero: shipped per-view set; A/B/C consistency R&D (reproject built, full-360 partial)
 
 **Scope:** Build a multi-view-consistent hero turntable. Shipped the per-view set, then — after the user (rightly) caught that independent FLUX per view is NOT 3D-consistent — ran a measured A/B/C investigation into true consistency.

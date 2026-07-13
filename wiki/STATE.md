@@ -1,6 +1,6 @@
 ---
 type: state
-updated: 2026-06-15
+updated: 2026-07-03
 ---
 
 # Current State
@@ -46,6 +46,10 @@ Run: `npm install --prefix apps/web3d-prototype` then `npm --prefix apps/web3d-p
 | **WebGL2 + GI** | + area lights + reflective ground + contact | richer; payoff strongest at ground level |
 | **WebGPU** | SSGI + GTAO + TRAA + HDRI IBL + VSM + vignette | softest/warmest GI — the in-browser ceiling |
 Lumen reference = **Twinmotion** (runbook). Ceiling analysis: [[research/web3d-realism]] · [[research/web3d-ue-browser]] · [[research/web3d-clientready]].
+
+## PRD (NEW, 2026-07-03) — the productization plan
+
+**[PRD v1 "mesh-first"](../docs/plans/PRD-v1-mesh-first.md)** — written from a 17-agent research fleet (7 research dimensions, each adversarially stress-tested, + 2 red teams + synthesis; evidence in `docs/plans/research/grand-idea-2026-07/`). Verdict: **the mesh is the product** — V1 = model-locked non-destructive re-rendering as a Food4Rhino plugin ($29–39/mo). Phase 0 = global **command/undo bus** (the load-bearing unbuilt piece) + Rhino capture plugin + auth/cost-gated hero. Phase 1 = still turntable + labeled static splat backdrop + light-coherent entourage + read-only copilot. Video fly-through, editable-splat authoring, mutating copilot, generative entourage = deferred behind evidence gates (PRD §6). Rationale: [[DECISIONS#mesh-first-prd]]. Key external facts: Veras is free-bundled in every Chaos tier; AI video warps building geometry (all hosted models); Chaos shipped splat relighting Jun 2026; Nuit = nearest thesis rival (watch: model binding).
 
 ## NEXT — remaining client-ready polish (follow-ups)
 

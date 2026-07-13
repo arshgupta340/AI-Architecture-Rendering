@@ -20,6 +20,17 @@ Each entry follows the same shape so it can be scanned in 15 seconds:
 
 ---
 
+## 2026-07-03 — Mesh-first PRD: ship model-locked re-rendering; defer video/editable-splats/mutating-copilot {#mesh-first-prd}
+
+**Decision:** Productize ONE primitive — model-locked, non-destructive re-rendering (Rhino semantic IDs → engine buffers → FLUX hero → region layers on a global command/undo bus) as a paid Food4Rhino plugin — and defer the grand idea's other pillars (AI video fly-through, editable splat environment, mutating copilot, generative entourage) behind explicit evidence gates ([PRD §6](../docs/plans/PRD-v1-mesh-first.md)).
+**Context:** User's grand idea (entourage-gen → Seedance/Kling fly-through → world-model editable splat → copilot → incumbent integration) was stress-tested by a 17-agent research fleet (2026-07-03, `wf_f03d1538-42b`).
+**Alternatives considered:**
+- Build the full pipeline as pillars — rejected: 4 stochastic stages in series ≈ 11% end-to-end first-pass yield; video/splat-editing are research-grade; incumbents (free Veras, D5 3.0, Chaos splat relighting) already commoditize the garnish.
+- Integrate INTO incumbents (Enscape SDK etc.) — rejected as primary: the Enscape SDK embeds *their* renderer in *your* app; no material/mask-layer access exists. Kept only as Twinmotion partner-conversation seed + Food4Rhino shelf distribution.
+- Standalone web app — fallback only: competes in the commoditized $20–40/mo photo-in-photo-out cluster and abandons the model-native seam.
+**Reasoning:** The only capability incumbents structurally lack is geometry-truth from the actual model (semantic IDs, not VLM-inferred masks) that survives the revision workflow ("move the window 2 ft" after renders). Everything else is either free at the incumbent (render button, video presets), research-stage (splat editing/relighting, geometry-true video), or reliability-negative (mutating copilot at 42–74% success with no undo bus to join). The unbuilt load-bearing piece is the transactional command/undo bus — built Phase 0, before any copilot.
+**Revisit if:** Nuit ships real Rhino/Revit model binding (seam narrows — primary watch); Chaos ships model-native semantic-ID editing; a hosted geometry-locked V2V API appears (G1 re-opens); relightable-splat editing reaches product quality in mainstream tools (G2 re-opens); Phase-0 wow demo fails to convert Rhino-forum architects (kill signal — reassess the whole wedge).
+
 ## 2026-06-15 — True multi-view consistency = reproject-from-3D, not per-view diffusion {#web3d-reproject-consistency}
 
 **Decision:** For a *consistent* multi-view hero (turntable / splat-bake feed), render the hero ONCE and **reproject its pixels onto the real 3D mesh** to make other views (`lib/reproject.ts`), filling only disocclusions with diffusion — rather than rendering each angle with an independent FLUX pass.
