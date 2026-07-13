@@ -1,0 +1,2617 @@
+{
+ "encoding": {
+  "scheme": "r=5*(i//2704); g=5*((i%2704)//52); b=5*(i%52); key='g,b' when r==0 else 'r,g,b'",
+  "render_transform": "out=0.7*in+base(px,ch); base=white_pass-178.5",
+  "ruleset": "csi"
+ },
+ "objects": {
+  "0,0": {
+   "guid": "2be53d4d-660b-40e6-80d1-f851a89a7a0a",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-04 - Roof Assemblies",
+   "semantic": "roof",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,5": {
+   "guid": "3b70071c-b12b-4634-8984-b01f8e721774",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-02 - Exterior Wall Assemblies",
+   "semantic": "wall",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,10": {
+   "guid": "bd43be5f-d6e9-40d4-bc0a-a4b423551849",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,15": {
+   "guid": "fadd40f6-32b6-4ee0-856b-9d82b040d04a",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,20": {
+   "guid": "83cdcea3-9753-45e5-b80c-ed6f8ff54c50",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,25": {
+   "guid": "03496371-6703-40b0-98e6-7c6091d01017",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-03 - Interior Wall Assemblies",
+   "semantic": "wall_interior",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,30": {
+   "guid": "6d2b3628-e102-44c3-b4d1-a4a9ecc3b023",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-01 - Floor Assemblies",
+   "semantic": "floor",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,35": {
+   "guid": "51aff177-3575-449a-95d8-b96b6198ee17",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,40": {
+   "guid": "8c58579d-8eeb-4d83-a331-a62bfdb66901",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,45": {
+   "guid": "69419a8b-376e-4112-a1f5-77ac8f27d00b",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,50": {
+   "guid": "52bbee7a-8518-4814-9f55-83027783555e",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,55": {
+   "guid": "ce71f22f-bdd7-4077-a4d1-7f081481fdbd",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,60": {
+   "guid": "13aec8e3-8ffe-43fb-84f4-d498a666dfa8",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,65": {
+   "guid": "2f3d8cf9-d04f-4862-a4c2-b61f02e119a3",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,70": {
+   "guid": "c7dc4936-eaa5-47c2-8a2d-e1e2df3b210d",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,75": {
+   "guid": "59cf796f-2f08-4632-9484-2f98c1987b19",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,80": {
+   "guid": "e77d4ee0-7942-48a1-879e-b2f057b8ca3b",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-02 - Exterior Wall Assemblies",
+   "semantic": "wall",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,85": {
+   "guid": "c839138f-e2ba-4ee8-8cde-ae6b6d01ded2",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,90": {
+   "guid": "86b00792-c85e-498e-bbd1-3e968e1290d7",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,95": {
+   "guid": "3af12e69-9843-439e-8570-060b3b975ccc",
+   "layer": "03 - CONCRETE::03-01-Concrete Foundation",
+   "semantic": "foundation",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,100": {
+   "guid": "86673dc6-b005-413d-8bdc-46ec752b4a9f",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,105": {
+   "guid": "e89b6fce-2c5c-44a3-bc1e-2c17c25d73ce",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,110": {
+   "guid": "2086c190-9b8e-40ca-b860-e37078a72a81",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,115": {
+   "guid": "8760b4a9-3064-4808-89f8-1326a956bd97",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,120": {
+   "guid": "3a48156a-bc81-4c37-9e4e-9b6b1ab7db9e",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,125": {
+   "guid": "d5b09583-5648-4992-a602-550f1b67df7e",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,130": {
+   "guid": "155fdb36-1001-41aa-9024-f5ead41fe5b6",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,135": {
+   "guid": "d4b13482-552d-4532-92fd-0d5ddab8cdd2",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,140": {
+   "guid": "6eac3755-c0e0-4da8-8da0-19eae240743c",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Extrusion",
+   "material": null,
+   "name": null
+  },
+  "0,145": {
+   "guid": "1f1a3416-63db-478f-9030-92d57afd1749",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,150": {
+   "guid": "93f0d51c-c773-43de-b317-5e8e5b9a7aaf",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,155": {
+   "guid": "6aae6fd8-ae76-44b8-9730-00d9fe0b17cb",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,160": {
+   "guid": "a4062acb-f195-4691-888c-dbadd276a965",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,165": {
+   "guid": "78eca9de-ca42-4781-8aad-a10760aa75ec",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,170": {
+   "guid": "2aa2b3ea-9ad8-4f3c-8629-cfcb83e9e845",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,175": {
+   "guid": "d0651bf4-17f2-438c-a41f-669f6fd48d62",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,180": {
+   "guid": "cb2daac3-1903-4497-be57-eef124125e75",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,185": {
+   "guid": "28513bb1-5c7c-412d-8040-f1be04ee5824",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,190": {
+   "guid": "aa77658e-a0c1-4a0a-bea9-3ef648870e48",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,195": {
+   "guid": "26b99428-883c-4607-8720-db3fd237cfcb",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,200": {
+   "guid": "7ba496e6-7392-47b0-bc14-59d9f2a604d3",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,205": {
+   "guid": "855cf7b3-40ba-4bca-86d3-992389c7d66b",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,210": {
+   "guid": "9cc602d4-fca7-496c-a8d6-13eb78ec4cc4",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,215": {
+   "guid": "fe074bcc-b5be-4804-a277-ad6b6f8a68ae",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,220": {
+   "guid": "043e3fa8-8460-4e70-8a63-3660e9a18f66",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,225": {
+   "guid": "84252576-b3d2-4d0a-a368-26a10823161c",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,230": {
+   "guid": "0f833de5-f01b-49ec-94cc-019b3b202ddb",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-04 - Roof Assemblies",
+   "semantic": "roof",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,235": {
+   "guid": "a5dcc1c1-5d58-41c0-b65f-57fcfb35e1ef",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,240": {
+   "guid": "e8ef94f5-ed2c-4bf7-ae04-a451a9898876",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Extrusion",
+   "material": null,
+   "name": null
+  },
+  "0,245": {
+   "guid": "c4d14c71-cb6b-47c4-8a74-fcb32810c831",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,250": {
+   "guid": "e6d2f949-a5c6-47bd-bea5-d49fae27b481",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "0,255": {
+   "guid": "f6cd2f5c-b07b-4fc4-acf8-8f42e643a32a",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,0": {
+   "guid": "6f00485c-711b-48cb-ba12-1de78da3f527",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,5": {
+   "guid": "74fad37c-8dce-4089-8fcf-e8bbf06af80f",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-04 - Roof Assemblies",
+   "semantic": "roof",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,10": {
+   "guid": "8449e48d-74c0-4b0c-b2bb-e40fb3741c55",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,15": {
+   "guid": "9f146652-d6d7-400c-9e4c-b466809d8005",
+   "layer": "08 - OPENINGS",
+   "semantic": "window",
+   "object_type": "InstanceReference",
+   "material": null,
+   "name": null
+  },
+  "5,20": {
+   "guid": "80795c34-70f4-41a1-aaa3-60725c65774d",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,25": {
+   "guid": "fa4e25d0-f72c-4a19-b7fe-3b987662e407",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,30": {
+   "guid": "387c47b2-a708-4526-b2c7-9c6d19d57d18",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,35": {
+   "guid": "fa791ed2-b529-4511-b095-27701cf66366",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,40": {
+   "guid": "1d4e4b73-f413-4451-9641-184044b0b5a2",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,45": {
+   "guid": "ba4cebb4-8c29-4c0b-8278-95a8b62edada",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,50": {
+   "guid": "eea4be73-2250-428c-9b13-087b67499b74",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,55": {
+   "guid": "213be441-d35d-4d5e-949d-8ee0d772f745",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,60": {
+   "guid": "c7c3eda9-bc93-4c3f-b221-f1de67335e92",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,65": {
+   "guid": "a6b49b8f-ce42-4143-91ae-53e07a16ef24",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,70": {
+   "guid": "a1ec9a06-f268-4bd8-8662-31c752b02a79",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,75": {
+   "guid": "bf7229dd-6339-4a01-8f8e-178eeea81633",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,80": {
+   "guid": "48998af8-8840-4c8a-8acf-168f016a009c",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,85": {
+   "guid": "e41e9bdf-1f1e-4676-8ded-4f1628972bff",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,90": {
+   "guid": "3037980e-043d-4495-8708-f200e6cf0afc",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,95": {
+   "guid": "1dfe11b9-b6c5-405d-9c3a-c78f81e34096",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,100": {
+   "guid": "28ef680c-e5b8-4bfc-8631-3497c903ab69",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,105": {
+   "guid": "be135cdf-2d8e-43d9-97f8-c6f3dfc5f2de",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,110": {
+   "guid": "ee8029f8-a188-4025-b8be-a63624847ef3",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,115": {
+   "guid": "2f933306-1db8-4dcd-b54e-5893d94490c7",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,120": {
+   "guid": "e09c199d-6fdc-4401-bcd2-5945e3266c48",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,125": {
+   "guid": "0bb498af-9bd9-407e-8623-bba408d62cfc",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,130": {
+   "guid": "a9cca443-8a10-435d-a323-227dc7e8e7c5",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,135": {
+   "guid": "e125c6fe-6add-431d-8260-ffa4033bcb91",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,140": {
+   "guid": "62673bb0-9306-4bd3-ad99-8e9a59e3d1c3",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,145": {
+   "guid": "423149e6-fa47-4dd6-9355-961c51ee5518",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,150": {
+   "guid": "deba392f-f595-4c34-bd07-ff7b0049c18b",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,155": {
+   "guid": "241e9c56-2a92-4311-b7c1-27133f8b6533",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,160": {
+   "guid": "781d3fec-c61d-4896-b204-ac8f3858c146",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,165": {
+   "guid": "5566a4b9-fbeb-4869-be83-c52875d7b32d",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,170": {
+   "guid": "f603eeda-292f-4734-8ed1-9d352c1f65e9",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,175": {
+   "guid": "5383e07e-45ff-4b6a-b2cd-b787254a86e1",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,180": {
+   "guid": "41ebb00a-3c2b-4c36-ae67-6fd6cd18b3c9",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,185": {
+   "guid": "53236bfb-1149-46ec-adcf-ac8b26d02416",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,190": {
+   "guid": "04af8823-fa0c-41cb-8ca5-08edd75813fa",
+   "layer": "09 - FINISHES::09-51 - Exterior Stair Treads",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,195": {
+   "guid": "22545d0f-a454-41c3-83fc-b3371275f40f",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-05 - Exterior Stairs",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,200": {
+   "guid": "6081850f-2c7e-403b-8aa5-3bba2bac0ed1",
+   "layer": "09 - FINISHES::09-51 - Exterior Stair Treads",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,205": {
+   "guid": "1e63341d-23d5-4ea3-92af-c9456b90ed0d",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,210": {
+   "guid": "01d8ee1e-7cd6-4999-b7e7-67b55e4b7ebc",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,215": {
+   "guid": "d93c54f8-bbe0-4c53-8a39-2a8f4325f522",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,220": {
+   "guid": "e6d1e83c-3c8e-499e-be17-d8c35f49b38a",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,225": {
+   "guid": "23d0d62d-bb94-44ab-bc99-fda8709fe267",
+   "layer": "09 - FINISHES::09-03- Exterior Finished Floor",
+   "semantic": "floor",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,230": {
+   "guid": "77b67ce7-6c28-43cb-990c-726e35722775",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,235": {
+   "guid": "1c7a8133-9ca6-438c-9f95-e4a44fe0d7a9",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,240": {
+   "guid": "e0fd74c8-2777-4c18-933c-e4adfc0843d9",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,245": {
+   "guid": "d73a2040-cf0b-4e29-b369-b112eb86b96c",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,250": {
+   "guid": "965cff57-f017-4a27-8bc5-c285607573f6",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "5,255": {
+   "guid": "65983d08-b26c-4a65-b24f-ac2e1dd75ed2",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,0": {
+   "guid": "ceec6961-88a9-4516-b94d-4bf0eb638e21",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,5": {
+   "guid": "ae366bac-da39-4ea9-b608-b73b5cd112e6",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,10": {
+   "guid": "6fa21b3c-ce83-425e-857c-7a2077825da1",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,15": {
+   "guid": "dd11dc29-3a15-4a85-8878-f2be1ed7ba87",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,20": {
+   "guid": "4a5af467-ce5a-4930-817d-68c24ba26919",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,25": {
+   "guid": "4f93e7a4-18b7-4229-a386-2290460ec23f",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,30": {
+   "guid": "eece7f4e-8697-47d4-a9ea-21dbe90d0cc8",
+   "layer": "03 - CONCRETE::03-01-Concrete Foundation",
+   "semantic": "foundation",
+   "object_type": "Extrusion",
+   "material": null,
+   "name": null
+  },
+  "10,35": {
+   "guid": "d45f11cf-7692-4644-92c5-e290c86c7d7c",
+   "layer": "03 - CONCRETE::03-01-Concrete Foundation",
+   "semantic": "foundation",
+   "object_type": "Extrusion",
+   "material": null,
+   "name": null
+  },
+  "10,40": {
+   "guid": "de08f946-7ce0-4d17-93a2-0e1b09ab0596",
+   "layer": "03 - CONCRETE::03-01-Concrete Foundation",
+   "semantic": "foundation",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,45": {
+   "guid": "3d3f27ce-d20e-4e28-bd4f-e5580be8266e",
+   "layer": "03 - CONCRETE::03-01-Concrete Foundation",
+   "semantic": "foundation",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,50": {
+   "guid": "c1ad8aa3-d1c8-415c-ae00-913333b3e031",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-00 - Wood Framing (General)",
+   "semantic": "other",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,55": {
+   "guid": "72da6a4f-7bbe-4883-9e49-8cd9c29da7bd",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-06 - Interior Stairs",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,60": {
+   "guid": "0098a786-70e9-4d82-87d3-45580167762c",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-03 - Interior Wall Assemblies",
+   "semantic": "wall_interior",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,65": {
+   "guid": "25154057-9e5a-4a1e-a8f5-f1ce91ee1ce2",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,70": {
+   "guid": "774327c7-0ba0-4dad-8d27-1c6583d58b7d",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,75": {
+   "guid": "4b90902b-e4cf-4cf8-b070-42a51c3c947c",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,80": {
+   "guid": "816104b1-afe5-44d8-b08e-b0b9acff9302",
+   "layer": "09 - FINISHES::09-62 - Interior Stair Railings",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,85": {
+   "guid": "a50ccb40-05b9-4e34-80da-5758179cbd18",
+   "layer": "09 - FINISHES::09-62 - Interior Stair Railings",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,90": {
+   "guid": "f225361b-8e94-4703-908b-20b772bdce74",
+   "layer": "09 - FINISHES::09-62 - Interior Stair Railings",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,95": {
+   "guid": "2dfc97c9-5375-4e32-b996-a27116ce6f1f",
+   "layer": "09 - FINISHES::09-04 - Interior Finished Floor",
+   "semantic": "floor",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,100": {
+   "guid": "bab231e5-10fc-4403-9841-b743fdb5a4b3",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-06 - Interior Stairs",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,105": {
+   "guid": "4bf5b5f2-e4da-4457-a8c9-d7ce773014ad",
+   "layer": "09 - FINISHES::09-62 - Interior Stair Railings",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,110": {
+   "guid": "0be6b472-b55b-43e9-9d09-2771fba68025",
+   "layer": "09 - FINISHES::09-62 - Interior Stair Railings",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,115": {
+   "guid": "1c3f39ed-f79a-4985-9f7b-5a23f94c8271",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,120": {
+   "guid": "21e6a78a-ea0b-44a5-bdca-38bbb0964d58",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,125": {
+   "guid": "e86870a9-e8b6-494f-9730-7ac284daf613",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,130": {
+   "guid": "20ceb43a-7e29-4fee-b051-6dc37a4884c3",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,135": {
+   "guid": "dfd64a64-214e-4e92-8609-cc314bec6ad1",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,140": {
+   "guid": "b455aca6-36ce-4705-b548-c9816a83c31a",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,145": {
+   "guid": "7ffa916b-69fb-41cf-8c6b-1893e57a71f3",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,150": {
+   "guid": "0e453fcf-5e7f-4c41-ba89-6e8eb6d1371e",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,155": {
+   "guid": "fce22a8d-cbee-49f8-85fd-465efd2ca757",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,160": {
+   "guid": "9dbcaa09-0c02-44ea-a1aa-1a68878197b6",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,165": {
+   "guid": "ba794b3b-fa66-463b-84ab-9113373ae8a9",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,170": {
+   "guid": "cd5c6de5-1843-4605-8813-94126f5094eb",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,175": {
+   "guid": "45d96a5e-2e27-4906-b5ec-7d1c4941d859",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,180": {
+   "guid": "62ce56a6-f5fb-4c27-b67e-e798fe3f7cd0",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,185": {
+   "guid": "551112e6-92b5-40a6-b7b7-b642b5981fa0",
+   "layer": "09 - FINISHES::09-62 - Interior Stair Railings",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,190": {
+   "guid": "2f697690-d89e-4aac-9ff9-5f2b9cf7f8cd",
+   "layer": "09 - FINISHES::09-62 - Interior Stair Railings",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,195": {
+   "guid": "765f2242-a28c-42d2-bb6e-5946b37ec909",
+   "layer": "09 - FINISHES::09-62 - Interior Stair Railings",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,200": {
+   "guid": "127f08e1-e8de-4913-a5e7-198e643bf244",
+   "layer": "09 - FINISHES::09-62 - Interior Stair Railings",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,205": {
+   "guid": "2de5cdcd-c84d-45b6-993a-63c0ab1cb44d",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,210": {
+   "guid": "3808e049-0b41-4d50-82eb-ae5acba80b0c",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,215": {
+   "guid": "9e1dbd47-c112-4a8d-993c-2b7ada75d043",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,220": {
+   "guid": "f923153c-1db4-472d-919e-085d6208926b",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,225": {
+   "guid": "efafd472-c97e-408c-8740-3e2cbe1f832b",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,230": {
+   "guid": "235d0372-c981-407f-8230-2aa10c2d1399",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,235": {
+   "guid": "cee6f4ab-6a62-4caf-92ae-72cc95f6ba9a",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,240": {
+   "guid": "c8a4df8a-d21b-482b-bfce-885961a69749",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,245": {
+   "guid": "07e27ab1-c88c-4119-80a0-7fe61203300c",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,250": {
+   "guid": "cd83447d-d53a-42de-be0d-f9c933a0d817",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "10,255": {
+   "guid": "106721ad-4495-40d7-829c-25e3889dd332",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,0": {
+   "guid": "b3c980c1-4302-487d-a6a7-167b52a48151",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,5": {
+   "guid": "092c892e-af3d-4074-a72a-363d957d6061",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,10": {
+   "guid": "87eadb63-a22a-4061-9451-eed81a3568c3",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,15": {
+   "guid": "acfdca92-3dfe-4b4a-bf52-4417098681f1",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,20": {
+   "guid": "9f5744b4-0479-40b0-8a15-8400d27b051b",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,25": {
+   "guid": "48835d61-f879-48da-a36e-12656f6a2250",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,30": {
+   "guid": "213524fc-b5bb-4ae2-94c7-a7d55a48c99f",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,35": {
+   "guid": "3e6db7e0-9375-476a-8a53-09d16403f370",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,40": {
+   "guid": "03742790-002d-4b40-b7a0-9f4396e6be19",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,45": {
+   "guid": "adc7697b-4f86-451e-ab34-77bf89b46e96",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,50": {
+   "guid": "ecf91cfb-bb6f-4749-8350-c669daadfc61",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,55": {
+   "guid": "dd19e55a-42a8-4031-9704-a618b2e93d41",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,60": {
+   "guid": "0dd33445-ce18-47b9-8cf5-ae5d241555bd",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,65": {
+   "guid": "6cf55cd9-ad3a-4d4e-b102-76c0cd1668b8",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,70": {
+   "guid": "ec47fb5d-b36a-437c-a1cf-d9670681b313",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,75": {
+   "guid": "e69671dd-ae1f-44a5-92b2-87884e66629d",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,80": {
+   "guid": "5579209c-621b-408d-9f98-e0ba15512e29",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,85": {
+   "guid": "e87fcf91-ad70-4cd3-8711-d1e8f9f148f1",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,90": {
+   "guid": "e56451ca-ff95-4aa2-af4e-44378d847833",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,95": {
+   "guid": "0001ed63-6a9c-44a9-af5d-917e155e9810",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,100": {
+   "guid": "17e6d2e9-c4ff-49bd-954b-fd054f6a6263",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,105": {
+   "guid": "8065bd61-0d2e-4996-b4e3-28227dda4599",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,110": {
+   "guid": "bd26d440-ca90-4474-a823-fa856d5f6fd0",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,115": {
+   "guid": "6ec0620b-bacd-46af-be8b-ffafb1893435",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,120": {
+   "guid": "a49b3054-614e-4dc2-9ac7-f65ebcf21f2f",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,125": {
+   "guid": "5d7f9078-841b-4818-8344-fc99c57d62ab",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,130": {
+   "guid": "4fd78cfa-c6a8-46ef-9535-33f337540da7",
+   "layer": "09 - FINISHES::09-63 - Interior Stair Balusters",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,135": {
+   "guid": "26f25c39-46ca-41b3-b502-705b3d65a4c5",
+   "layer": "09 - FINISHES::09-62 - Interior Stair Railings",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,140": {
+   "guid": "7dab9825-0ba9-4b66-8e60-eb69e09281ac",
+   "layer": "09 - FINISHES::09-62 - Interior Stair Railings",
+   "semantic": "stair",
+   "object_type": "Extrusion",
+   "material": null,
+   "name": null
+  },
+  "15,145": {
+   "guid": "7de741d7-9ae3-4f42-a576-4f0f8d2578e2",
+   "layer": "09 - FINISHES::09-62 - Interior Stair Railings",
+   "semantic": "stair",
+   "object_type": "Extrusion",
+   "material": null,
+   "name": null
+  },
+  "15,150": {
+   "guid": "f063b4de-26fa-4019-8428-5e0a0373f206",
+   "layer": "09 - FINISHES::09-62 - Interior Stair Railings",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,155": {
+   "guid": "651d896d-ba36-4fe8-b4bc-2a74ecf9319e",
+   "layer": "09 - FINISHES::09-62 - Interior Stair Railings",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,160": {
+   "guid": "dbab5764-14ac-492a-b1c6-4df66ff04145",
+   "layer": "09 - FINISHES::09-61 - Interior Stair Treads",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,165": {
+   "guid": "4920997e-248f-4803-8d72-fbdc6c99f15a",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,170": {
+   "guid": "0c06f10b-8333-4322-b63a-a7e912cab5eb",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,175": {
+   "guid": "ecea2b0f-a3f2-48fc-bbb7-ae494a350ca3",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,180": {
+   "guid": "d4b3ea03-4db5-4d13-afd7-66f5fda840af",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,185": {
+   "guid": "9118c103-a7d8-442a-9c89-17fbacab4e34",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,190": {
+   "guid": "5c934ac9-5173-412c-b2f8-1e4ba5ff0ec4",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,195": {
+   "guid": "840da0bc-1591-4bc6-868b-175d2d637c6a",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,200": {
+   "guid": "1d95f0e7-050c-4a22-8a66-2ea27870f3b6",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,205": {
+   "guid": "1458e40e-9e65-4af0-891d-5df1e5637d27",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,210": {
+   "guid": "c7836111-8699-4081-ab10-3b3b89fcc245",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,215": {
+   "guid": "9690208f-2ea5-4ed2-85e4-afc6d2ab0e38",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,220": {
+   "guid": "1a4415c8-e7a9-4ca5-9313-381d73552bdf",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,225": {
+   "guid": "077353af-5d16-43a1-80ec-14df35681ed3",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,230": {
+   "guid": "f0120aa7-910b-4edd-bf84-bb669ff1cb67",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,235": {
+   "guid": "7e6a6ea9-3014-4532-9b72-361bee5f35e6",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,240": {
+   "guid": "643b5e75-2242-4773-976b-5a59df7baa4a",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,245": {
+   "guid": "24f89783-699e-4df0-bcbf-78441fbba0a1",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "15,250": {
+   "guid": "7073fbd5-b203-461c-96fb-928d072fa208",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Extrusion",
+   "material": null,
+   "name": null
+  },
+  "15,255": {
+   "guid": "59226004-7354-4331-8bc7-0144c7c4f62c",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,0": {
+   "guid": "a4794254-06b8-429a-bcab-2de1edf1aca3",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,5": {
+   "guid": "669771d7-093f-46c6-9f45-8c0c4c153f6c",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,10": {
+   "guid": "0059534d-b62b-457b-8b47-ce9d95134686",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,15": {
+   "guid": "2588bd98-6248-4a5e-8751-0d6a9e2db329",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Extrusion",
+   "material": null,
+   "name": null
+  },
+  "20,20": {
+   "guid": "4d249fea-6a24-44b1-8f55-326963da0ebb",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,25": {
+   "guid": "a5ff421e-7021-4cfe-bd7b-3658f7a18de3",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,30": {
+   "guid": "3051625e-5947-4b4c-a94d-a01f5bc25f4d",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,35": {
+   "guid": "acde3b16-861a-42a8-9100-ea276fea8b30",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,40": {
+   "guid": "af63de76-dd46-48ec-9330-b2d4b692797c",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,45": {
+   "guid": "4ec1bb3c-e9f2-44bf-98c8-418ec6b29710",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,50": {
+   "guid": "5c7ea5ac-0266-439f-8aff-99352b5f65a3",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,55": {
+   "guid": "26161b0b-4bae-4c78-9e51-dfb0aee76944",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,60": {
+   "guid": "d25af0c8-6d6c-4b69-9d99-b6ec2d2f307e",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,65": {
+   "guid": "557b8a29-d5b9-4b17-8af8-f7cd3d7b4a7a",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,70": {
+   "guid": "c0d4f944-701f-4055-886f-d53cf35eb357",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,75": {
+   "guid": "166631bb-8ec2-42c8-bf03-0c0188385a79",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,80": {
+   "guid": "f43f0c1d-a174-4f74-9ade-5b3963be9d99",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,85": {
+   "guid": "512662b4-9908-4306-9b31-d86fb15f0232",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,90": {
+   "guid": "c37799bb-2ab8-46c6-ab0f-311bf3e1f9fe",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,95": {
+   "guid": "1d4f1ad4-ebdf-469b-8744-e33e46f67206",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,100": {
+   "guid": "101f1a4f-6c62-49a9-9a48-185e23b291a3",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,105": {
+   "guid": "afa975e5-53d5-4a3c-99da-bf66b10fde46",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Extrusion",
+   "material": null,
+   "name": null
+  },
+  "20,110": {
+   "guid": "2d0d966c-9ec3-4c2a-b7d1-710da75c8e95",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,115": {
+   "guid": "e0261129-43f2-46fe-b550-1037d5d279c3",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,120": {
+   "guid": "6eb3a8b2-6d51-49ee-895b-7ea777e6bd58",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,125": {
+   "guid": "0fe5af2f-2813-417e-ada7-0988a3ae389f",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,130": {
+   "guid": "6034faaa-b146-476a-a83e-a5fe4c26754a",
+   "layer": "09 - FINISHES::09-50 - Exterior Stair Finishes",
+   "semantic": "stair",
+   "object_type": "Extrusion",
+   "material": null,
+   "name": null
+  },
+  "20,135": {
+   "guid": "9daf9fa9-a604-4258-8703-630e72ad25c9",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-02 - Exterior Wall Assemblies",
+   "semantic": "wall",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,140": {
+   "guid": "444c8b58-e288-4fa5-91a5-eea8849a8d59",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-02 - Exterior Wall Assemblies",
+   "semantic": "wall",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,145": {
+   "guid": "ecdbd748-3e60-4ee3-bc8d-2b2dfecedc29",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-02 - Exterior Wall Assemblies",
+   "semantic": "wall",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,150": {
+   "guid": "36625113-8a0f-484e-bd97-c7aaf5c5f4a9",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Extrusion",
+   "material": null,
+   "name": null
+  },
+  "20,155": {
+   "guid": "0729de97-f1cd-47ef-a0b8-061b43e70bf1",
+   "layer": "09 - FINISHES::09-01 - Misc Exterior Finishes",
+   "semantic": "trim",
+   "object_type": "Extrusion",
+   "material": null,
+   "name": null
+  },
+  "20,160": {
+   "guid": "6dcb717e-d007-40d0-b74f-295fffadebad",
+   "layer": "09 - FINISHES::09-51 - Exterior Stair Treads",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,165": {
+   "guid": "7cde258a-e1d9-41e7-90e7-c7752a38dc33",
+   "layer": "09 - FINISHES::09-51 - Exterior Stair Treads",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,170": {
+   "guid": "c8934a0e-5f22-49a3-88a4-bc181349e136",
+   "layer": "09 - FINISHES::09-51 - Exterior Stair Treads",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,175": {
+   "guid": "6c645746-9910-49c0-bb41-0baa69cbfb54",
+   "layer": "09 - FINISHES::09-51 - Exterior Stair Treads",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,180": {
+   "guid": "3771c637-671b-4979-830c-80771e222c80",
+   "layer": "09 - FINISHES::09-51 - Exterior Stair Treads",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,185": {
+   "guid": "09912d1f-5b72-45af-8b20-4bdbde600983",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-00 - Wood Framing (General)",
+   "semantic": "other",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "20,190": {
+   "guid": "76b84874-a72d-43dd-bb38-5f2120c88e53",
+   "layer": "08 - OPENINGS",
+   "semantic": "window",
+   "object_type": "InstanceReference",
+   "material": null,
+   "name": null
+  },
+  "20,195": {
+   "guid": "27d04dd3-3404-412f-a54e-ddfed4ac7728",
+   "layer": "08 - OPENINGS",
+   "semantic": "window",
+   "object_type": "InstanceReference",
+   "material": null,
+   "name": null
+  },
+  "20,200": {
+   "guid": "bdd310d1-80ca-4a46-b960-16fd04d9a265",
+   "layer": "08 - OPENINGS",
+   "semantic": "window",
+   "object_type": "InstanceReference",
+   "material": null,
+   "name": null
+  },
+  "20,205": {
+   "guid": "e7953ac6-bf93-4b92-bb2d-a3552d97bc29",
+   "layer": "08 - OPENINGS",
+   "semantic": "window",
+   "object_type": "InstanceReference",
+   "material": null,
+   "name": null
+  },
+  "20,210": {
+   "guid": "27a684e0-98f0-429b-9657-bc8006a74cde",
+   "layer": "08 - OPENINGS",
+   "semantic": "window",
+   "object_type": "InstanceReference",
+   "material": null,
+   "name": null
+  },
+  "20,215": {
+   "guid": "7cfeec6f-3fd2-4262-9a53-0721567405e8",
+   "layer": "08 - OPENINGS",
+   "semantic": "window",
+   "object_type": "InstanceReference",
+   "material": null,
+   "name": null
+  },
+  "20,220": {
+   "guid": "ec22e009-9cc0-4b4e-89fc-58a15fffac0b",
+   "layer": "08 - OPENINGS",
+   "semantic": "window",
+   "object_type": "InstanceReference",
+   "material": null,
+   "name": null
+  },
+  "20,225": {
+   "guid": "a937b037-db0a-428d-849b-a0d1f05f7749",
+   "layer": "08 - OPENINGS",
+   "semantic": "window",
+   "object_type": "InstanceReference",
+   "material": null,
+   "name": null
+  },
+  "20,230": {
+   "guid": "137ad03b-047f-47a8-b251-fb7b557b8fff",
+   "layer": "08 - OPENINGS",
+   "semantic": "window",
+   "object_type": "InstanceReference",
+   "material": null,
+   "name": null
+  },
+  "20,235": {
+   "guid": "82698125-f935-4573-8d5d-b383ec5becf0",
+   "layer": "08 - OPENINGS",
+   "semantic": "window",
+   "object_type": "InstanceReference",
+   "material": null,
+   "name": null
+  },
+  "20,240": {
+   "guid": "54eb0efd-fdd4-4964-9e2c-b7608bcc28f7",
+   "layer": "08 - OPENINGS",
+   "semantic": "window",
+   "object_type": "InstanceReference",
+   "material": null,
+   "name": null
+  },
+  "20,245": {
+   "guid": "741de1db-8d82-4e8f-9469-63a4e9710550",
+   "layer": "08 - OPENINGS",
+   "semantic": "window",
+   "object_type": "InstanceReference",
+   "material": null,
+   "name": null
+  },
+  "20,250": {
+   "guid": "272e4b9c-9a84-435d-9845-bb60e3af7711",
+   "layer": "08 - OPENINGS",
+   "semantic": "window",
+   "object_type": "InstanceReference",
+   "material": null,
+   "name": null
+  },
+  "20,255": {
+   "guid": "a93ec35d-f83a-467b-baec-1c83917c0bf1",
+   "layer": "08 - OPENINGS",
+   "semantic": "window",
+   "object_type": "InstanceReference",
+   "material": null,
+   "name": null
+  },
+  "25,0": {
+   "guid": "5281f595-efb1-4bf5-b041-5eefe5cf58c2",
+   "layer": "08 - OPENINGS",
+   "semantic": "window",
+   "object_type": "InstanceReference",
+   "material": null,
+   "name": null
+  },
+  "25,5": {
+   "guid": "bc203d6f-81b6-47e5-a672-86109a7cc157",
+   "layer": "08 - OPENINGS",
+   "semantic": "window",
+   "object_type": "InstanceReference",
+   "material": null,
+   "name": null
+  },
+  "25,10": {
+   "guid": "727c6c03-f1b6-48c3-a589-49e43381867b",
+   "layer": "09 - FINISHES::09-61 - Interior Stair Treads",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,15": {
+   "guid": "fe022d43-0240-4afa-8e3a-cd36dcdcf208",
+   "layer": "09 - FINISHES::09-61 - Interior Stair Treads",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,20": {
+   "guid": "474ee30d-48ae-4e22-9cc7-af8d4b59bc9a",
+   "layer": "09 - FINISHES::09-61 - Interior Stair Treads",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,25": {
+   "guid": "89054c4f-136d-4f91-ab99-6aa15d21e988",
+   "layer": "09 - FINISHES::09-61 - Interior Stair Treads",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,30": {
+   "guid": "ff90c0ee-20d1-4598-8c66-e5048c6dc01c",
+   "layer": "09 - FINISHES::09-61 - Interior Stair Treads",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,35": {
+   "guid": "67c5c573-c944-4fa3-b9aa-1a64a4f517e5",
+   "layer": "09 - FINISHES::09-61 - Interior Stair Treads",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,40": {
+   "guid": "2b732a90-d44a-42d8-add4-cb6337eec0eb",
+   "layer": "09 - FINISHES::09-61 - Interior Stair Treads",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,45": {
+   "guid": "5ff2887f-8703-4f7d-86e5-96239971b886",
+   "layer": "09 - FINISHES::09-61 - Interior Stair Treads",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,50": {
+   "guid": "9ae24c99-0ff5-4fc3-a25f-1946a62dfe50",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-06 - Interior Stairs",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,55": {
+   "guid": "2b76f810-ffa6-4177-9d59-1078d95f5532",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-06 - Interior Stairs",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,60": {
+   "guid": "1e8d6730-b238-4dcb-8c68-1a923e151923",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-06 - Interior Stairs",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,65": {
+   "guid": "e5f975ba-715c-4da4-8550-8f4469ee8753",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-06 - Interior Stairs",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,70": {
+   "guid": "9f4c61b5-efdc-4b42-ae29-5662078cee78",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-06 - Interior Stairs",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,75": {
+   "guid": "b0b62be7-4589-4dd7-848d-a3ed1c02fc86",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-06 - Interior Stairs",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,80": {
+   "guid": "d6792e05-a0af-4d5d-81ff-9b961b9149cf",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-06 - Interior Stairs",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,85": {
+   "guid": "463e747c-bd99-4f65-87d9-2af01bbf354b",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-06 - Interior Stairs",
+   "semantic": "stair",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,90": {
+   "guid": "2bea2f7b-e05a-4c2d-abfe-e183333bccb6",
+   "layer": "08 - OPENINGS",
+   "semantic": "window",
+   "object_type": "InstanceReference",
+   "material": null,
+   "name": null
+  },
+  "25,95": {
+   "guid": "bb81e1a4-5c72-40d1-a1b2-cb8200d3d3a3",
+   "layer": "08 - OPENINGS",
+   "semantic": "window",
+   "object_type": "InstanceReference",
+   "material": null,
+   "name": null
+  },
+  "25,100": {
+   "guid": "8e376a44-01e1-44c7-8cd7-e1630b31cc2d",
+   "layer": "08 - OPENINGS",
+   "semantic": "window",
+   "object_type": "InstanceReference",
+   "material": null,
+   "name": null
+  },
+  "25,105": {
+   "guid": "5b01dbc0-156d-48ce-bcdc-75d65878cc7d",
+   "layer": "08 - OPENINGS",
+   "semantic": "window",
+   "object_type": "InstanceReference",
+   "material": null,
+   "name": null
+  },
+  "25,110": {
+   "guid": "ea3b3f6d-f761-49a7-912c-5bb7508c597c",
+   "layer": "08 - OPENINGS",
+   "semantic": "window",
+   "object_type": "InstanceReference",
+   "material": null,
+   "name": null
+  },
+  "25,115": {
+   "guid": "ef3145bd-3c22-4bc0-81eb-16607ee00de2",
+   "layer": "08 - OPENINGS",
+   "semantic": "window",
+   "object_type": "InstanceReference",
+   "material": null,
+   "name": null
+  },
+  "25,120": {
+   "guid": "801f6378-528d-4a19-b5be-6e814e40e5b6",
+   "layer": "08 - OPENINGS",
+   "semantic": "window",
+   "object_type": "InstanceReference",
+   "material": null,
+   "name": null
+  },
+  "25,125": {
+   "guid": "c3d87d13-c488-4f0a-a4be-ade228badd20",
+   "layer": "08 - OPENINGS",
+   "semantic": "window",
+   "object_type": "InstanceReference",
+   "material": null,
+   "name": null
+  },
+  "25,130": {
+   "guid": "461e5a9b-c359-4ce2-8f74-718d61983e5e",
+   "layer": "08 - OPENINGS",
+   "semantic": "window",
+   "object_type": "InstanceReference",
+   "material": null,
+   "name": null
+  },
+  "25,135": {
+   "guid": "d7ca9042-d452-4c34-8f84-8f91be5175b0",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-01 - Floor Assemblies",
+   "semantic": "floor",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,140": {
+   "guid": "afb717c5-e253-4da0-9d9c-b775940d99aa",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-01 - Floor Assemblies",
+   "semantic": "floor",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,145": {
+   "guid": "d3d1ad57-f0e9-489d-8592-691bc332e844",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-02 - Exterior Wall Assemblies",
+   "semantic": "wall",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,150": {
+   "guid": "eaf50c47-d682-4251-ac83-9ce86a2ebf60",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-04 - Roof Assemblies",
+   "semantic": "roof",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,155": {
+   "guid": "d012f822-84c2-4dea-b1e2-6ca6354fb2fb",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-03 - Interior Wall Assemblies",
+   "semantic": "wall_interior",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,160": {
+   "guid": "09e58422-52d3-4e20-b6ab-a9335056a484",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-03 - Interior Wall Assemblies",
+   "semantic": "wall_interior",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,165": {
+   "guid": "430ef3e4-dbbc-49d8-8659-2283f616bbd0",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-03 - Interior Wall Assemblies",
+   "semantic": "wall_interior",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,170": {
+   "guid": "4b5da533-f883-47c4-91e9-1736841b8831",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-03 - Interior Wall Assemblies",
+   "semantic": "wall_interior",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,175": {
+   "guid": "3cdacbf1-f517-4a43-9bb1-fe309e57558f",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-00 - Wood Framing (General)",
+   "semantic": "other",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,180": {
+   "guid": "ed21a94d-8dc9-49c2-b984-14a050f4cd1b",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-02 - Exterior Wall Assemblies",
+   "semantic": "wall",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,185": {
+   "guid": "6f5bb342-2bdf-47b4-95c9-a01a01db8b12",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-02 - Exterior Wall Assemblies",
+   "semantic": "wall",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,190": {
+   "guid": "4ac4f73e-4c85-46d6-aa8c-1c4cfd46eb18",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-02 - Exterior Wall Assemblies",
+   "semantic": "wall",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,195": {
+   "guid": "9da0336a-6b8c-49df-884c-f4e98fb461f4",
+   "layer": "06 - WOOD PLASTICS & COMPOSITES::06-02 - Exterior Wall Assemblies",
+   "semantic": "wall",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,200": {
+   "guid": "74213cd0-bc64-4b11-ac88-ab71b74b623c",
+   "layer": "08 - OPENINGS::08-21 - Door Panels",
+   "semantic": "door",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,205": {
+   "guid": "caa0c3dd-c986-4efd-9665-9512e9e7a5b1",
+   "layer": "08 - OPENINGS::08-22 - Door Hardware",
+   "semantic": "door",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,210": {
+   "guid": "d94e00c7-8fb7-400c-8ece-946d303a5dad",
+   "layer": "08 - OPENINGS::08-02 - Opening Exterior Trim",
+   "semantic": "window",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,215": {
+   "guid": "78e47847-51f7-4bc4-89bc-df9d41370881",
+   "layer": "08 - OPENINGS::08-03 - Opening Interior Trim",
+   "semantic": "window",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,220": {
+   "guid": "a84ada3a-9f6e-4bf4-9578-a1e9b3609df0",
+   "layer": "08 - OPENINGS::08-01 - Opening Frames",
+   "semantic": "window",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,225": {
+   "guid": "7f2e0a37-980c-45a7-98c1-39242fac2bc2",
+   "layer": "03 - CONCRETE::03-01-Concrete Foundation",
+   "semantic": "foundation",
+   "object_type": "Extrusion",
+   "material": null,
+   "name": null
+  },
+  "25,230": {
+   "guid": "2af8706d-119e-44fa-9f4a-374f231f5bc3",
+   "layer": "03 - CONCRETE::03-01-Concrete Foundation",
+   "semantic": "foundation",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,235": {
+   "guid": "f9769509-8c3e-44d8-835a-1a5bec0885ec",
+   "layer": "03 - CONCRETE::03-01-Concrete Foundation",
+   "semantic": "foundation",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,240": {
+   "guid": "5e40a722-32ca-417f-ac73-ee7b07c2d016",
+   "layer": "31 - SITE::31-00 - Site-Misc",
+   "semantic": "ground",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,245": {
+   "guid": "b8323152-8480-422d-893c-11cba56f3946",
+   "layer": "31 - SITE::31-00 - Site-Misc",
+   "semantic": "ground",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,250": {
+   "guid": "244f63fb-f100-4b11-8c19-6a0aa3db0ca1",
+   "layer": "31 - SITE::31-01 - Site-Massing",
+   "semantic": "ground",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "25,255": {
+   "guid": "fc0ddf94-b23e-48a1-86f4-e8371cef951e",
+   "layer": "31 - SITE::31-05 - Site-Top Soil",
+   "semantic": "ground",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "30,0": {
+   "guid": "35911bb3-5ae7-4021-ac31-e23d59320f90",
+   "layer": "31 - SITE::31-00 - Site-Misc",
+   "semantic": "ground",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "30,5": {
+   "guid": "a9cffb09-ccb7-4817-92e6-050f5c98e52f",
+   "layer": "31 - SITE::31-00 - Site-Misc",
+   "semantic": "ground",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "30,10": {
+   "guid": "56d92aa0-fd66-449e-8598-e4606b2ca796",
+   "layer": "31 - SITE::31-00 - Site-Misc",
+   "semantic": "ground",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "30,15": {
+   "guid": "3cf47afd-fb00-42d7-b7d5-e4c80e56a7e0",
+   "layer": "31 - SITE::31-00 - Site-Misc",
+   "semantic": "ground",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "30,20": {
+   "guid": "d98f9ee0-f9ca-4249-a051-5f3ab84ccd41",
+   "layer": "31 - SITE::31-00 - Site-Misc",
+   "semantic": "ground",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "30,25": {
+   "guid": "732c51e2-2fb1-4c2b-ab33-700fcc84f358",
+   "layer": "31 - SITE::31-00 - Site-Misc",
+   "semantic": "ground",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "30,30": {
+   "guid": "f880ade1-b5f5-4d07-b867-031887db643b",
+   "layer": "31 - SITE::31-00 - Site-Misc",
+   "semantic": "ground",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "30,35": {
+   "guid": "005dc389-ddb3-4f25-a885-94de21e0cb13",
+   "layer": "31 - SITE::31-00 - Site-Misc",
+   "semantic": "ground",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "30,40": {
+   "guid": "615fd0ba-a1a5-41c2-8af9-8411f3095bc7",
+   "layer": "31 - SITE::31-05 - Site-Top Soil",
+   "semantic": "ground",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "30,45": {
+   "guid": "052567b7-abf6-47b7-9e22-8601331f0260",
+   "layer": "31 - SITE::31-03 - Site-Concrete",
+   "semantic": "paving",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "30,50": {
+   "guid": "e4faa69e-4662-4e8e-8d9e-585187d94837",
+   "layer": "31 - SITE::31-03 - Site-Concrete",
+   "semantic": "paving",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "30,55": {
+   "guid": "b6f3ccb0-4160-4e68-a697-65480b7a7274",
+   "layer": "31 - SITE::31-04 - Site-Asphalt",
+   "semantic": "paving",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "30,60": {
+   "guid": "6d50a31f-5619-4fcd-8032-0057c60e836a",
+   "layer": "31 - SITE::31-03 - Site-Concrete",
+   "semantic": "paving",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  },
+  "30,65": {
+   "guid": "bc10b2dd-3845-42cb-8674-15cae5b95dcd",
+   "layer": "31 - SITE::31-03 - Site-Concrete",
+   "semantic": "paving",
+   "object_type": "Brep",
+   "material": null,
+   "name": null
+  }
+ }
+}

@@ -1,0 +1,122 @@
+[
+  {
+    "material": "travertine",
+    "anchor_lab": [
+      73.28141467289663,
+      2.384295110585256,
+      18.68442653918956
+    ],
+    "rows": {
+      "naive": {
+        "de": 7.427848536850042,
+        "de_ab": 7.103896766971387,
+        "dtex": 2.5211977719098186,
+        "lab": [
+          75.45111156661216,
+          2.877532515433463,
+          11.597673676400769
+        ]
+      },
+      "v1_locked": {
+        "de": 4.140970829302079,
+        "de_ab": 1.8023956909876016,
+        "dtex": 4.351857711162275,
+        "lab": [
+          77.00955216797914,
+          2.3434173884501135,
+          16.882494454253028
+        ]
+      },
+      "A1": {
+        "de": 6.808982018057677,
+        "de_ab": 6.1428592026751,
+        "dtex": 4.933603324536776,
+        "lab": [
+          76.21867818479723,
+          1.765842545788767,
+          12.572779002805706
+        ]
+      },
+      "A2": {
+        "de": 8.052273756017005,
+        "de_ab": 6.602820287429943,
+        "dtex": 4.48424719832245,
+        "lab": [
+          77.8903057427467,
+          1.7223951755367493,
+          12.114866110661694
+        ]
+      }
+    },
+    "naive_de": 7.427848536850042,
+    "naive_de_ab": 7.103896766971387,
+    "winner": "v1_locked",
+    "winner_de": 4.140970829302079,
+    "winner_de_ab": 1.8023956909876016,
+    "winner_beats_naive": true,
+    "winner_beats_naive_ab": true,
+    "cost": 0.0,
+    "sidebyside": "C:\\Users\\arshg\\AI Architecture Rendering\\spike\\outputs\\multiview_v2\\sidebyside_travertine.png",
+    "wallzoom": "C:\\Users\\arshg\\AI Architecture Rendering\\spike\\outputs\\multiview_v2\\_wallzoom_travertine.png"
+  },
+  {
+    "material": "red_brick",
+    "anchor_lab": [
+      44.291589423106,
+      19.455708237887027,
+      27.774703586381374
+    ],
+    "rows": {
+      "naive": {
+        "de": 8.253908660413531,
+        "de_ab": 8.085627527508654,
+        "dtex": 6.493332915119986,
+        "lab": [
+          42.63338688395592,
+          19.40635693262631,
+          19.689226670189306
+        ]
+      },
+      "v1_locked": {
+        "de": 21.619368037877386,
+        "de_ab": 20.6462776415718,
+        "dtex": 25.893568708998302,
+        "lab": [
+          50.70472390667382,
+          7.043478593835365,
+          11.276057105042584
+        ]
+      },
+      "A1": {
+        "de": 14.964811648620934,
+        "de_ab": 11.942159133038139,
+        "dtex": 5.0033410312113205,
+        "lab": [
+          53.30992756934417,
+          15.613985724898336,
+          16.46734611913899
+        ]
+      },
+      "A2": {
+        "de": 13.749414282333264,
+        "de_ab": 9.548466167111256,
+        "dtex": 9.473732877986926,
+        "lab": [
+          54.18467726072078,
+          13.924264625670432,
+          19.991623366485364
+        ]
+      }
+    },
+    "naive_de": 8.253908660413531,
+    "naive_de_ab": 8.085627527508654,
+    "winner": "A2",
+    "winner_de": 13.749414282333264,
+    "winner_de_ab": 9.548466167111256,
+    "winner_beats_naive": false,
+    "winner_beats_naive_ab": false,
+    "cost": 0.0,
+    "sidebyside": "C:\\Users\\arshg\\AI Architecture Rendering\\spike\\outputs\\multiview_v2\\sidebyside_red_brick.png",
+    "wallzoom": "C:\\Users\\arshg\\AI Architecture Rendering\\spike\\outputs\\multiview_v2\\_wallzoom_red_brick.png"
+  }
+]
