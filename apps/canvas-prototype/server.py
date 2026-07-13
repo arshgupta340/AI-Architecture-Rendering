@@ -139,19 +139,36 @@ def apply_material(body: dict) -> dict:
         raise ValueError("missing 'swatch'")
     swatch_file = _swatch_path(swatch)
 
+    # View-aware: in a multi-view project the client sends the active view id, so the
+    # mask + base come from THAT view, not the anchor. (Without this, applying on the
+    # "Front" tab built the mask from the hero/anchor geometry -> misregistered patches.)
+    # Falls back to the global single-view project when no valid view is given.
+    view_id = body.get("view")
+    if view_id and (VIEWS_DIR / view_id).is_dir():
+        view = _load_view(view_id)
+        regions = view.regions
+    else:
+        view_id = None
+        view = multiview_apply.View("canvas", _base_png, _ids, _regions["regions"])
+        regions = _regions["regions"]
+
     if body.get("region_ids"):
         region_ids = sorted(int(i) for i in body["region_ids"])
     elif body.get("region_semantic"):
         sem = body["region_semantic"]
-        region_ids = sorted(int(k) for k, r in _regions["regions"].items()
-                            if r["semantic"] == sem)
+        region_ids = sorted(int(k) for k, r in regions.items() if r.get("semantic") == sem)
     else:
         raise ValueError("missing 'region_ids' or 'region_semantic'")
     if not region_ids:
         raise ValueError("no regions matched")
 
+    # default apply = the interactive proxy (deterministic projection, instant, $0).
+    # generative=True opts into the FLUX.2 Edit beauty pass (the future "Render").
+    generative = bool(body.get("generative"))
+    mode = "gen" if generative else "px"
     key = hashlib.sha1(
-        f"{swatch}|{','.join(map(str, region_ids))}".encode()).hexdigest()[:16]
+        f"{swatch}|{view_id or 'main'}|{','.join(map(str, region_ids))}|{mode}".encode()
+    ).hexdigest()[:16]
     LAYERS.mkdir(parents=True, exist_ok=True)
     out_path = LAYERS / f"{key}.png"
     url = f"/project/layers/{key}.png"
@@ -160,33 +177,25 @@ def apply_material(body: dict) -> dict:
         return {"layer_id": key, "image_url": url, "cost_est": 0.0,
                 "live": False, "cached": True}
 
-    semantics = _semantic_of(region_ids)
+    semantics = {regions.get(str(i), {}).get("semantic", "?") for i in region_ids}
     target = " and ".join(sorted(semantics))
     material = multiview_apply.material_desc_for(swatch)
-    # One View DTO over the loaded single-view project; the same materialize_view the
-    # multi-view anchor stage uses builds the mask, runs the edit (or uses precomputed
-    # bytes), and composites — so the two paths cannot drift.
-    view = multiview_apply.View("canvas", _base_png, _ids, _regions["regions"])
 
-    # ---- NO-SPEND demo path: precomputed travertine walls on the ALIGNED base
-    if swatch == "travertine" and semantics == {"wall"}:
-        # travertine_walls_v2.png has travertine across the whole wall semantic
-        # on the same depth+canny base the canvas shows; masking by the
-        # *requested* instance mask yields a correct per-selection layer.
-        precomp = (SPIKE / "outputs" / "e2_house_v2" / "travertine_walls_v2.png").read_bytes()
+    # ---- default: interactive proxy — deterministic projection, instant, no spend,
+    # geometry exactly preserved (cannot hallucinate openings the way FLUX edits do).
+    if not generative:
         mat = multiview_apply.materialize_view(
             view, swatch_name=swatch, swatch_path=swatch_file, material_desc=material,
-            region_ids=region_ids, target=target, precomputed=precomp)
+            region_ids=region_ids, target=target, generative=False)
         out_path.write_bytes(_layer_rgba(mat["final_png"], mat["mask_png"]))
-        print(f"[apply] NO-SPEND path: precomputed E3 travertine walls -> {key}")
+        print(f"[apply] proxy {swatch} -> {target} ({len(region_ids)} regions) -> {key}")
         return {"layer_id": key, "image_url": url, "cost_est": 0.0,
                 "live": False, "cached": False}
 
-    # ---- live path: FLUX.2 [pro] Edit (E3 winner) + mask composite, via the shared
-    # materialize_view engine. The budget guard runs first; on_cost increments
-    # _live_calls for the one billable call, mirroring apply_material_all.
+    # ---- generative beauty pass (opt-in): FLUX.2 Edit + mask composite. Budget guard
+    # first; on_cost increments _live_calls for the one billable call.
     if not os.environ.get("FAL_KEY"):
-        raise RuntimeError("FAL_KEY not set (spike/.env) — live path unavailable")
+        raise RuntimeError("FAL_KEY not set (spike/.env) — generative path unavailable")
     if _live_calls >= MAX_LIVE_CALLS:
         raise RuntimeError(
             f"budget guard: {MAX_LIVE_CALLS} live calls "
@@ -201,7 +210,7 @@ def apply_material(body: dict) -> dict:
     t0 = time.monotonic()
     mat = multiview_apply.materialize_view(
         view, swatch_name=swatch, swatch_path=swatch_file, material_desc=material,
-        region_ids=region_ids, target=target, on_cost=on_cost)
+        region_ids=region_ids, target=target, generative=True, on_cost=on_cost)
     print(f"[apply] fal returned in {time.monotonic() - t0:.1f}s")
     out_path.write_bytes(_layer_rgba(mat["final_png"], mat["mask_png"]))
     return {"layer_id": key, "image_url": url, "cost_est": COST_PER_CALL,
@@ -263,11 +272,15 @@ def apply_material_all(body: dict) -> dict:
     anchor = _load_view(anchor_id)
     others = [_load_view(v["id"]) for v in meta["views"] if v["id"] != anchor_id]
     material_desc = multiview_apply.material_desc_for(swatch)
-    strategy = multiview_apply.lock_strategy(swatch)
+    # default = interactive proxy (instant, $0, consistency automatic); generative=True
+    # opts into the per-view FLUX.2 Edit beauty pass.
+    generative = bool(body.get("generative"))
+    strategy = multiview_apply.lock_strategy(swatch) if generative else "proxy"
+    mode = "gen" if generative else "px"
 
     def _mv_key(vid: str, ids: list[int]) -> str:
         return hashlib.sha1(
-            f"mv|{swatch}|{vid}|{','.join(map(str, ids))}".encode()).hexdigest()[:16]
+            f"mv|{swatch}|{vid}|{','.join(map(str, ids))}|{mode}".encode()).hexdigest()[:16]
 
     def _ids_in(view: multiview_apply.View) -> list[int]:
         if region_semantic is not None:
@@ -296,39 +309,32 @@ def apply_material_all(body: dict) -> dict:
                 "anchor_id": anchor.id, "anchor": cached[anchor.id], "views": views_out,
                 "cost_est": 0.0, "live": False, "cached": True}
 
-    # The anchor stage equals the single-view apply, so reuse its no-spend path:
-    # travertine on the wall semantic serves the precomputed E3/E2b walls for $0.
-    anchor_sem_ids = (anchor.ids_for_semantic(region_semantic) if region_semantic
-                      else [i for i in (region_ids or []) if str(i) in anchor.regions])
-    anchor_precomp = None
-    sem_set = {anchor.regions[str(i)]["semantic"] for i in anchor_sem_ids} if anchor_sem_ids else set()
-    if swatch == "travertine" and sem_set == {"wall"}:
-        anchor_precomp = (SPIKE / "outputs" / "e2_house_v2" / "travertine_walls_v2.png").read_bytes()
+    # ---- generative beauty pass only: budget-guard the billable edits up front.
+    # The proxy is free, instant, and consistent by construction (no anchor lock).
+    on_cost = None
+    if generative:
+        n_live = 1 + len(others)
+        if not os.environ.get("FAL_KEY"):
+            raise RuntimeError("FAL_KEY not set (spike/.env) — generative path unavailable")
+        if _live_calls + n_live > MAX_LIVE_CALLS:
+            raise RuntimeError(
+                f"budget guard: this would make {n_live} live calls and only "
+                f"{MAX_LIVE_CALLS - _live_calls} remain this session "
+                f"({MAX_LIVE_CALLS} total, ~${MAX_LIVE_CALLS * COST_PER_CALL:.2f})")
 
-    # ---- budget guard: count the billable edits up front ----
-    n_live = (0 if anchor_precomp is not None else 1) + len(others)
-    if not os.environ.get("FAL_KEY") and n_live > 0:
-        raise RuntimeError("FAL_KEY not set (spike/.env) — multi-view live path unavailable")
-    if _live_calls + n_live > MAX_LIVE_CALLS:
-        raise RuntimeError(
-            f"budget guard: this would make {n_live} live calls and only "
-            f"{MAX_LIVE_CALLS - _live_calls} remain this session "
-            f"({MAX_LIVE_CALLS} total, ~${MAX_LIVE_CALLS * COST_PER_CALL:.2f})")
-
-    def on_cost(c: float, label: str):
-        global _live_calls
-        _live_calls += 1
-        print(f"[apply_all] LIVE fal {_live_calls}/{MAX_LIVE_CALLS} (~${c:.2f}): {label}")
+        def on_cost(c: float, label: str):
+            global _live_calls
+            _live_calls += 1
+            print(f"[apply_all] LIVE fal {_live_calls}/{MAX_LIVE_CALLS} (~${c:.2f}): {label}")
 
     print(f"[apply_all] {swatch} -> {region_semantic or region_ids} across "
-          f"{1 + len(others)} views (strategy={strategy}, "
-          f"{'no-spend anchor' if anchor_precomp else 'live anchor'}, "
-          f"{n_live} live calls)")
+          f"{1 + len(others)} views "
+          f"({'generative ' + strategy + ' lock' if generative else 'proxy · instant · $0'})")
     t0 = time.monotonic()
     res = multiview_apply.apply_to_views(
         anchor=anchor, others=others, swatch_name=swatch, swatch_path=swatch_file,
         material_desc=material_desc, region_semantic=region_semantic,
-        anchor_region_ids=region_ids, anchor_precomputed=anchor_precomp, on_cost=on_cost)
+        anchor_region_ids=region_ids, generative=generative, on_cost=on_cost)
     print(f"[apply_all] done in {time.monotonic() - t0:.1f}s, est ${res['cost']:.2f}")
 
     # ---- persist per-view layers + assemble the response ----
@@ -355,7 +361,7 @@ def apply_material_all(body: dict) -> dict:
         "strategy": res["strategy"], "swatch": swatch,
         "semantic": region_semantic, "anchor_id": anchor.id,
         "anchor": anchor_out, "views": views_out,
-        "cost_est": res["cost"], "live": anchor_precomp is None or len(others) > 0,
+        "cost_est": res["cost"], "live": generative,
     }
 
 

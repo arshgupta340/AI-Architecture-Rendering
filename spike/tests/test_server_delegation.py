@@ -110,7 +110,7 @@ def test_apply_material_live_path_goes_through_materialize_view(server, tmp_path
     with patch.object(server.multiview_apply, "flux2_edit",
                       side_effect=lambda *a, **k: _png((10, 20, 30))), \
          patch.object(server.multiview_apply, "materialize_view", side_effect=spy_materialize):
-        out = server.apply_material({"region_ids": [1], "swatch": "red_brick"})
+        out = server.apply_material({"region_ids": [1], "swatch": "red_brick", "generative": True})
 
     # delegated to the shared engine with the server-computed target, live (no precomp)
     assert seen["view_id"] == "canvas"
@@ -136,5 +136,52 @@ def test_apply_material_budget_guard_raises_when_exhausted(server, tmp_path, mon
     with patch.object(server.multiview_apply, "flux2_edit",
                       side_effect=AssertionError("no fal call when budget exhausted")):
         with pytest.raises(RuntimeError, match="budget guard"):
-            server.apply_material({"region_ids": [1], "swatch": "red_brick"})
+            server.apply_material({"region_ids": [1], "swatch": "red_brick", "generative": True})
     assert server._live_calls == server.MAX_LIVE_CALLS  # unchanged
+
+
+def test_apply_material_proxy_default_is_instant_and_free(server, tmp_path, monkeypatch):
+    """The DEFAULT apply (no 'generative') uses the deterministic proxy: no fal call,
+    no FAL_KEY needed, cost_est 0 / live False, a real layer PNG written, same shape."""
+    layers = _wire_project(server, tmp_path, monkeypatch)
+    monkeypatch.delenv("FAL_KEY", raising=False)  # proxy needs no key
+
+    with patch.object(server.multiview_apply, "flux2_edit",
+                      side_effect=AssertionError("proxy must not call flux2_edit")):
+        out = server.apply_material({"region_ids": [1], "swatch": "red_brick"})
+
+    assert out["live"] is False and out["cached"] is False
+    assert out["cost_est"] == 0.0
+    assert server._live_calls == 0                       # no budget consumed
+    assert (layers / f"{out['layer_id']}.png").exists()  # a real layer was written
+    assert set(out) == {"layer_id", "image_url", "cost_est", "live", "cached"}
+
+
+def test_apply_material_uses_selected_view_not_anchor(server, tmp_path, monkeypatch):
+    """View-aware fix: in a multi-view project, apply_material must build the mask from
+    the REQUESTED view (body['view']), not the global anchor. Without this the Front tab
+    got the hero geometry and the material landed misregistered."""
+    _wire_project(server, tmp_path, monkeypatch)             # anchor globals: wall id 1 = TOP half
+    # a distinct 'front' view: wall id 1 = BOTTOM half (different geometry than the anchor)
+    front_ids = np.zeros((16, 16), np.uint16)
+    front_ids[8:, :] = 1
+    front_view = server.multiview_apply.View(
+        "front", _png((12, 12, 12)), front_ids, {"1": {"semantic": "wall"}})
+    vroot = tmp_path / "views"
+    (vroot / "front").mkdir(parents=True)
+    monkeypatch.setattr(server, "VIEWS_DIR", vroot, raising=False)
+    monkeypatch.setattr(server, "_load_view", lambda vid: front_view, raising=False)
+
+    seen = {}
+    real = server.multiview_apply.materialize_view
+
+    def spy(view, **kw):
+        seen["view"] = view
+        return real(view, **kw)
+
+    with patch.object(server.multiview_apply, "materialize_view", side_effect=spy):
+        out = server.apply_material({"region_ids": [1], "swatch": "red_brick", "view": "front"})
+
+    assert seen["view"].id == "front"
+    assert np.array_equal(seen["view"].ids, front_ids)       # FRONT geometry, not the anchor's
+    assert out["live"] is False and out["cost_est"] == 0.0

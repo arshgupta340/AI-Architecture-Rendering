@@ -284,9 +284,9 @@ function renderInspector() {
     allBtn.disabled = !canApply || !oneSem;
     allBtn.title = oneSem ? "" : "select a single material type (e.g. all walls) to propagate";
   }
-  $("apply-note").textContent = selectedSwatch === "travertine" && selectionSemantics().join() === "wall"
-    ? "travertine on walls uses the precomputed demo result (no API spend)"
-    : selectedSwatch ? "live FLUX.2 Edit call (~$0.06 per view)" : "";
+  $("apply-note").textContent = selectedSwatch
+    ? "instant material preview · no spend (deterministic projection)"
+    : "";
 }
 
 function buildSwatchGrid() {
@@ -335,7 +335,8 @@ async function applyMaterial(allViews) {
   try {
     const r = await fetch("/api/apply_material", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ region_ids: regionIds, swatch: selectedSwatch }),
+      // send the active view so the server builds the mask from THIS view, not the anchor
+      body: JSON.stringify({ region_ids: regionIds, swatch: selectedSwatch, view: activeView || undefined }),
     });
     const res = await r.json();
     if (!r.ok) throw new Error(res.error || r.statusText);
@@ -352,8 +353,8 @@ async function applyMaterial(allViews) {
     if (i >= 0) layers[i] = layer; else layers.push(layer);
     persistLayers(); redraw(); renderLayerPanel();
     $("status").textContent = res.live
-      ? `live edit done (est $${res.cost_est.toFixed(2)})`
-      : res.cached ? "layer served from cache" : "layer served (no spend)";
+      ? `beauty pass done (est $${res.cost_est.toFixed(2)})`
+      : res.cached ? "served from cache · instant" : "applied · instant · $0";
   } catch (e) {
     $("status").textContent = "apply failed: " + e.message;
     alert("Apply failed: " + e.message);
@@ -389,8 +390,9 @@ async function applyMaterialAll(semantic, semLabel) {
     const i = layers.findIndex((l) => l.regionKey === key && l.multi);
     if (i >= 0) layers[i] = layer; else layers.push(layer);
     persistLayers(); redraw(); renderLayerPanel();
-    $("status").textContent =
-      `applied to ${entries.length} views · ${res.strategy} lock · est $${res.cost_est.toFixed(2)}`;
+    $("status").textContent = res.live
+      ? `beauty pass · ${entries.length} views · est $${res.cost_est.toFixed(2)}`
+      : `applied to ${entries.length} views · instant · $0`;
   } catch (e) {
     $("status").textContent = "apply-all failed: " + e.message;
     alert("Apply to all views failed: " + e.message);
@@ -409,8 +411,8 @@ function renderLayerPanel() {
     const el = document.createElement("div");
     el.className = "layer-item" + (l.visible ? "" : " off");
     const sub = l.multi
-      ? `${l.swatch} · ${Object.keys(l.byView).length} views${l.strategy ? " · " + l.strategy : ""}`
-      : `${l.swatch}${l.live ? "" : " · demo"}`;
+      ? `${l.swatch} · ${Object.keys(l.byView).length} views`
+      : `${l.swatch}`;
     el.innerHTML =
       `<img src="/project/swatches/${swatchFile(l.swatch)}" alt="">` +
       `<div class="l-meta"><div class="l-name">${l.label}` +
