@@ -1,6 +1,6 @@
 ---
 type: log
-updated: 2026-05-19
+updated: 2026-07-14
 ---
 
 # Decision Log
@@ -19,6 +19,17 @@ Each entry follows the same shape so it can be scanned in 15 seconds:
 ```
 
 ---
+
+## 2026-07-14 — Reve Canvas: fast-to-market 2D sibling track on Reve's layout API {#reve-canvas-track}
+
+**Decision:** Launch a second product track — a web app wrapping Reve 2.x's layout API (`extract_layout` → edit regions → `render_layout`) in an architecture-native layer management system (taxonomy-typed layers, version DAG, variants, drift-score trust UI), as a **sibling product under the shared brand**, spike-gated by ≤$5 of live validation before any app build. PRD: [PRD-reve-canvas.md](../docs/plans/PRD-reve-canvas.md).
+**Context:** User discovered Reve (reve.com — #2 arena image model; ex-Adobe Research founders) exposes its internal scene representation as read/write JSON layouts via API — the only frontier image model that does. Their consumer UI is generic (no persistent layers/history/taxonomy/CAD awareness). The user wants a product in market while the mesh-first 3D track is in the pipeline. Deep research (2026-07-14) verified: layouts = labeled bbox regions (NOT masks), one flat image + layout per render, endpoints experimental at ~$0.11/call, no fine-tuning offering (differentiation must be workflow/taxonomy, not weights), license permits embedding but prohibits user-visible multi-model aggregation.
+**Alternatives considered:**
+- Fold into `apps/web3d-prototype` — rejected: different stack (needs auth/metering/jobs), different economics (paid API per edit vs $0 client-side), different funnel (any-image upload vs Rhino model).
+- Wait for the mesh-first track — rejected: the layout-API window is open now (endpoints shipped ~5 weeks ago, zero community wrappers exist yet); speed is the point of this track.
+- Build on Reve's cheap v1 endpoints ($0.024–0.04) — rejected for core: no layout access = no layer system = no product; re-evaluate post-V1 as a "quick tweak" cost tier only.
+**Reasoning:** Ships in weeks, not quarters; the layer/taxonomy IP (`packages/arch-taxonomy`, CanvasLayer ↔ HeroLayer convergence contract) feeds the 3D product even if this track dies; wider funnel (no Rhino requirement) that the thin Rhino bridge later funnels toward the mesh product. User decisions locked: upload-first core loop; web + thin Rhino bridge; credits SaaS on founder key ($19–29/mo, solo/small-firm); Next.js + Supabase; $5 spike authorized (raises the $0.05 session cap for this spike only).
+**Revisit if:** spike C2 (geometry preservation outside edited region) fails — kill for ≤$5; Reve deprecates/reprices the experimental layout endpoints; Reve ships its own layer-management or architecture vertical; founder-key rate limits (2,000/day) block growth before a partnership lands; week-2 beta retention <20%.
 
 ## 2026-07-03 — Mesh-first PRD: ship model-locked re-rendering; defer video/editable-splats/mutating-copilot {#mesh-first-prd}
 

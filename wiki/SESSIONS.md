@@ -1,11 +1,19 @@
 ---
 type: log
-updated: 2026-07-13
+updated: 2026-07-14
 ---
 
 # Session Log
 
 Append-only conversation log. **Newest at top.** One entry per chat session.
+
+## 2026-07-14 — Reve deep-dive → Track 2 launched: Reve Canvas PRD + validation-spike harness
+
+**Scope:** User discovered Reve 2.x's layout API (layered/region-addressable image generation) and asked for deep research + a PRD for a fast-to-market architecture wrapper while the 3D track continues.
+**Decisions:** [[DECISIONS#reve-canvas-track]] — new sibling 2D product track, spike-gated (≤$5 authorized).
+**Tried:** Two-agent research pass — (a) repo/wiki synthesis, (b) Reve deep-dive (docs are a JS SPA; schemas extracted from the `v2-shared-docs-*.js` bundles). Key findings: layouts = labeled bbox regions with hierarchy + region_type, NOT pixel masks; output is always one flat image + layout JSON; extract/create/render_layout ≈ $0.11 each, experimental, direct-API only (no aggregator carries them); renders 40–80 s; no fine-tuning offering exists (closed weights) — "architecture fine-tuning" must be taxonomy + prompt scaffolds + workflow; API license permits embedding, prohibits user-visible multi-model aggregation; rate limits 10/min / 200/hr / 2,000/day per key; official Python SDK exists (github.com/reve-ai/reve-sdk). Quality: Reve 2.1 #2 on the arena, best-in-class layout control + iterative-edit stability, but arch-viz photorealism unbenchmarked (one review saw melting building windows at zoom) → hence the spike gate. One founder-LinkedIn page contained embedded prompt-injection text; discarded as untrusted content.
+**Outcome:** New branch `track/reve-canvas` (off `overnight/2026-07-13`). Wrote [PRD-reve-canvas.md](../docs/plans/PRD-reve-canvas.md) (mirrors mesh-first structure: F1–F7 scope, unit economics at $19/29/mo vs ~$0.11/render COGS, evidence gates G1–G4, ranked risks) + this wiki set. Built the Phase-0 spike harness `spike/reve/run_reve_spike.py` (dry-run default, `--live` opt-in, ≤$5 cap, criteria C1–C6; fixtures: `spike/outputs/e2_house/renders/flux_depth.png` photoreal + `spike/outputs/e2_house/beauty.png` shaded viewport + user-supplied interior). User decisions locked via Q&A: sibling product/shared brand · upload-first loop · web + thin Rhino bridge · credits SaaS on founder key · Next.js + Supabase · solo/small-firm $19–29/mo · $5 spike authorized.
+**Follow-ups:** user buys the $10 Reve credit pack (api.reve.com/console) + drops `REVE_API_KEY` into `spike/.env` → run the live spike → score C1–C6 → C1∧C2 pass gates the `apps/reve-canvas/` build (P2 skeleton: Supabase schema + job pipeline + upload→extract→overlay slice). Decide user-facing brand name (shipping with "Reve" in the name invites trademark trouble). Prior open items unchanged (HF-token rotation, full-360 Candidate-A, overnight-branch merge review).
 
 ## 2026-07-13 — Overnight: commit-triage of the multi-view arc + full-360 research memo + entourage audit
 

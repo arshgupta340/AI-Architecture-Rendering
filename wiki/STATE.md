@@ -1,6 +1,6 @@
 ---
 type: state
-updated: 2026-07-03
+updated: 2026-07-14
 ---
 
 # Current State
@@ -50,6 +50,11 @@ Lumen reference = **Twinmotion** (runbook). Ceiling analysis: [[research/web3d-r
 ## PRD (NEW, 2026-07-03) — the productization plan
 
 **[PRD v1 "mesh-first"](../docs/plans/PRD-v1-mesh-first.md)** — written from a 17-agent research fleet (7 research dimensions, each adversarially stress-tested, + 2 red teams + synthesis; evidence in `docs/plans/research/grand-idea-2026-07/`). Verdict: **the mesh is the product** — V1 = model-locked non-destructive re-rendering as a Food4Rhino plugin ($29–39/mo). Phase 0 = global **command/undo bus** (the load-bearing unbuilt piece) + Rhino capture plugin + auth/cost-gated hero. Phase 1 = still turntable + labeled static splat backdrop + light-coherent entourage + read-only copilot. Video fly-through, editable-splat authoring, mutating copilot, generative entourage = deferred behind evidence gates (PRD §6). Rationale: [[DECISIONS#mesh-first-prd]]. Key external facts: Veras is free-bundled in every Chaos tier; AI video warps building geometry (all hosted models); Chaos shipped splat relighting Jun 2026; Nuit = nearest thesis rival (watch: model binding).
+
+## Track 2 — Reve Canvas (NEW, 2026-07-14): 2D fast-to-market sibling product
+
+**[PRD-reve-canvas.md](../docs/plans/PRD-reve-canvas.md)** · rationale [[DECISIONS#reve-canvas-track]] · branch `track/reve-canvas`. A web app wrapping **Reve 2.x's layout API** (the only frontier image model exposing its scene representation as read/write JSON: `extract_layout` → edit labeled bbox regions → `render_layout`) in an **architecture-native layer system**: upload a viewport screenshot/render/photo → auto-layerized taxonomy-typed layer panel → per-layer material/object/lighting edits from swatch scaffolds → batched re-render (~$0.11, 40–80 s) → version DAG + variants + drift-score trust badge. Credits SaaS on founder key, $19–29/mo, solo/small-firm; Next.js + Supabase (`apps/reve-canvas/`, not yet scaffolded); thin Rhino push-viewport bridge in V1.x; shared vocabulary via `packages/arch-taxonomy` (CanvasLayer ↔ HeroLayer convergence contract with the 3D track).
+**Status:** PRD + wiki written; spike harness `spike/reve/run_reve_spike.py` built (dry-run verified). **GATE: ≤$5 live validation spike** (user-authorized; needs user's `REVE_API_KEY` in `spike/.env` — $10 min credit pack at api.reve.com/console). Criteria C1 (extraction sanity) ∧ C2 (geometry preservation, the kill gate) must pass before any app build. Constraints designed around: bboxes not masks; no fine-tuning exists (workflow/taxonomy is the moat); layout endpoints experimental + direct-API only; license prohibits user-visible multi-model.
 
 ## NEXT — remaining client-ready polish (follow-ups)
 
