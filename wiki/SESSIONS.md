@@ -1,11 +1,19 @@
 ---
 type: log
-updated: 2026-06-15
+updated: 2026-07-13
 ---
 
 # Session Log
 
 Append-only conversation log. **Newest at top.** One entry per chat session.
+
+## 2026-07-13 — Overnight: commit-triage of the multi-view arc + full-360 research memo + entourage audit
+
+**Scope:** Unattended overnight run (orchestrator + subagents): triage/commit ~41 uncommitted changes from the multi-view hero arc, verify tests, KTX2 audit, entourage scale check, full-360 consistency research memo.
+**Decisions:** none — the full-360 recommendation is seeded in [[research/full360-options]] for an attended decision.
+**Tried:** KTX2 encode (skipped — no KhronosGroup `ktx` CLI on PATH; exact install steps in the overnight digest); entourage unit-bug hunt (measured every GLB — no bug exists to fix); EXA MCP was permission-blocked for the research agent (WebSearch fallback used); the claude-mem plugin worker was down all session (hook noise; also blocked the Read tool — worth restarting/fixing).
+**Outcome:** New branch `overnight/2026-07-13` (from `overnight/spike-builder-2026-05-17` HEAD): 9 triage commits (`a9f9c92`…`fdd16ec`) — env-configured FLUX.1 hero endpoint (zero-setup connect), deterministic material-proxy default in multiview+canvas (FLUX.2 opt-in), Rhino glTF export + post-process + CC0 ingest scripts, capture fixtures + diagnostic overlays, mesh-first PRD v1 + 17-agent research docs, showcase page, wiki, .claude config — plus `efcf915` = [[research/full360-options]] (3 candidates + recommendation: texture-space synchronized diffusion, FLUX-hero-seeded-UV hybrid, first; MV-Adapter fallback; orbit-video only as baseline). **Full test suite 87/87 green** on the committed work. Entourage audit verdict: slider-feet → world-feet math is EXACT (all 12 GLB normalization constants match measured bounding boxes to stored precision; world unit = feet, proven from Scene/GeoTiles/rhino_export); "trees read small" is a design-default issue — 18 ft default height, 30 ft slider cap, and per-species `baseHeightFt` unused by the scale code (no size variety) — and comments in `Entourage.tsx`/`entourageAssets.ts` overstate what the code does.
+**Follow-ups:** attended review + merge decision (main can fast-forward to `overnight/2026-07-13`; the three `worktree-agent-*` branches are patch-equivalent to HEAD → deletable); run the full-360 Candidate-A experiment per [[research/full360-options]]; entourage design pass (raise tree default/slider cap, wire `baseHeightFt` for per-species variety, reconcile stale comments); install the `ktx` CLI then run `scripts/encode_ktx2.mjs` (NEXT #4); `spike/outputs/web3d_house/house*.glb` (2×14 MB) left uncommitted — decide git-lfs or regenerate; rotate the exposed HF token (still open from 2026-06-15).
 
 ## 2026-07-03 — Grand-idea research fleet (17 agents) → mesh-first PRD v1
 
