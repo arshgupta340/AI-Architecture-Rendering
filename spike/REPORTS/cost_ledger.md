@@ -56,9 +56,10 @@ Append-only log of every paid API call the overnight agent makes.
 2026-07-16 REVE-SPIKE | reve-canvas P0 correction | Reve | reve-2.x layouts | 0.53 | 5 calls: S1 x2 re-extract (broadened taxonomy 64->92%), S2 building-material swap (drift 1.48% PASS), edit-mechanic replace{+ref,noref,v2} — established render_layout prompt-rewrite over-preserves (no material change)
 2026-07-16 REVE-SPIKE | reve-canvas P0 correction | Reve | reve-2.x layouts | 0.53 | 5 calls: edit-primitives (create 400'd $0), create_layout `change` + render_layout = THE edit pipeline (travertine w/ geometry locked, 1.34% drift, C6 verbatim). C2 PASS. See DECISIONS#reve-canvas-revived
 2026-07-16 REVE-SPIKE | reve-canvas P0 battery | Reve | reve-2.x layouts | 1.06 | 10 calls: gate-closeout TI (interior 27-region decomp + floor swap), interior create+extract (real room: floor/ceiling/walls+furniture — GENERAL scope), T1 framing-pin (aspect pinnable), T2 facet-isolation (wall->travertine, roof stable). Battery all PASS. See reve_spike.md
+2026-07-16 REVE-APP | reve-canvas UI verify | Reve | reve-2.x layouts | 0.32 | live end-to-end through the built app: extract (14 typed layers) + change-command edit (House cladding -> travertine, 6144x2688 aspect-pinned). App then switched to REVE_MODE=mock ($0) for further dev.
 ```
 
-**Running total: $4.55** (legacy 2D pipeline $1.99 + Reve Canvas gate $2.56 of $5 authorized)
+**Running total: $4.87** (legacy 2D pipeline $1.99 + Reve Canvas gate+app $2.88 of $5 authorized — near cap; further dev in mock mode = $0)
 
 Notes:
 - T21 user-authorized overage: $0.05 → $0.06.
