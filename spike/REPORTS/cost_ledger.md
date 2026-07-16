@@ -49,9 +49,13 @@ Append-only log of every paid API call the overnight agent makes.
 2026-06-13 MULTIVIEW | multiview-lock | fal.ai | flux-general union (render mv_front) x1, flux-2-pro/edit x6 | 0.38 | multi-view material lock: render front view + travertine{naive,locked} + red_brick{anchor,naive,locked}. Travertine LOCKED dE 4.14 vs NAIVE 7.43 (consistency win); red_brick LOCKED backfired (anchor's golden-hour lighting injected). FLUX.2 Edit verified to accept 3 image_urls. User-authorized ~$0.60 fal budget for this task. See REPORTS/multiview.md
 2026-06-13 MULTIVIEW-V2 | multiview-lock-v2 | fal.ai | flux-2-pro/edit x4 | 0.24 | textured-material lock fix (Part A): A1 prompt-soft + A2 neutral-ref, both materials. Reused v1's cache (anchor/naive/v1-locked) for $0; only 4 new edits. red_brick v1-backfire FIXED: A2 dE 21.62->13.75 (Lab), 20.65->9.55 (chroma), texture-energy 25.9->9.5. travertine v1-locked stays best (chroma dE_ab 1.80). User-authorized ~$1.50 fal budget for this task. See REPORTS/multiview_v2.md
 2026-06-13 MULTIVIEW-V2-CANVAS | canvas Part B | fal.ai | flux-2-pro/edit x1 | 0.06 | live verify of POST /api/apply_material_all (travertine/wall across hero+front): anchor served from precompute ($0) + 1 FLUX.2 Edit lock for front view. Both views got an RGBA wall layer (hero 130,737px, front 108,466px opaque). Proves "one swatch -> all views" through the real HTTP endpoint. See apps/canvas-prototype/verify_multiview_api.py
+2026-07-15 23:09 REVE-SPIKE | reve-canvas P0 | Reve | reve-2.x layouts | 0.11 | S1_exterior_photoreal (request rsid-eab17bdd471aba2270b40fcb6b4efa6d)
+2026-07-15 23:09 REVE-SPIKE | reve-canvas P0 | Reve | reve-2.x layouts | 0.11 | S1_viewport_shaded (request rsid-ca97bb06abf32e0978c0b12afa3e50c1)
+2026-07-15 REVE-SPIKE | reve-canvas P0 | Reve | reve-2.x layouts | 0.11 | S1_exterior_refined (request rsid-142e06376dcf27adc9aed7fa5e2d58e1)
+2026-07-15 REVE-SPIKE | reve-canvas P0 | Reve | reve-2.x layouts | 0.11 | S2_wall_travertine (request rsid-a725c33f1ca67bec45b7690a021df059)
 ```
 
-**Running total: $1.99**
+**Running total: $2.43**
 
 Notes:
 - T21 user-authorized overage: $0.05 → $0.06.
@@ -64,3 +68,4 @@ Notes:
 - T25 user-authorized $0.30–0.50 for FLUX-vs-SD comparison budget; actual marginal spend was $0.05 for one comparison run. 4–9 more runs in budget if we want to map further (region, material) combos via FLUX.
 - 2026-06-03 user-authorized ~$1.20 for an 8-view masterplan render (separate from the spike bake-off); actual spend ~$0.36 across 9 NB Pro calls. Outputs in `spike/outputs/masterplan_renders/`.
 - 2026-06-13 multiview-v3 + tech-debt-unify session: **$0**. The brick-lock "beats naive" result came from re-scoring cached v1/v2 composites under a new illuminant-invariant metric (`run_multiview_lock_v3.py`) plus an offline-rejected A4 reference — no fal calls. Tech-debt was a pure refactor (tests only). Running total unchanged at $1.99.
+- 2026-07-15 Reve Canvas Phase-0 spike: 4 successful 80-credit calls = 320 credits. Exact pack-rate value is **$0.4267**; per-line two-decimal ledger estimates sum to $0.44, hence the displayed $2.43 running total. Reve balance reconciled from 7,500 to 7,180 credits. One earlier HTTP 402 attempt billed $0. See `REPORTS/reve_spike.md`.
