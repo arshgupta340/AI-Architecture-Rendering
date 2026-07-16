@@ -69,3 +69,10 @@ graphify-out/
 .graphify_*
 apps/web3d-prototype/public/splats/*.spz
 apps/web3d-prototype/public/splats/*.ply
+
+# Local agent runtime state (never commit)
+.claude/worktrees/
+.claude/scheduled_tasks.lock
+
+# June-13 export intermediates; canonical model lives in apps/web3d-prototype/public/model/
+spike/outputs/web3d_house/*.glb
