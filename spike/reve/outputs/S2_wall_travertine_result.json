@@ -1,0 +1,14 @@
+{
+  "edited_region": "wall.shingle-siding-1#002",
+  "edited_bbox": {
+    "x0": 0.304,
+    "x1": 0.706,
+    "y0": 0.395,
+    "y1": 0.786
+  },
+  "drift_outside_bbox": 0.071,
+  "c2_pass_threshold_0.05": false,
+  "c6_label_roundtrip": true,
+  "request_id": "rsid-a725c33f1ca67bec45b7690a021df059",
+  "credits_used": 80
+}
