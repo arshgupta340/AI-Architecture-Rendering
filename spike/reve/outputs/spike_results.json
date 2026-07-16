@@ -1,13 +1,37 @@
 {
-  "started": "2026-07-15 23:08",
+  "started": "2026-07-16 08:36",
   "steps": {
     "S1_exterior_photoreal": {
-      "n_regions": 18,
-      "n_matched": 12,
-      "match_rate": 0.667,
+      "n_regions": 12,
+      "n_matched": 11,
+      "match_rate": 0.917,
       "classes_found": [
         "context",
-        "door",
+        "glazing",
+        "roof",
+        "sky"
+      ],
+      "labels": [
+        "<house 1>",
+        "<roof 1>",
+        "<porch 1>",
+        "<stairs 1>",
+        "<window 1>",
+        "<window 2>",
+        "<window 3>",
+        "<window 6>",
+        "<window 7>",
+        "<plain 1>",
+        "<shadow 1>",
+        "<sky 1>"
+      ]
+    },
+    "S1_viewport_shaded": {
+      "n_regions": 10,
+      "n_matched": 10,
+      "match_rate": 1.0,
+      "classes_found": [
+        "context",
         "glazing",
         "ground",
         "sky"
@@ -16,60 +40,45 @@
         "<house 1>",
         "<stairs 1>",
         "<railing 1>",
-        "<porch 1>",
-        "<column 1>",
-        "<column 2>",
-        "<door 1>",
-        "<window 1>",
-        "<window 2>",
-        "<window 3>",
-        "<window 4>",
-        "<window 5>",
-        "<window 6>",
-        "<window 8>",
-        "<window 9>",
-        "<grass 1>",
-        "<shadow 1>",
-        "<sky 1>"
-      ]
-    },
-    "S1_viewport_shaded": {
-      "n_regions": 10,
-      "n_matched": 7,
-      "match_rate": 0.7,
-      "classes_found": [
-        "context",
-        "glazing",
-        "sky"
-      ],
-      "labels": [
-        "<house 1>",
-        "<porch 1>",
-        "<stairs 1>",
         "<window 5>",
         "<window 6>",
         "<window 7>",
         "<window 8>",
-        "<window 12>",
-        "<terrain 1>",
+        "<window 9>",
+        "<ground 1>",
         "<sky 1>"
       ]
+    },
+    "S2_wall_travertine": {
+      "edited_region": "context.house-1#000",
+      "target_kind": "building",
+      "drift_outside_bbox": 0.0148,
+      "c2_pass_threshold_0.05": true,
+      "c6_label_roundtrip": true,
+      "child_regions_before": 7,
+      "child_regions_after": 7
     }
   },
-  "spent_credits": 160,
-  "spent_usd": 0.21,
+  "spent_credits": 240,
+  "spent_usd": 0.32,
   "calls": [
     {
       "what": "S1_exterior_photoreal",
       "credits": 80,
-      "request_id": "rsid-eab17bdd471aba2270b40fcb6b4efa6d",
-      "ts": "2026-07-15 23:09"
+      "request_id": "rsid-a3bf65276f775bae6c054a95cee61113",
+      "ts": "2026-07-16 08:36"
     },
     {
       "what": "S1_viewport_shaded",
       "credits": 80,
-      "request_id": "rsid-ca97bb06abf32e0978c0b12afa3e50c1",
-      "ts": "2026-07-15 23:09"
+      "request_id": "rsid-af4a1cd2d8dfc67108837082b51604a4",
+      "ts": "2026-07-16 08:37"
+    },
+    {
+      "what": "S2_wall_travertine",
+      "credits": 80,
+      "request_id": "rsid-30df3cb86180eefc9bfb1840b015ec37",
+      "ts": "2026-07-16 08:37"
     }
   ]
 }

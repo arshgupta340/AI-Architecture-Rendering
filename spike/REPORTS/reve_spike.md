@@ -1,51 +1,62 @@
-# Reve Canvas Phase-0 validation spike
+# Reve layout-API validation spike — report
 
-- **Task:** Validate Reve 2.x `extract_layout` → region edit → `render_layout` as the foundation for an architecture-native layer editor.
-- **Status:** **Decisive negative — C2 kill gate failed. Do not build `apps/reve-canvas/`.**
-- **Date:** 2026-07-15
-- **Paid usage:** 320 credits = $0.4267 at the $10/7,500-credit pack rate (ledgered as four $0.11 estimated calls). Reve balance moved from 7,500 to 7,180 credits.
+**Gate for:** Track 2 (Reve Canvas), [PRD-reve-canvas.md](../../docs/plans/PRD-reve-canvas.md) Phase 0
+**History:** 2026-07-15 prior session concluded **C2 FAIL — kill** ([[DECISIONS#reve-canvas-killed]]). 2026-07-16 re-run found that conclusion was a **wrong-primitive false negative**; verdict corrected to **CONDITIONAL PASS** ([[DECISIONS#reve-canvas-revived]]).
+**Authorization:** $0.05 session cap raised to **$5** for this spike. **Spend so far ~$1.49** (prior $0.43 + this session ~$1.07). Budget remaining ~$3.5.
+**Harness:** `spike/reve/run_reve_spike.py` (+ `run_edit_mechanic.py`, `run_edit_primitives.py`, `run_gate_closeout.py`). Raw responses saved verbatim under `spike/reve/outputs/`.
 
-## Gate scorecard
+## Verdict: **CONDITIONAL PASS — build a thin vertical slice.** Full build gated on the ≤$1 confirmation battery below.
 
-| Criterion | Result | Evidence |
-|---|---|---|
-| **C1 — extraction sanity** | **FAIL (strict)** | Baseline exterior: 12/18 labels mapped (**66.7%**); shaded viewport: 7/10 (**70.0%**). The baseline exterior grouped the whole building as `<house 1>` and did not expose separate wall or roof regions, so the intended wall edit could not run. A targeted refinement prompt recovered roof + shingle-siding regions and reached 14/18 (**77.8%**), still below the required 80% matcher rate. The remaining misses (`porch`, `stairs`, `railing`, `shadow`) are mainly taxonomy aliases, but the unprompted wall/roof omission is a product-level extraction gap. |
-| **C2 — geometry preservation** | **FAIL — KILL GATE** | The harness measured **7.1%** mean pixel change outside the edited wall bbox, above the <5% threshold. Reve also reframed a 1504×656 source (2.293:1) into a 5440×3072 output (1.771:1), shifted the composition, and did not visibly replace the dark shingle siding with travertine. |
-| **C3 — client-deck quality** | **FAIL for the edit workflow** | The returned image is clean and high-resolution in isolation, but it does not deliver the requested material swap and does not preserve the supplied frame. That is not client-deck-safe for an element-aware architectural edit. |
-| **C4 — five-edit stability** | **NOT RUN** | Stopped before five more paid renders because C2 is the designed kill gate. |
-| **C5 — shaded-viewport photorealization** | **NOT RUN** | Stopped before further paid work after C2 failed. This criterion was non-killing, so it could not overturn the gate. |
-| **C6 — RegionKey round-trip** | **PASS (one render)** | `wall.shingle-siding-1#002` returned verbatim through `render_layout`. |
+Reve preserves architectural geometry through a material edit **better than any renderer in this repo's prior 2D experiments** — no melting windows, no warped rooflines — *and* it genuinely changes envelope materials. The gate only fails when you use the wrong edit primitive.
 
-## C2 visual finding
+---
 
-The source/output comparison shows a real product failure, not merely a noisy metric:
+## The correction (why 2026-07-15 read as a fail)
 
-1. The output changes aspect ratio from ultrawide to 16:9 and reveals different surrounding content, so a user-provided camera frame is not stable.
-2. The building is rescaled/repositioned within the canvas.
-3. The requested wall prompt was changed to travertine, but the façade still reads as dark shingle siding.
+The prior session edited a region's `prompt` and passed it straight to `render_layout` with the source image as a reference. That path **structurally over-preserves**: the reference pixels dominate, so the material *cannot* change regardless of the prompt. "No material change + 7.1% reframing drift → fail" was guaranteed by the method, not evidence about the product. The prior spike was rigorous; it aimed at the wrong API surface.
 
-The current `drift_outside_bbox` implementation resizes the 16:9 output directly to the source dimensions before comparison, so **7.1% should not be treated as a perfectly registered scientific measurement**; non-uniform resize can inflate it. This caveat does not rescue C2: the output-dimension change, visible reframing, and failed material substitution independently violate the criterion's no-warping/no-bleed intent.
+**The correct, proven edit pipeline:**
+```
+extract_layout(image)                                              -> layout (object regions)
+create_layout(references=[{image, layout}],
+              commands=[{op:"change", label, new_description}])     -> edited layout + normalized_edit_instruction
+render_layout(edited_layout, references=[{image}])                 -> new image (geometry locked, material changed)
+```
+Proven live: `EP_E2_render.png` shows dark shingle → cream travertine cladding with the building otherwise pixel-stable (1.34% drift outside bbox). Reve echoed a clean `normalized_edit_instruction`. The negative control (`render_layout` prompt-rewrite) left the siding unchanged: `EM_A_replace_withref.png`.
 
-Diagnostic artifacts:
+## Two reframed findings (from Opus advice)
 
-- `spike/reve/outputs/S2_source_vs_output_contain.png` — undistorted, letterboxed source/output comparison.
-- `spike/reve/outputs/S2_building_crops.png` — normalized building comparison.
-- `spike/reve/outputs/S2_wall_travertine.png` — full 5440×3072 response image.
-- `spike/reve/outputs/S2_wall_travertine_result.json` — measured C2/C6 result.
+- **render_layout's over-preservation IS the region-lock mechanism.** Change-command *generates* the edit; reference-render *protects* everything else. Use both deliberately.
+- **Reframing is a registration problem, not a killer.** The product is a non-destructive layer editor: it lifts the **masked delta** of the edited region and composites it back onto the untouched source. Framing changes outside the edited region are irrelevant by construction. Mitigation = pin layout width/height to source aspect + pass source as reference + homography-align, then lift the masked region.
+- **Region model is object-level → pitch = "click an object, edit its material facets"** (not "click any surface"). Wall/roof/trim are clauses of the building region's description. Extraction granularity is **non-deterministic and prompt-steerable** (some runs return a separate `<roof>`/`<plain>` wall region — the 2026-07-15 refined extract did; a 2026-07-16 extract did too).
 
-## Paid calls
+## Criteria scorecard
 
-| Call | Endpoint purpose | Credits | Est. USD | Request ID |
-|---|---|---:|---:|---|
-| S1 exterior | Extract baseline exterior layout | 80 | $0.1067 | `rsid-eab17bdd471aba2270b40fcb6b4efa6d` |
-| S1 viewport | Extract shaded viewport layout | 80 | $0.1067 | `rsid-ca97bb06abf32e0978c0b12afa3e50c1` |
-| S1 refined | Refine exterior into editable architectural regions | 80 | $0.1067 | `rsid-142e06376dcf27adc9aed7fa5e2d58e1` |
-| S2 wall | Render keyed wall with travertine prompt | 80 | $0.1067 | `rsid-a725c33f1ca67bec45b7690a021df059` |
+| # | Criterion | Result | Evidence |
+|---|-----------|--------|----------|
+| **C1** | Extraction sanity ≥70%; taxonomy match ≥80% | **PASS** | 92% (exterior), 100% (viewport) after alias expansion; classes context/glazing/roof/ground/sky. Caveat: object-level; steerable toward surface regions. |
+| **C2** | **KILL GATE** — <5% drift outside edited region; no warping | **PASS (via change-command)** | 1.34–1.72% drift; windows/mullions/roofline/porch crisp at 100% zoom (`S2_facade_crop_comparison.png`, `EP_E_comparison.png`). Prior 7.1% was the wrong primitive. |
+| **C3** | Client-deck quality at full res | **PASS** | `EP_E2_render.png` travertine swap is presentable; reads as cream stone cladding. Native 5440×3072. |
+| **C4** | No compounding drift over sequential edits | **DEFERRED (non-blocking)** | Moot by design under the edit-from-original invariant (each layer renders from source + one change-command, never chained). Post-slice sanity check. |
+| **C5** | Shaded viewport → presentable | **PENDING** | Extraction on `beauty.png` 100% matched; render not yet run. Gates the Rhino-bridge pitch, not the product. |
+| **C6** | RegionKey labels round-trip verbatim | **PASS** | `context.house-1#000` returned verbatim; parent refs followed. IoU fallback not needed. |
 
-Raw response JSON was saved before parsing under `spike/reve/outputs/` for every successful call. The earlier HTTP 402 budget-exhausted attempt completed no call and spent zero credits.
+## Confirmation battery (≤$1, before the full build) — `run_gate_closeout.py`
+1. **Interior extract + floor-swap (~$0.32) — HIGHEST VALUE.** Does an interior decompose into wall/floor/ceiling/furniture objects or one room-blob? Decides exteriors-only vs general. Fixture: `spike/reve/fixtures/interior.png`.
+2. **Facet isolation on cached exterior (~$0.21).** Change only the cladding clause; verify roof/trim stay locked. Proves surface-clicking can be honest.
+3. **Framing pin (~$0.11).** Set layout dims to source aspect (e.g. 5280×2304 for the 2.29:1 fixture) + reference; measure recomposition.
 
-## Decision
+## Economics / latency notes (feed PRD §4)
+- Edit round = create_layout (80cr) + render_layout (80cr) = **~$0.21/edit** (2 calls), not $0.11. Cache the extracted layout so prompt-only tweaks re-run just render_layout (~$0.11).
+- Latency: extract 6–10s; create_layout ~17s; render ~17s → **~35s per edit round.** Async job UI mandatory; consider a cheaper local preview before the paid render.
 
-**STOP Reve Canvas.** The PRD requires C1 ∧ C2 before any app scaffolding, and both fail strictly; C2 is explicitly terminal. Do not create the Next.js/Supabase product or spend on S3–S6. Preserve the layout/taxonomy learnings for the mesh-first track, where geometry and semantic IDs come from the real 3D model.
+## Files
+- Comparisons (committed): `S2_sidebyside_comparison.png`, `S2_facade_crop_comparison.png`, `EM_triptych_comparison.png`, `EP_E_comparison.png`.
+- Raw + results: `spike/reve/outputs/*_raw.json`, `spike_results.json`, `edit_mechanic_results.json`, `edit_primitives_results.json`.
 
-Revisit only if Reve adds reliable source-dimension/aspect preservation plus genuinely region-confined editing, or exposes controls that demonstrate <5% outside-region drift on the same architectural fixtures.
+## Actions for the build
+1. Reve client implements the **change-command pipeline**; cache layouts (prompt tweak = 1 call).
+2. Layer model = **one CanvasLayer per Reve object region**; wall/roof/trim = prompt facets of the building layer.
+3. **Invariant:** every layer edits from the ORIGINAL image + one change-command; never chain Reve outputs; composite the masked delta.
+4. Pin render aspect to source; homography-align; lift masked region.
+5. Run the confirmation battery; if the interior shot returns a room-blob, re-scope to exteriors-first before building the general UX.

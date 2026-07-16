@@ -1,0 +1,17 @@
+{
+  "EM_A_replace_withref": {
+    "desc": "prompt REPLACE + original image as reference (geometry anchor)",
+    "use_ref": true,
+    "drift_outside_bbox": 0.0155
+  },
+  "EM_B_replace_noref": {
+    "desc": "prompt REPLACE + NO reference (layout-only render)",
+    "use_ref": false,
+    "drift_outside_bbox": 0.0814
+  },
+  "EM_C_replace_withref_v2": {
+    "desc": "prompt REPLACE + reference, second seed for variance",
+    "use_ref": true,
+    "drift_outside_bbox": 0.0172
+  }
+}

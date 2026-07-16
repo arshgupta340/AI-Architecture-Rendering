@@ -53,9 +53,11 @@ Append-only log of every paid API call the overnight agent makes.
 2026-07-15 23:09 REVE-SPIKE | reve-canvas P0 | Reve | reve-2.x layouts | 0.11 | S1_viewport_shaded (request rsid-ca97bb06abf32e0978c0b12afa3e50c1)
 2026-07-15 REVE-SPIKE | reve-canvas P0 | Reve | reve-2.x layouts | 0.11 | S1_exterior_refined (request rsid-142e06376dcf27adc9aed7fa5e2d58e1)
 2026-07-15 REVE-SPIKE | reve-canvas P0 | Reve | reve-2.x layouts | 0.11 | S2_wall_travertine (request rsid-a725c33f1ca67bec45b7690a021df059)
+2026-07-16 REVE-SPIKE | reve-canvas P0 correction | Reve | reve-2.x layouts | 0.53 | 5 calls: S1 x2 re-extract (broadened taxonomy 64->92%), S2 building-material swap (drift 1.48% PASS), edit-mechanic replace{+ref,noref,v2} — established render_layout prompt-rewrite over-preserves (no material change)
+2026-07-16 REVE-SPIKE | reve-canvas P0 correction | Reve | reve-2.x layouts | 0.53 | 5 calls: edit-primitives (create 400'd $0), create_layout `change` + render_layout = THE edit pipeline (travertine w/ geometry locked, 1.34% drift, C6 verbatim). C2 PASS. See DECISIONS#reve-canvas-revived
 ```
 
-**Running total: $2.43**
+**Running total: $3.49** (legacy 2D pipeline $1.99 + Reve Canvas gate $1.50)
 
 Notes:
 - T21 user-authorized overage: $0.05 → $0.06.

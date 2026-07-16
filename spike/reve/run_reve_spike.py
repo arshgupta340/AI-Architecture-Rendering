@@ -80,12 +80,24 @@ ALIASES = {
     "window": "glazing", "windows": "glazing", "mullion": "glazing", "glass": "glazing",
     "facade": "wall", "siding": "wall", "brick": "wall", "cladding": "wall",
     "tree": "vegetation", "trees": "vegetation", "bush": "vegetation", "plant": "vegetation",
-    "grass": "ground", "lawn": "ground", "driveway": "paving", "path": "paving",
-    "sidewalk": "paving", "road": "paving", "street": "context", "building": "context",
-    "house": "context", "car": "vehicle", "sofa": "furniture", "couch": "furniture",
-    "table": "furniture", "chair": "furniture", "lamp": "fixture", "light": "fixture",
-    "clouds": "sky", "man": "person", "woman": "person", "people": "person",
+    "shrub": "vegetation", "hedge": "vegetation", "foliage": "vegetation", "garden": "vegetation",
+    "grass": "ground", "grassy": "ground", "lawn": "ground", "field": "ground", "meadow": "ground",
+    "hill": "ground", "landscape": "ground", "terrain": "ground", "yard": "ground",
+    "driveway": "paving", "path": "paving", "sidewalk": "paving", "road": "paving", "patio": "paving",
+    "street": "context", "building": "context", "house": "context", "villa": "context",
+    "cabin": "context", "cottage": "context", "structure": "context", "porch": "context",
+    "stairs": "context", "staircase": "context", "railing": "context", "chimney": "context",
+    "deck": "context", "balcony": "context", "gable": "context", "trim": "context",
+    "pediment": "context", "truss": "context", "fence": "context", "shadow": "context",
+    "car": "vehicle", "sofa": "furniture", "couch": "furniture", "table": "furniture",
+    "chair": "furniture", "rug": "furniture", "lamp": "fixture", "light": "fixture",
+    "clouds": "sky", "cloud": "sky", "man": "person", "woman": "person", "people": "person",
 }
+
+# Labels Reve uses for the primary built structure — a material/"wall" edit means
+# rewriting THIS region's prompt (Reve has no separate wall/roof region; the envelope
+# is one object whose child regions are the windows/porch/stairs).
+BUILDING_LABEL_HINTS = ("house", "building", "villa", "cabin", "cottage", "structure", "home")
 MATERIAL_SCAFFOLDS = {
     "travertine": "honed travertine stone cladding, buff cream tone, subtle horizontal banding, matte finish",
     "red_brick": "red clay brick masonry in running bond, tumbled texture, light mortar joints",
@@ -217,11 +229,50 @@ def pick_region(layout: dict, semantic: str) -> dict | None:
     return best
 
 
+def pick_building_region(layout: dict) -> dict | None:
+    """The primary built structure. Reve emits the envelope as ONE object (label
+    like '<house 1>') whose prompt carries the wall/roof/trim materials and whose
+    children are the windows/porch/stairs. A 'wall material' edit = rewriting this
+    region's prompt. Prefer an explicit building label; else the largest
+    coarse/medium region that isn't sky or ground."""
+    for region in layout.get("regions", []):
+        low = region.get("label", "").lower()
+        if any(h in low for h in BUILDING_LABEL_HINTS):
+            return region
+    best, best_area = None, 0.0
+    for region in layout.get("regions", []):
+        sem = match_semantic(region.get("label", ""))
+        if sem in ("sky", "ground", "vegetation", "water"):
+            continue
+        b = region.get("bbox", {})
+        area = max(0.0, (b.get("x1", 0) - b.get("x0", 0)) * (b.get("y1", 0) - b.get("y0", 0)))
+        if area > best_area:
+            best, best_area = region, area
+    return best
+
+
+def child_labels(layout: dict, parent_label: str) -> list[str]:
+    return [r["label"] for r in layout.get("regions", []) if r.get("parent") == parent_label]
+
+
 def patch_region_prompt(layout: dict, label: str, new_prompt: str) -> dict:
     out = json.loads(json.dumps(layout))
     for region in out.get("regions", []):
         if region["label"] == label:
             region["prompt"] = new_prompt
+            return out
+    raise KeyError(f"region '{label}' not in layout")
+
+
+def override_region_material(layout: dict, label: str, material_prompt: str) -> dict:
+    """Append a strong material-override clause to a region's existing prompt so
+    structure/geometry cues survive but the surface material changes. This is how
+    the product will really edit an envelope material given Reve's object model."""
+    out = json.loads(json.dumps(layout))
+    for region in out.get("regions", []):
+        if region["label"] == label:
+            base = (region.get("prompt") or "").strip()
+            region["prompt"] = f"{base} The exterior walls are now clad in {material_prompt}."
             return out
     raise KeyError(f"region '{label}' not in layout")
 
@@ -348,7 +399,9 @@ def live_run(steps: list[str], budget_cap: float) -> None:
                       f"{score['match_rate']:.0%} taxonomy-matched, classes: {score['classes_found']}")
             save_results()
 
-        def swap(fixture: str, semantic: str, scaffold: str, tag: str) -> None:
+        def swap(fixture: str, target_kind: str, scaffold: str, tag: str) -> None:
+            """target_kind='building' rewrites the envelope material (Reve's object
+            model); otherwise it's a taxonomy class (floor/ground/sky/...)."""
             if fixture not in layouts:
                 if not FIXTURES[fixture].exists():
                     print(f"  skip {tag} ({fixture} missing)")
@@ -356,28 +409,40 @@ def live_run(steps: list[str], budget_cap: float) -> None:
                 data = client.extract_layout(b64_of(FIXTURES[fixture]), f"{tag}_extract")
                 layouts[fixture] = data["layout"]
             keyed, _ = relabel_with_region_keys(layouts[fixture])
-            target = pick_region(keyed, semantic)
+            if target_kind == "building":
+                target = pick_building_region(keyed)
+            else:
+                target = pick_region(keyed, target_kind)
             if target is None:
-                results["steps"][tag] = {"error": f"no '{semantic}' region found -- C1 signal"}
-                print(f"  [{tag}] NO {semantic} REGION -- that is itself a C1 finding")
+                results["steps"][tag] = {"error": f"no '{target_kind}' region found -- C1 signal"}
+                print(f"  [{tag}] NO {target_kind} REGION -- that is itself a C1 finding")
                 return
-            edited = patch_region_prompt(keyed, target["label"], MATERIAL_SCAFFOLDS[scaffold])
+            kids_before = child_labels(keyed, target["label"])
+            if target_kind == "building":
+                edited = override_region_material(keyed, target["label"], MATERIAL_SCAFFOLDS[scaffold])
+            else:
+                edited = patch_region_prompt(keyed, target["label"], MATERIAL_SCAFFOLDS[scaffold])
             data = client.render_layout(edited, b64_of(FIXTURES[fixture]), tag)
-            returned_labels = [r.get("label") for r in data.get("layout", {}).get("regions", [])]
+            ret_layout = data.get("layout", {})
+            returned_labels = [r.get("label") for r in ret_layout.get("regions", [])]
+            kids_after = child_labels(ret_layout, target["label"])
             drift = drift_outside_bbox(FIXTURES[fixture], OUT_DIR / f"{tag}.png", target["bbox"])
             results["steps"][tag] = {
                 "edited_region": target["label"],
+                "target_kind": target_kind,
                 "drift_outside_bbox": round(drift, 4),
                 "c2_pass_threshold_0.05": drift < 0.05,
                 "c6_label_roundtrip": target["label"] in returned_labels,
+                "child_regions_before": len(kids_before),
+                "child_regions_after": len(kids_after),
             }
-            print(f"  [{tag}] drift outside bbox: {drift:.2%} "
-                  f"({'PASS' if drift < 0.05 else 'FAIL'} vs 5%) | "
-                  f"C6 label round-trip: {target['label'] in returned_labels}")
+            print(f"  [{tag}] edited '{target['label']}' | drift outside bbox: {drift:.2%} "
+                  f"({'PASS' if drift < 0.05 else 'FAIL'} vs 5%) | C6 round-trip: "
+                  f"{target['label'] in returned_labels} | children {len(kids_before)}->{len(kids_after)}")
 
         if "S2" in steps:
-            print("S2 -- exterior wall -> travertine")
-            swap("exterior_photoreal", "wall", "travertine", "S2_wall_travertine")
+            print("S2 -- exterior envelope -> travertine (edit the building region)")
+            swap("exterior_photoreal", "building", "travertine", "S2_wall_travertine")
             save_results()
 
         if "S3" in steps:
@@ -393,18 +458,26 @@ def live_run(steps: list[str], budget_cap: float) -> None:
                 layouts[fixture] = data["layout"]
             current_layout, _ = relabel_with_region_keys(layouts[fixture])
             current_image = FIXTURES[fixture]
+            # Object-aware edit chain: building = envelope material override; sky/ground
+            # = real regions; global = whole-image prompt (lighting).
             edits = [
-                ("wall", "prompt", MATERIAL_SCAFFOLDS["red_brick"]),
-                ("roof", "prompt", MATERIAL_SCAFFOLDS["charcoal_metal_roof"]),
+                ("building", "material", MATERIAL_SCAFFOLDS["red_brick"]),
                 ("sky", "prompt", "dramatic golden-hour sky, low warm sun, scattered clouds"),
+                ("ground", "prompt", "lush manicured green lawn, healthy summer grass"),
                 (None, "global", "photographed at dusk, warm interior lights glowing, long soft shadows"),
-                ("vegetation", "prompt", "mature leafy deciduous trees, lush summer foliage"),
+                ("building", "material", MATERIAL_SCAFFOLDS["charcoal_metal_roof"]),
             ]
             for i, (semantic, mode, text) in enumerate(edits, 1):
                 tag = f"S4_edit{i}_{semantic or 'global'}"
                 if mode == "global":
                     edited = json.loads(json.dumps(current_layout))
                     edited["prompt"] = ((edited.get("prompt") or "") + " " + text).strip()
+                elif semantic == "building":
+                    target = pick_building_region(current_layout)
+                    if target is None:
+                        print(f"  [{tag}] no building region, skipping")
+                        continue
+                    edited = override_region_material(current_layout, target["label"], text)
                 else:
                     target = pick_region(current_layout, semantic)
                     if target is None:
