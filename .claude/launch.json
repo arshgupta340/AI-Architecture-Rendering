@@ -21,6 +21,12 @@
       "port": 5181
     },
     {
+      "name": "reve-canvas",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "apps/reve-canvas", "run", "dev"],
+      "port": 5182
+    },
+    {
       "name": "showcase",
       "runtimeExecutable": "spike\\.venv\\Scripts\\python.exe",
       "runtimeArgs": ["-m", "http.server", "5190"],
