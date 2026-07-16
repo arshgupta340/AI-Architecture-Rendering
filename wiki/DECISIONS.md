@@ -1,6 +1,6 @@
 ---
 type: log
-updated: 2026-07-14
+updated: 2026-07-15
 ---
 
 # Decision Log
@@ -19,6 +19,17 @@ Each entry follows the same shape so it can be scanned in 15 seconds:
 ```
 
 ---
+
+## 2026-07-15 — Kill Reve Canvas after geometry-preservation gate failed {#reve-canvas-killed}
+
+**Decision:** Stop the Reve Canvas product at Phase 0; do not scaffold `apps/reve-canvas/`, provision its backend, or spend on the remaining live spike steps. Redirect product effort to the mesh-first geometry-locked track while retaining the raw Reve layouts and taxonomy lessons.
+**Context:** The ≤$5 pre-build spike required C1 extraction sanity ∧ C2 geometry preservation. Four calls spent 320 credits ($0.4267): two baseline extracts, one refined extract, and one keyed wall→travertine render. Strict C1 topped out at 77.8% matcher coverage after prompting (threshold 80%). C2 measured 7.1% change outside the edited bbox (threshold <5%); the 1504×656 source was reframed to 5440×3072 with a shifted composition, and the dark shingle siding remained visually unchanged instead of becoming travertine. RegionKey round-trip passed once, but it cannot offset the kill gate. Evidence: [reve_spike.md](../spike/REPORTS/reve_spike.md).
+**Alternatives considered:**
+- Continue S3–S6 to characterize quality and five-edit stability — rejected: C2 is explicitly terminal, and more paid calls cannot make the product gate pass.
+- Treat the 7.1% number as a harness artifact and proceed — rejected: aspect-ratio change makes the exact metric imperfect, but the undistorted visual comparison independently shows reframing and a failed material substitution.
+- Build a client-side masking/compositing workaround — rejected for this track: Reve returned one flat re-render and bbox regions; adding a separate masking pipeline would abandon the validated architecture and duplicate the mesh track's stronger geometry-truth path.
+**Reasoning:** The product's promise is trustworthy element-aware edits on a user's existing architectural frame. A renderer that changes the frame and does not reliably apply the selected material fails that core promise before workflow features can add value. Stopping at $0.43 is the purpose of the spike gate, not a project failure.
+**Revisit if:** Reve exposes reliable source dimensions/aspect controls and region-confined rendering, then the same fixtures demonstrate <5% outside-region drift with visible material compliance and no window/roofline warping at 100% zoom.
 
 ## 2026-07-14 — Reve Canvas: fast-to-market 2D sibling track on Reve's layout API {#reve-canvas-track}
 

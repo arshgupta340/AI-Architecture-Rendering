@@ -1,11 +1,19 @@
 ---
 type: log
-updated: 2026-07-14
+updated: 2026-07-15
 ---
 
 # Session Log
 
 Append-only conversation log. **Newest at top.** One entry per chat session.
+
+## 2026-07-15 — Reve Canvas live spike → C2 kill gate failed; product stopped
+
+**Scope:** Pick up `docs/plans/CODEX-HANDOFF-reve-canvas.md`, validate its assumptions against the live checkout/current official Reve SDK, and execute the cheapest decisive portion of the Phase-0 gate before any app build.
+**Decisions:** [[DECISIONS#reve-canvas-killed]] — stop the Reve Canvas product after the C2 kill gate failed; do not scaffold the app or spend on the remaining spike steps.
+**Tried:** Read the required repo/wiki/PRD/spike/convergence sources and shared Reve Canvas memory; confirmed branch `track/reve-canvas`; cross-checked request bodies against the current official `reve-ai/reve-sdk`; ran the $0 plan and 87/87 mocked tests; verified `REVE_API_KEY` through the script helper without reading/printing `spike/.env`; recovered from an initial zero-cost HTTP 402 after the user funded the API Budget; ran two baseline extracts, one targeted architectural-region refinement, and one keyed wall→travertine render. Raw JSON was saved before parsing and the source/output was inspected undistorted and at building scale.
+**Outcome:** Spent 320 credits ($0.4267 exact pack value; balance 7,500→7,180). Strict C1 failed: baseline match rates were 66.7% exterior / 70.0% viewport; a refinement prompt recovered roof + siding but reached 77.8%, below the 80% threshold. C2 failed decisively: 7.1% measured drift outside the edited bbox vs <5%, source 1504×656 reframed to 5440×3072, composition shifted, and the requested travertine did not visibly replace the shingle siding. C6 RegionKey round-trip passed once. C4/C5 were not run because the gate says stop on C2. Full report: [`spike/REPORTS/reve_spike.md`](../spike/REPORTS/reve_spike.md). No app scaffolding began.
+**Follow-ups:** Preserve the raw responses and taxonomy findings, but redirect product effort to the mesh-first geometry-locked track. Revisit Reve only if its API gains reliable source-frame preservation and genuinely region-confined architectural edits that pass <5% outside-region drift on these fixtures.
 
 ## 2026-07-14 — Reve deep-dive → Track 2 launched: Reve Canvas PRD + validation-spike harness
 
