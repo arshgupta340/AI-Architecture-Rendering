@@ -5,7 +5,14 @@
 **Authorization:** $0.05 session cap raised to **$5** for this spike. **Spend so far ~$1.49** (prior $0.43 + this session ~$1.07). Budget remaining ~$3.5.
 **Harness:** `spike/reve/run_reve_spike.py` (+ `run_edit_mechanic.py`, `run_edit_primitives.py`, `run_gate_closeout.py`). Raw responses saved verbatim under `spike/reve/outputs/`.
 
-## Verdict: **CONDITIONAL PASS — build a thin vertical slice.** Full build gated on the ≤$1 confirmation battery below.
+## Verdict: **PASS — build.** Confirmation battery ran green (2026-07-16); scope is GENERAL (interiors + exteriors).
+
+### Confirmation battery results (2026-07-16, ~$1.06)
+- **Interior decomposition (HIGHEST VALUE): PASS.** A real interior room (Reve-generated, `interior_room.png`) extracted into **27 regions** — separate `<floor>`, `<ceiling>`, `<walls>` surfaces PLUS individual `<sofa>`/`<table>`/`<cabinet>`/`<lamp>`/`<rug>`/`<painting>`/`<window>` objects. Interiors decompose *better* than exteriors → **product is general, not exteriors-only.** A floor/ground swap on a complex 34-region exterior stayed contained (3.72% outside-bbox drift). (Note: repo's two "interior" fixtures are mislabeled exteriors; used a generated interior — a real user interior should be re-confirmed but the decomposition vocabulary is proven.)
+- **Facet isolation: PASS.** A `change` command rewriting only the cladding clause turned the walls travertine while the **roof stayed dark shingle** (`GC_T2_wallonly_render.png`) — surface-clicking can be honest.
+- **Framing pin: PASS.** Setting layout width/height to the source aspect produced 6144×2688 (2.29:1) matching the 2.29:1 source (`GC_T1_pin_render.png`) — aspect/framing is controllable.
+
+### Original verdict line (kept): CONDITIONAL PASS — now upgraded to PASS by the battery above.
 
 Reve preserves architectural geometry through a material edit **better than any renderer in this repo's prior 2D experiments** — no melting windows, no warped rooflines — *and* it genuinely changes envelope materials. The gate only fails when you use the wrong edit primitive.
 

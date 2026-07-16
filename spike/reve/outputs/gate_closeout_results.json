@@ -1,0 +1,18 @@
+{
+  "T1": {
+    "pinned_dims": [
+      5280,
+      2304
+    ],
+    "output_dims": [
+      6144,
+      2688
+    ],
+    "aspect_matches_source": true
+  },
+  "T2": {
+    "edited": "<house 1>",
+    "has_separate_roof_region": true,
+    "note": "manual: inspect GC_T2_wallonly_render.png \u2014 did roof stay dark while walls -> travertine?"
+  }
+}

@@ -111,6 +111,40 @@ def main() -> None:
     ref_b64 = b64_of(src)
     results = {}
 
+    if "TI" in tests:
+        print("TI -- INTERIOR decomposition + floor swap (exteriors-only vs general)")
+        interior = FIXTURES["interior_photo"]
+        if not interior.exists():
+            print(f"  skip TI -- no interior fixture at {interior}")
+        else:
+            iref = b64_of(interior)
+            idata = client.extract_layout(iref, "GC_TI_extract")
+            ilayout = idata["layout"]
+            labels = [r.get("label") for r in ilayout.get("regions", [])]
+            classes = sorted({match_semantic(r.get("label", "")) for r in ilayout.get("regions", [])
+                              if match_semantic(r.get("label", ""))})
+            floor = pick_region(ilayout, "floor")
+            results["TI_extract"] = {"n_regions": len(labels), "labels": labels,
+                                     "classes": classes, "has_floor_region": floor is not None}
+            print(f"  [TI] {len(labels)} regions | classes {classes}")
+            print(f"  [TI] labels: {labels}")
+            print(f"  [TI] separate floor region: {floor is not None}")
+            # floor swap via the change-command pipeline (if a floor/ground region exists)
+            floor_target = floor or pick_region(ilayout, "ground")
+            if floor_target is not None:
+                _, fdata = change_cmd_pipeline(
+                    client, iref, ilayout, floor_target["label"],
+                    "wide-plank white oak flooring, matte natural oil finish; keep walls, ceiling, furniture unchanged",
+                    "GC_TI_floorswap")
+                drift = drift_outside_bbox(interior, OUT_DIR / "GC_TI_floorswap_render.png", floor_target["bbox"])
+                results["TI_floorswap"] = {"edited": floor_target["label"], "drift_outside_bbox": round(drift, 4),
+                                           "c2_pass_threshold_0.05": drift < 0.05,
+                                           "note": "manual: did floor->oak while walls/furniture stayed put?"}
+                print(f"  [TI] floor swap drift outside bbox: {drift:.2%} ({'PASS' if drift < 0.05 else 'FAIL'})")
+            else:
+                results["TI_floorswap"] = {"skip": "no floor/ground region -- interior may be one room-blob"}
+                print("  [TI] NO floor/ground region -- possible room-blob; inspect labels above")
+
     if "T1" in tests:
         print("T1 -- framing pin (layout dims = source aspect)")
         _, data = change_cmd_pipeline(client, ref_b64, layout, building["label"], TRAVERTINE,
