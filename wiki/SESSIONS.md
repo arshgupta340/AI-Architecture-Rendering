@@ -1,11 +1,19 @@
 ---
 type: log
-updated: 2026-07-15
+updated: 2026-07-16
 ---
 
 # Session Log
 
 Append-only conversation log. **Newest at top.** One entry per chat session.
+
+## 2026-07-16 — Overnight: commit triage + entourage scale audit (no unit bug) + KTX2 blocked
+
+**Scope:** Unattended overnight run on new branch `overnight/2026-07-16` (from `track/reve-canvas` HEAD): triage the ~11 uncommitted Reve-spike-aftermath changes into logical commits, run the test suite, execute the wiki NEXT queue (KTX2, entourage scale), $0 spend.
+**Decisions:** none (housekeeping gitignore additions only).
+**Tried:** File-by-file diff review before committing — found and repaired a `§`→backtick text corruption in 6 places across [[DECISIONS]]/[[SESSIONS]]/[[STATE]] that the 2026-07-15 session's edits had introduced; the corruption never entered history. Checked for the KhronosGroup `ktx` CLI (absent → KTX2 encode skipped per plan). Entourage audit parsed raw GLB POSITION accessors to independently verify the hardcoded `glbHeightUnits`/`glbBaseY` values (Bush 1.582/−0.235 exact; Tree ymin −0.243 exact). The queued full-360 research memo turned out to already exist ([[research/full360-options]], committed 2026-07-13) — not duplicated.
+**Outcome:** 5 commits on `overnight/2026-07-16`: `b13db5f` wiki kill-gate bookkeeping (§-repaired), `b417750` Reve spike report + cost ledger ($2.43 running total), `d3de035` raw Reve evidence (JSONs + overlays), `68cb20f` gitignore agent-runtime state + June glb intermediates + .hermes.md, `75614e1` entourage scale audit report. Tests 87/87 pass. **Entourage verdict: NO unit bug** — world unit is feet everywhere, per-species GLB heights are measured and normalized correctly; trees read small because `DEFAULT_ENT_HEIGHT.tree = 18 ft`, the slider caps at 30 ft, and per-species `baseHeightFt` is dead code at render (all species collapse to the flat global `treeFt`). Levers documented in `spike/REPORTS/entourage_scale_audit.md`. Live API spend: $0.
+**Follow-ups:** KTX2 still blocked on installing KTX-Software (steps in `apps/web3d-prototype/scripts/encode_ktx2.mjs` header + tonight's digest). Optional entourage polish (not a bug): raise tree default 18→24 ft, cap 30→~50 ft, restore per-species height ratios. Merge: `main` fast-forwards cleanly to `overnight/2026-07-16`; all `worktree-agent-*` branches are fully merged and safe to delete. Digest: `C:\Users\arshg\overnight\digests\2026-07-16-rendering.md`.
 
 ## 2026-07-15 — Reve Canvas live spike → C2 kill gate failed; product stopped
 

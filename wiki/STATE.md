@@ -1,6 +1,6 @@
 ---
 type: state
-updated: 2026-07-14
+updated: 2026-07-16
 ---
 
 # Current State
@@ -64,8 +64,8 @@ The $0 realtime path + the **hero render** are **built + QA'd + LIVE** (the hero
 2b. **(optional) DEPLOY FLUX.2** — `modal run spike/modal_flux2.py::warm_weights` (~70 GB) + `modal deploy spike/modal_flux2.py` (H200; validate the VideoX-Fun loader block on first deploy) → select the FLUX.2 preset in the Backend card. Opt-in, ~2–4× FLUX.1 cost. `spike/REPORTS/flux2_feasibility.md`.
 2c. **Multi-view hero** (NEW): the **per-view turntable is BUILT + live-verified** (`heroCaptureViewsFn` → N same-seed base renders → gallery + Export all + `bakeFromHeroViews` bridge), but per-view FLUX is NOT 3D-consistent (geometry/lighting/material drift). True consistency = **reproject-from-3D** ([[DECISIONS#web3d-reproject-consistency]], `lib/reproject.ts`): hero pixels → real mesh → other angles, gaps inpainted. **Reproject CORE verified** (perfect consistency for nearby angles); A/B/C findings: tighten-lock fixes geometry only (74.5→93.1% edge-align), IP-Adapter blocked on diffusers 0.32.2. **OPEN follow-up:** the full-360 CHAINED turntable loses the building in back views (chained gap-fill doesn't reconstruct unseen sides) — needs multi-hero anchors + loop closure + UI. Evidence + run scripts logged in [[SESSIONS]]. **region_edit v2 true inpaint** still scoped/deferred.
 3. **Hero v2** — true `FluxControlNetInpaintPipeline` for `region_edit` (vs the full-pass+composite); WebGPU hero capture (async readback); multi-view-consistent hero → feed the scene-bake for a photoreal walkthrough.
-4. **KTX2 encode** — run `scripts/encode_ktx2.mjs` on a machine with the KhronosGroup `ktx` CLI (+ `npm i -D sharp`), then enable the KTX2 load path behind `setKTX2Renderer`.
-5. **Real cutout people** — source genuinely-CC0 PNGs; **entourage scale check** (trees read slightly small).
+4. **KTX2 encode** — run `scripts/encode_ktx2.mjs` on a machine with the KhronosGroup `ktx` CLI (+ `npm i -D sharp`), then enable the KTX2 load path behind `setKTX2Renderer`. *(Checked 2026-07-16: `ktx` still absent on this machine — install steps in the script header + the overnight digest.)*
+5. **Real cutout people** — source genuinely-CC0 PNGs. ~~Entourage scale check~~ **audited 2026-07-16, NO unit bug** (`spike/REPORTS/entourage_scale_audit.md`): feet everywhere, per-species GLB normalization verified against raw accessors; trees read small from defaults (tree default 18 ft, slider cap 30 ft, per-species `baseHeightFt` dead at render). Optional polish levers documented, not applied.
 6. **Atmosphere ceiling** — optional takram physically-based sky/clouds; WebGPU clouds.
 
 ## Pipeline (Rhino → web), all `$0`
