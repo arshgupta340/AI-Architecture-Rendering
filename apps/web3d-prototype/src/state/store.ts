@@ -13,8 +13,10 @@ export type SavedView = {
   preset?: boolean;
 };
 
-/** A placed entourage instance. `scale` is a per-item variation (~0.85–1.15); the
- *  rendered size = entHeight[asset]/baseHeight[asset] * scale. */
+/** A placed entourage instance. `scale` is a per-item variation (0.8–1.3). For GLB
+ *  trees/bushes the rendered height = entHeight[asset] * scale (species GLBs are
+ *  normalized by their measured native height in Entourage.tsx); only the procedural
+ *  person path still uses entHeight[asset]/BASE_HEIGHT[asset] * scale. */
 export type EntItem = {
   id: string;
   asset: string;
