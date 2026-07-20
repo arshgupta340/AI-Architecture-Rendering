@@ -1,5 +1,6 @@
 import { extractLayout, resolveMode } from "@/lib/reve/client";
 import { autoLayerize, relabelWithRegionKeys } from "@/lib/model";
+import { isPersistenceConfigured, saveLayers } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -11,12 +12,16 @@ function stripDataUrl(s: string): string {
 
 export async function POST(request: Request) {
   try {
-    const { imageDataUrl } = (await request.json()) as { imageDataUrl?: string };
+    const { imageDataUrl, projectId } = (await request.json()) as { imageDataUrl?: string; projectId?: string };
     if (!imageDataUrl) return Response.json({ error: "imageDataUrl required" }, { status: 400 });
 
     const { layout, meta } = await extractLayout(stripDataUrl(imageDataUrl));
     const { layout: keyed, idByOld } = relabelWithRegionKeys(layout);
     const layers = autoLayerize(keyed, idByOld);
+
+    if (projectId && isPersistenceConfigured()) {
+      await saveLayers(projectId, layers).catch(() => undefined);
+    }
 
     return Response.json({ layout: keyed, layers, meta, mode: resolveMode() });
   } catch (err) {

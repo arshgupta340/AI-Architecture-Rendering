@@ -2,6 +2,7 @@ import { editRegion, resolveMode } from "@/lib/reve/client";
 import { buildChangeDescription, pinAspect, type CanvasLayer, type EnvelopeFacet } from "@/lib/model";
 import { getMaterial } from "@/lib/taxonomy";
 import type { ReveLayout } from "@/lib/reve/types";
+import { isPersistenceConfigured, recordEdit } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -19,6 +20,10 @@ interface EditBody {
   facet?: EnvelopeFacet;
   srcWidth: number;
   srcHeight: number;
+  projectId?: string;
+  baseSnapshotId?: string;
+  persistedLayerId?: string;
+  creditsCost?: number;
 }
 
 export async function POST(request: Request) {
@@ -40,6 +45,20 @@ export async function POST(request: Request) {
       command: { op: "change", label: layer.reveLabel, new_description: newDescription },
       aspect,
     });
+
+    if (body.projectId && body.baseSnapshotId && body.persistedLayerId && isPersistenceConfigured()) {
+      await recordEdit({
+        projectId: body.projectId,
+        layerId: body.persistedLayerId,
+        kind: "material_swap",
+        materialId,
+        facet,
+        baseSnapshotId: body.baseSnapshotId,
+        resultImageDataUrl: `data:image/png;base64,${result.imageB64}`,
+        layout,
+        creditsCost: body.creditsCost ?? 0,
+      }).catch(() => null);
+    }
 
     return Response.json({
       imageDataUrl: `data:image/png;base64,${result.imageB64}`,
