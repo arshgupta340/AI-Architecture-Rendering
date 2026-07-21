@@ -1,11 +1,19 @@
 ---
 type: log
-updated: 2026-07-18
+updated: 2026-07-21
 ---
 
 # Session Log
 
 Append-only conversation log. **Newest at top.** One entry per chat session.
+
+## 2026-07-21 — Overnight: verification pass (stale queue — 2026-07-18 already did the work)
+
+**Scope:** Unattended overnight run on new branch `overnight/2026-07-21` (from `overnight/2026-07-18` HEAD). The run prompt was a re-issue of the 2026-07-18 queue (claimed ~41 uncommitted changes on `overnight/spike-builder-2026-05-17`); reality was a clean tree on `overnight/2026-07-18` with every queue item already shipped. Run collapsed to verification instead of re-doing work.
+**Decisions:** none.
+**Tried:** Commit triage — nothing to triage (clean tree, 0 uncommitted files). Test suite: **87/87 pass** (2.5 s). KTX2: `ktx` CLI **still absent** on PATH (re-checked 2026-07-21; install steps remain in the `encode_ktx2.mjs` header). Entourage scale: audit of 2026-07-16 + re-verification of 2026-07-18 stand; not re-run. Full-360 memo: already refreshed 2026-07-18; instead **independently confirmed its load-bearing claim upstream** — `FluxControlNetPipeline` on diffusers `main` inherits `FluxIPAdapterMixin` and exposes `ip_adapter_image` in `__call__` (fetched the live source), so the Candidate-B recommendation (multi-hero anchoring on the shipped stack) survives adversarial re-check. `npm run build` verification of `apps/web3d-prototype` was blocked by the session permission config (both shells) — not attempted further per the no-fighting rule.
+**Outcome:** 1 wiki commit on `overnight/2026-07-21` (this entry + STATE date/re-check touch-ups). No code changes — none were needed. Live API spend: $0. No subagents deployed: the queue held no substantive execution to delegate, and inventing work to satisfy the orchestration split would have burned tokens for nothing.
+**Follow-ups:** Same as 2026-07-18, unchanged: attended session runs the memo's Candidate-B experiment plan (diffusers bump → 4 shared-ref heroes → reproject + blend + gap-inpaint); KTX2 blocked on installing KTX-Software. Merge: `main` fast-forwards cleanly to `overnight/2026-07-21` (154+ commits, linear); `worktree-agent-a0001157a2945c34b` / `-a178f87a4873aef04` / `-ab4480f50bdef2418` all fully merged, safe to delete. **Fix the overnight wrapper's prompt** — it is replaying the 2026-07-18 session verbatim (branch name, change count, queue); next re-issue would waste a third run. Digest: `C:\Users\arshg\overnight\digests\2026-07-21-rendering.md`.
 
 ## 2026-07-18 — Overnight: fixtures committed + full-360 memo refreshed (recommendation flipped) + entourage audit re-verified
 
