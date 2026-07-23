@@ -1,11 +1,19 @@
 ---
 type: log
-updated: 2026-07-21
+updated: 2026-07-23
 ---
 
 # Session Log
 
 Append-only conversation log. **Newest at top.** One entry per chat session.
+
+## 2026-07-23 — Overnight: diverged lines unified + composite module committed + full-360 memo independently re-confirmed
+
+**Scope:** Unattended overnight run on new branch `overnight/2026-07-23` (from `build/reve-canvas` HEAD). Third replay of the stale wrapper prompt (~41 changes on `overnight/spike-builder-2026-05-17` — reality: 1 untracked file), but this run had real work: the `build/reve-canvas` line (reve-canvas vertical slice) and the `overnight/2026-07-18/21` docs line had **diverged** from the same base commit, and a new uncommitted module existed.
+**Decisions:** none.
+**Tried:** Commit triage found `apps/reve-canvas/src/lib/composite.ts` (masked-delta composite-back, caller-supplied-mask variant with a DOM-free testable core) — and discovered it is a **parallel implementation** of the same feature already committed on the `wt/composite` worktree branch (`applyMaskedDelta`: bbox→feathered mask + drift score + dev page). Committed the new variant with the conflict flagged; **reconciliation of the two variants is an open item before merging `wt/composite`**. Merged `overnight/2026-07-21` into tonight's branch (clean, disjoint files) so one branch again contains everything. Tests **87/87 pass** before and after the merge. KTX2: `ktx` still absent (re-checked 2026-07-23). Entourage: stands audited (2026-07-16, re-verified 2026-07-18); not re-run. Full-360 memo: one Opus research subagent ran a fresh 2025-26 sweep **without being told the 2026-07-18 memo existed** — it independently converged on the same recommendation (multi-hero anchoring + loop closure, MeSS arXiv 2508.15169 as precedent). New memo at `research/full360-options.md` (root), cross-linked with the canonical [[research/full360-options]]; its stale IP-Adapter-blocked line corrected. New evidence folded into the wiki memo header: FlashTex (relightable bake), GCAlign-style exposure pass, MV-Adapter-as-anchor-generator escalation, SEVA 576p cap. `node`/`npm` blocked by the session permission config (as 2026-07-21) → reve-canvas `tsc`/build not verifiable tonight; the new module is imported nowhere yet so it cannot break the app build.
+**Outcome:** 3 commits + 1 merge on `overnight/2026-07-23`: `9be01d6` composite module, `ff4cb8c` merge of `overnight/2026-07-21`, `3d7f5e8` reconciled full-360 memos, + this wiki update. Tonight's branch now supersedes every prior overnight/agent branch. Live API spend: $0.
+**Follow-ups:** (1) **Reconcile the two masked-delta composite implementations** (tonight's `compositeMaskedDelta` vs `wt/composite`'s `applyMaskedDelta`) before merging `wt/composite` — likely: keep tonight's pure core + wt/composite's bbox-mask builder & drift score on top. (2) `wt/auth` / `wt/brand` / `wt/composite` worktrees each hold 1 unmerged commit — review + land in an attended session. (3) **Fix the overnight wrapper's prompt** (third verbatim replay). (4) Attended session: run the memo's multi-anchor experiment plan. (5) KTX2 unchanged. Digest: `C:\Users\arshg\overnight\digests\2026-07-23-rendering.md`.
 
 ## 2026-07-21 — Overnight: verification pass (stale queue — 2026-07-18 already did the work)
 
