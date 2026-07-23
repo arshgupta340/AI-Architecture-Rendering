@@ -1,11 +1,27 @@
 ---
 type: log
-updated: 2026-07-16
+updated: 2026-07-21
 ---
 
 # Session Log
 
 Append-only conversation log. **Newest at top.** One entry per chat session.
+
+## 2026-07-21 — Overnight: verification pass (stale queue — 2026-07-18 already did the work)
+
+**Scope:** Unattended overnight run on new branch `overnight/2026-07-21` (from `overnight/2026-07-18` HEAD). The run prompt was a re-issue of the 2026-07-18 queue (claimed ~41 uncommitted changes on `overnight/spike-builder-2026-05-17`); reality was a clean tree on `overnight/2026-07-18` with every queue item already shipped. Run collapsed to verification instead of re-doing work.
+**Decisions:** none.
+**Tried:** Commit triage — nothing to triage (clean tree, 0 uncommitted files). Test suite: **87/87 pass** (2.5 s). KTX2: `ktx` CLI **still absent** on PATH (re-checked 2026-07-21; install steps remain in the `encode_ktx2.mjs` header). Entourage scale: audit of 2026-07-16 + re-verification of 2026-07-18 stand; not re-run. Full-360 memo: already refreshed 2026-07-18; instead **independently confirmed its load-bearing claim upstream** — `FluxControlNetPipeline` on diffusers `main` inherits `FluxIPAdapterMixin` and exposes `ip_adapter_image` in `__call__` (fetched the live source), so the Candidate-B recommendation (multi-hero anchoring on the shipped stack) survives adversarial re-check. `npm run build` verification of `apps/web3d-prototype` was blocked by the session permission config (both shells) — not attempted further per the no-fighting rule.
+**Outcome:** 1 wiki commit on `overnight/2026-07-21` (this entry + STATE date/re-check touch-ups). No code changes — none were needed. Live API spend: $0. No subagents deployed: the queue held no substantive execution to delegate, and inventing work to satisfy the orchestration split would have burned tokens for nothing.
+**Follow-ups:** Same as 2026-07-18, unchanged: attended session runs the memo's Candidate-B experiment plan (diffusers bump → 4 shared-ref heroes → reproject + blend + gap-inpaint); KTX2 blocked on installing KTX-Software. Merge: `main` fast-forwards cleanly to `overnight/2026-07-21` (154+ commits, linear); `worktree-agent-a0001157a2945c34b` / `-a178f87a4873aef04` / `-ab4480f50bdef2418` all fully merged, safe to delete. **Fix the overnight wrapper's prompt** — it is replaying the 2026-07-18 session verbatim (branch name, change count, queue); next re-issue would waste a third run. Digest: `C:\Users\arshg\overnight\digests\2026-07-21-rendering.md`.
+
+## 2026-07-18 — Overnight: fixtures committed + full-360 memo refreshed (recommendation flipped) + entourage audit re-verified
+
+**Scope:** Unattended overnight orchestration run on new branch `overnight/2026-07-18` (from `build/reve-canvas` HEAD): commit triage, test suite, KTX2 re-check, entourage-audit re-verification, full-360 research memo refresh, $0 spend.
+**Decisions:** none (the memo's recommendation flip is a research finding, not a committed decision — next attended session decides).
+**Tried:** The run prompt claimed ~41 uncommitted changes on `overnight/spike-builder-2026-05-17` — stale; reality was `build/reve-canvas` with a clean tree except `spike/reve/fixtures/` (2 interior PNGs referenced by `run_reve_spike.py`). Checked `ktx` CLI (still absent → KTX2 skipped again per plan). Delegated two Opus subagents: (a) independent re-verification of the 2026-07-16 entourage scale audit against current code — **still accurate, no unit bug**, all file:line claims confirmed; only find was a stale `EntItem` comment in `state/store.ts` describing the legacy `entHeight/BASE_HEIGHT` formula (fixed); (b) 2025-26 web survey refreshing [[research/full360-options]].
+**Outcome:** 4 commits on `overnight/2026-07-18`: `f6dcd26` reve interior fixtures, `200471e` entourage comment fix, `f415880` full-360 memo refresh, + this wiki update. Tests 87/87 pass. **Memo recommendation FLIPPED**: Candidate B (multi-hero anchoring + loop closure on the shipped FLUX + `reproject.ts` stack) is now first choice — the "IP-Adapter blocked on diffusers 0.32.2" finding is stale (current `FluxControlNetPipeline` inherits `FluxIPAdapterMixin`; Redux/InstantX usable after a diffusers bump); MeSS (arXiv 2508.15169) validates the shape at building scale. Fallback: Candidate A UV-bake, upgraded to **Hunyuan3D-2.1-Paint** (mesh-conditioned, PBR output, commercial-friendly license). Candidate C (MV-Adapter / Stable Virtual Camera) demoted to research-only (SDXL fidelity gap; SEVA non-commercial on weights AND output). Live API spend: $0.
+**Follow-ups:** Next attended session = run the memo's Candidate-B experiment plan (diffusers bump → 4 shared-ref heroes → reproject + blend + gap-inpaint; kill criteria inline). KTX2 still blocked on installing KTX-Software. Merge: `main` fast-forwards cleanly to `overnight/2026-07-18` (every branch in the repo is an ancestor of it); all three `worktree-agent-*` branches fully merged, safe to delete. Digest: `C:\Users\arshg\overnight\digests\2026-07-18-rendering.md`.
 
 ## 2026-07-16 — Overnight: commit triage + entourage scale audit (no unit bug) + KTX2 blocked
 
