@@ -1,11 +1,19 @@
 ---
 type: log
-updated: 2026-07-23
+updated: 2026-07-25
 ---
 
 # Session Log
 
 Append-only conversation log. **Newest at top.** One entry per chat session.
+
+## 2026-07-25 — Overnight: verification pass + full branch audit + composite reconciliation plan (fourth stale-prompt replay)
+
+**Scope:** Unattended overnight run on new branch `overnight/2026-07-25` (from `overnight/2026-07-23` HEAD — identical commit `450db2c`). **Fourth verbatim replay** of the stale wrapper prompt (claimed ~41 uncommitted changes on `overnight/spike-builder-2026-05-17`; reality: clean tree, no stash). Run collapsed to verification plus one genuinely new deliverable: a delegated read-only branch audit with a concrete composite-reconciliation plan.
+**Decisions:** none.
+**Tried:** Commit triage — nothing to triage (clean tree, 0 files). Tests **87/87 pass** (2.3 s). KTX2: `ktx`/`toktx`/`ktx2ktx2` still absent on PATH (re-checked 2026-07-25). New permission nuance: `node` v24.14.1 **is** runnable this session (`node --version` passes) but arbitrary node-script execution and `npm` are gated → a direct `node node_modules/typescript/lib/tsc.js` typecheck of reve-canvas was attempted and denied; TS verification still needs an attended session. Entourage: code untouched since the audited commit (`74a6273`, 2026-06-14) apart from the 07-18 comment fix → audit stands, not re-run. Full-360 memo: both memos exist and converge; not re-derived. Delegated one read-only Opus branch-audit subagent (evidence: `git cherry`, `merge-base --is-ancestor`, `git show` on worktree branches): **all three `worktree-agent-*` branches and every older branch** (`overnight/2026-07-13/16/18/21/23`, `overnight/spike-builder-2026-05-17`, `renderer-bakeoff`, `build/reve-canvas`, `track/reve-canvas`) **are fully merged into tonight's branch** — zero unmerged commits, zero unapplied patches. `wt/auth` (`bebb2fe`, +1788/−162: Supabase auth + migrations + route wiring), `wt/brand` (`e6c6205`, +1147/−202: componentized UI + brand system), `wt/composite` (`367645e`, +377: real Variant B) each hold exactly 1 unmerged commit awaiting attended review. **Key audit finding:** `wt/brand` carries a deliberate `composite.ts` STUB declaring the `applyMaskedDelta → {dataUrl, driftScore, maskDataUrl}` / `BBox` contract, so the reconciled module's public API is already pinned by a second consumer; and Variant B's mask encoding `(255,255,255,α)` is **exactly** what Variant A's luma×alpha `blendMaskedDelta` core consumes — the variants are compatible, not conflicting.
+**Outcome:** 1 wiki commit on `overnight/2026-07-25` (this entry + STATE touch-ups). No code changes — none needed. Live API spend: **$0**. Concrete reconciliation plan recorded (see follow-up 1 + digest).
+**Follow-ups:** (1) **Composite reconciliation (attended), now fully planned:** keep A's `blendMaskedDelta` as the single bit-exact blend primitive; port B's `pixelBoxes`/`boxAlpha`/`createMask` (bbox→feathered mask), `coverFit` registration (prefer over A's stretch), and `calculateDrift` into the same module; re-express `applyMaskedDelta` as a thin wrapper calling `blendMaskedDelta`; keep the `BBox`/`CompositeResult` contract verbatim (wt/brand's stub depends on it, discard the stub at merge); bring over `/dev/composite` + test-notes; add a Node unit test around `blendMaskedDelta` (neither variant has automated tests). Then land `wt/composite` → `wt/brand` → `wt/auth`. (2) **Merge:** `main` fast-forward to `450db2c` verified safe (merge-base == `main` tip, 159 linear commits, 0 on main side). (3) **Branch cleanup:** all `worktree-agent-*` + older `overnight/*` + `renderer-bakeoff` + `build/track/reve-canvas` safe to delete. (4) **Fix the overnight wrapper prompt** — fourth replay; every run since 07-18 has burned its triage phase on a stale premise. (5) KTX2 unchanged (install KTX-Software). (6) Attended session: run the memo's multi-anchor experiment plan. Digest: `C:\Users\arshg\overnight\digests\2026-07-25-rendering.md`.
 
 ## 2026-07-23 — Overnight: diverged lines unified + composite module committed + full-360 memo independently re-confirmed
 
