@@ -1,11 +1,19 @@
 ---
 type: log
-updated: 2026-07-25
+updated: 2026-07-28
 ---
 
 # Session Log
 
 Append-only conversation log. **Newest at top.** One entry per chat session.
+
+## 2026-07-28 — Overnight: verification pass + full-360 delta survey (fifth stale-prompt replay)
+
+**Scope:** Unattended overnight run on new branch `overnight/2026-07-28` (from `overnight/2026-07-25` HEAD, identical commit `fd4d093`). **Fifth verbatim replay** of the stale wrapper prompt (claimed ~41 uncommitted changes on `overnight/spike-builder-2026-05-17`; reality: clean tree). Run = verification pass + one delegated research delta on the full-360 memo.
+**Decisions:** none.
+**Tried:** Commit triage — nothing to triage (clean tree). Tests **87/87 pass** (2.2 s). KTX2: `ktx` still absent on PATH (re-checked 2026-07-28) → skipped again; install steps unchanged (`encode_ktx2.mjs` header). Permission gates re-tested: `node --version` runs, but `npm` and node-script execution (`node …/tsc.js`) both still denied → the planned composite reconciliation stays attended (can't typecheck-verify TS changes overnight). Entourage: spot-verified the 07-16 audit's key claims against current code (`Entourage.tsx:402` tree default 18 ft; per-species `glbHeightUnits` normalization in `entourageAssets.ts`) — audit stands, not re-run. Merge/branch audit independently re-verified from scratch (`git branch --merged`, merge-base, rev-list): matches the 07-25 audit exactly. Delegated one Opus research subagent for a **delta survey** (post-2026-07-20 only) on [[research/full360-options]].
+**Outcome:** 2 commits on `overnight/2026-07-28`: `2420cc4` — a dated "2026-07-28 delta survey" section appended to `research/full360-options.md` (root): **recommendation UNCHANGED** (multi-hero anchoring + loop closure first). Two corroborating finds: **WorldMesh** (arXiv 2603.22972, code released 2026-07-05) = a building/multi-room-scale mesh-conditioned diffusion pipeline that is essentially Approach A's shape with a reference implementation (back-projection, nearest-neighbour camera ordering, edge-recall validation) — mine it before building; and the **diffusers IP-Adapter unblock is now a closed/shipped issue** (#10689), not just a `main`-branch claim (exact version tag unpinned — keep the smoke-test caveat). Watch-list add: FLUX.2 ControlNet landing in diffusers (#13351); a FLUX-native texturing backbone would be the one thing that flips texture-bake ahead of anchoring. Plus this wiki commit. Live API spend: **$0**.
+**Follow-ups:** unchanged from 07-25: (1) composite reconciliation (attended, plan in the 07-25 entry) then land `wt/composite` → `wt/brand` → `wt/auth`; (2) `main` fast-forward to tonight's HEAD verified safe; (3) all `worktree-agent-*` + older `overnight/*` + `renderer-bakeoff` + `build/track reve-canvas` branches safe to delete; (4) **fix the overnight wrapper prompt — fifth replay**; (5) KTX2 blocked on installing KTX-Software; (6) attended session runs the memo's multi-anchor experiment plan (now with WorldMesh's code as a reference). Digest: `C:\Users\arshg\overnight\digests\2026-07-28-rendering.md`.
 
 ## 2026-07-25 — Overnight: verification pass + full branch audit + composite reconciliation plan (fourth stale-prompt replay)
 
