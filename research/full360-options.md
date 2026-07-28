@@ -187,3 +187,41 @@ persists even with bracketing anchors, escalate to **Approach C's MV-Adapter as 
 (texture-on-mesh)** as the strategic bet if the product ever needs true 360° free-orbit rather than a
 finite turntable — it is definitionally consistent but the largest pipeline change and trades FLUX's
 one-shot photoreal look for renderer-dependent polish.
+
+## 2026-07-28 delta survey
+
+DELTA sweep for developments since ~2026-07-20. **Recommendation UNCHANGED** (Approach A / multi-hero
+anchoring + loop closure first). Two findings worth recording, both *corroborating* not *redirecting*:
+
+1. **WorldMesh — a code-released, architecture-scale instantiation of the recommended approach.**
+   *Navigable Multi-Room 3D Scenes via Mesh-Conditioned Image Diffusion*, arXiv 2603.22972v3
+   (v3 submitted 2026-07-05; code + data at https://mschneider456.github.io/world-mesh/). Not in either
+   prior memo. It builds an explicit mesh scaffold, conditions image diffusion on **mesh-rendered depth
+   + color**, keeps cross-view style coherent via **greedy nearest-neighbour camera selection**, then
+   **projects synthesized images back onto mesh surfaces to accumulate consistent textures
+   progressively**, with **edge-recall validation** against mesh depth. This is almost exactly Approach
+   A's shape (mesh-anchored ControlNet-style diffusion → back-project → progressive accumulate →
+   structural-fidelity check), now the strongest *building-scale* published analogue beside MeSS — and
+   unlike MeSS it ships code. **What changes:** nothing in the ranking; it adds a second published
+   validation of Approach A and a concrete reference implementation to mine for the back-projection /
+   camera-ordering / edge-recall details. https://arxiv.org/abs/2603.22972
+
+2. **diffusers IP-Adapter unblock is confirmed merged (not just `main`).** The exact block the memos
+   cite — issue #10689, "Support IPAdapter for all Flux pipelines, not only txt2img" — is now
+   **Closed / Done**, i.e. `FluxControlNetPipeline` officially inherits `FluxIPAdapterMixin` in a tagged
+   line (per HF docs + closed issue). I could not pin the precise version tag from public release notes
+   (fetch was unreliable), so the Approach-A experiment plan should still smoke-test the multi-controlnet
+   batching path after the bump, as the memo already says. https://github.com/huggingface/diffusers/issues/10689
+   · https://huggingface.co/docs/diffusers/en/api/pipelines/controlnet_flux
+
+**Not material (checked, no change):**
+- **Hunyuan3D-2.5** — tech report predates the window (2025-06-23); PBR multi-view paint is the same
+  lineage as the already-covered Hunyuan3D-2.1-Paint fallback; no new open-weights *Paint* drop or
+  license change found post-2026-07-20. Fallback stands as written. https://arxiv.org/abs/2506.16504
+- **Object-scale texture-bake churn** (VCD-Texture, RomanTex, AssetGen, MD-ProjTex) — same
+  SyncMVD/Hunyuan lineage the memos already survey under Approach B; nothing that closes B's
+  building-scale / FLUX-look gap.
+- **Watch-list add:** **FLUX.2** ControlNet support is landing in diffusers (e.g. "Flux.2 Dev Fun
+  ControlNet", issue #13351). No FLUX.2 mesh-paint or multi-view head yet — but a FLUX-native texturing
+  backbone remains the one development that would promote the texture-bake route over anchoring; keep
+  watching. https://github.com/huggingface/diffusers/issues/13351
