@@ -1,11 +1,19 @@
 ---
 type: log
-updated: 2026-07-28
+updated: 2026-07-30
 ---
 
 # Session Log
 
 Append-only conversation log. **Newest at top.** One entry per chat session.
+
+## 2026-07-30 — Overnight: verification pass, delta survey empty (sixth stale-prompt replay)
+
+**Scope:** Unattended overnight run on new branch `overnight/2026-07-30` (from `overnight/2026-07-28` HEAD, commit `0c3f9ab`). **Sixth verbatim replay** of the stale wrapper prompt (claimed ~41 uncommitted changes on `overnight/spike-builder-2026-05-17`; reality: clean tree, no stash). Run = verification gates + one delegated 2-day research delta.
+**Decisions:** none.
+**Tried:** Commit triage — nothing to triage (clean tree). Tests **87/87 pass** (2.1 s). KTX2: `ktx` still absent — `command -v`/`Get-Command`/direct invocation all permission-gated this session, so verified by filesystem instead: no KTX-Software under `C:\Program Files` (only Enscape's bundled `.ktx2` textures match) → skipped again; `npm` remains gated overnight, so the encode needs an attended session regardless. Entourage: spot-verified audit claims against current code (`Entourage.tsx:402` flat `treeFt` default 18; `store.ts:86`; `entourageAssets.ts` GLB constants exact) and confirmed via `git log` the three files are untouched since the 07-18 comment fix (`200471e`) — audit stands. Merge audit re-derived fresh: merge-base(main, tonight) == main tip, **162 linear commits, fast-forward safe**; `git branch --merged` shows everything merged except `wt/auth`/`wt/brand`/`wt/composite` at exactly 1 unmerged commit each — matches 07-25/07-28 exactly. Delegated one research subagent for a **2-day delta survey** (2026-07-28→30) on [[research/full360-options]].
+**Outcome:** Delta survey verdict: **no material change; memo intentionally NOT edited** (nothing to add in a 2-day window). Watch-list status: diffusers **#13351 still open/unassigned** (no FLUX-native texturing backbone landed — the one thing that would flip the recommendation); **WorldMesh upgraded to ECCV 2026 accepted** (repo has LICENSE, 0 open issues — no setup landmines yet; still interior multi-room scope, mine-not-adopt); one new immature third-party FLUX.2-Klein ControlNet (`ReyChiaro/flux.2-klein-controlnet`, no mesh/multi-view/texture angle — not material). Recommendation unchanged: multi-hero anchoring + loop closure first. 1 wiki commit on `overnight/2026-07-30` (this entry + STATE touch-ups). No code changes — none needed. Live API spend: **$0**.
+**Follow-ups:** unchanged from 07-28: (1) composite reconciliation (attended, plan in the 07-25 entry) then land `wt/composite` → `wt/brand` → `wt/auth`; (2) `main` fast-forward to tonight's HEAD verified safe; (3) all `worktree-agent-*` + older `overnight/*` + `renderer-bakeoff` + `build/track reve-canvas` branches safe to delete; (4) **fix the overnight wrapper prompt — sixth replay**; every unattended run since 07-18 has re-verified the same facts; (5) KTX2 blocked on installing KTX-Software (attended: install + `npm i -D sharp` + run `encode_ktx2.mjs`); (6) attended session runs the memo's multi-anchor experiment plan (WorldMesh code as reference). Digest: `C:\Users\arshg\overnight\digests\2026-07-30-rendering.md`.
 
 ## 2026-07-28 — Overnight: verification pass + full-360 delta survey (fifth stale-prompt replay)
 
